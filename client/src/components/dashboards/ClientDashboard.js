@@ -1,6 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import { API_ENDPOINTS } from '../../config/api';
 import { Link } from 'react-router-dom';
 import { Container, Typography, Button, Grid, Paper, List, ListItem, ListItemText, Divider, CircularProgress, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Rating, Chip } from '@mui/material';
 import { Videocam as VideocamIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
@@ -40,10 +41,10 @@ const ClientDashboard = () => {
           psychologistsRes,
           companyRes
         ] = await Promise.all([
-          axios.get('http://localhost:5000/api/sessions', config),
-          axios.get('http://localhost:5000/api/feedback/client', config).catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/users/psychologists', config).catch(() => ({ data: { data: [] } })),
-          axios.get('http://localhost:5000/api/company/my-company', config).catch(() => ({ data: null }))
+          axios.get(`${API_ENDPOINTS.SESSIONS}`, config),
+          axios.get(`${API_ENDPOINTS.BASE_URL}/api/feedback/client`, config).catch(() => ({ data: [] })),
+          axios.get(`${API_ENDPOINTS.USERS}/psychologists`, config).catch(() => ({ data: { data: [] } })),
+          axios.get(`${API_ENDPOINTS.COMPANY}/my-company`, config).catch(() => ({ data: null }))
         ]);
 
         // Process sessions

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import { API_ENDPOINTS } from '../../config/api';
 import { Container, Typography, Grid, Paper, List, ListItem, ListItemText, Divider, Button, CircularProgress, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Chip } from '@mui/material';
 import { Videocam as VideocamIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
 import QuickActions from '../shared/QuickActions';
@@ -36,8 +37,8 @@ const PsychologistDashboard = () => {
       const config = { headers: { 'x-auth-token': token } };
       
       const [sessionsRes, clientsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/sessions', config),
-        axios.get('http://localhost:5000/api/users/clients', config)
+        axios.get(`${API_ENDPOINTS.SESSIONS}`, config),
+        axios.get(`${API_ENDPOINTS.USERS}/clients`, config)
       ]);
 
       const sortedSessions = sessionsRes.data.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
