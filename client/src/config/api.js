@@ -6,12 +6,12 @@ const isDevelopment = window.location.hostname === 'localhost';
 let API_BASE_URL;
 
 if (isProduction) {
-  API_BASE_URL = 'https://smiling-steps-production.up.railway.app';
+  API_BASE_URL = 'https://smiling-steps-backend.onrender.com';
 } else if (isDevelopment) {
   API_BASE_URL = 'http://localhost:5000';
 } else {
-  // Fallback to Railway for any other case
-  API_BASE_URL = 'https://smiling-steps-production.up.railway.app';
+  // Fallback to Render for any other case
+  API_BASE_URL = 'https://smiling-steps-backend.onrender.com';
 }
 
 console.log('🌐 API Configuration:', {
