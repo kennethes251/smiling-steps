@@ -1,6 +1,9 @@
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+// Helper function to get full API URL
+export const getApiUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
+
 export const API_ENDPOINTS = {
   BASE_URL: API_BASE_URL,
   AUTH: `${API_BASE_URL}/api/auth`,

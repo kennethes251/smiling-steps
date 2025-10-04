@@ -22,6 +22,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import LockIcon from '@mui/icons-material/Lock';
 import PersonIcon from '@mui/icons-material/Person';
 import Logo from '../components/Logo';
+import { API_ENDPOINTS } from '../config/api';
 
 // Import local images with fallbacks
 let heroImage1, heroImage2, heroImage3, therapistImage1, therapistImage2, therapistImage3, howItWorksImg;
@@ -191,7 +192,7 @@ const TherapistCard = ({ name, specialization, image, isCenter = false }) => (
     {image ? (
       <Box
         component="img"
-        src={image.startsWith('http') ? image : `http://localhost:5000${image}`}
+        src={image.startsWith('http') ? image : `${API_ENDPOINTS.BASE_URL}${image}`}
         alt={name}
         sx={{
           width: isCenter ? { xs: 180, sm: 200, md: 240 } : { xs: 140, sm: 160, md: 180 },
@@ -282,7 +283,7 @@ const LandingPage = () => {
 
   const fetchFeaturedTherapists = async () => {
     try {
-      const response = await axios.get(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api/public/psychologists` : 'http://localhost:5000/api/public/psychologists');
+      const response = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
       // Get first 3 therapists for featured section
       const therapists = response.data.slice(0, 3).map(therapist => ({
         name: therapist.name.startsWith('Dr.') ? therapist.name : `Dr. ${therapist.name}`,
