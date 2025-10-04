@@ -40,7 +40,6 @@ function App() {
     <ThemeProvider theme={theme}>
       <SnackbarProvider>
         <AuthProvider>
-          <ApiTest />
           <Header />
           <Routes>
             {/* Public Routes */}
