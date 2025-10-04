@@ -6,12 +6,26 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware - More permissive CORS for production debugging
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-netlify-domain.netlify.app', 'https://smiling-steps.netlify.app']
-    : ['http://localhost:3000'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // In production, allow all netlify.app domains and localhost
+    if (process.env.NODE_ENV === 'production') {
+      if (origin.includes('netlify.app') || origin.includes('localhost')) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    }
+    
+    // In development, allow all origins
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 };
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -21,7 +35,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
-  console.log(`🌐 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.get('Origin')} - ${new Date().toISOString()}`);
   next();
 });
 
