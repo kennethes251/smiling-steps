@@ -1,7 +1,25 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
+console.log('🚀 Starting server...');
+
+try {
+  console.log('📦 Loading dotenv...');
+  require('dotenv').config();
+  console.log('✅ Dotenv loaded');
+
+  console.log('📦 Loading express...');
+  const express = require('express');
+  console.log('✅ Express loaded');
+
+  console.log('📦 Loading cors...');
+  const cors = require('cors');
+  console.log('✅ CORS loaded');
+
+  console.log('📦 Loading mongoose...');
+  const mongoose = require('mongoose');
+  console.log('✅ Mongoose loaded');
+} catch (error) {
+  console.error('❌ Error loading dependencies:', error);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -63,17 +81,31 @@ const connectDB = async () => {
 };
 
 const startServer = async () => {
+  console.log('🔗 Connecting to database...');
   await connectDB();
 
-  // Load Models
-  require('./models/User');
-  require('./models/Session');
-  require('./models/Assessment');
-  require('./models/AssessmentResult');
-  require('./models/Feedback');
-  require('./models/CheckIn');
-  require('./models/Blog');
-  require('./models/Resource');
+  console.log('📋 Loading models...');
+  try {
+    require('./models/User');
+    console.log('✅ User model loaded');
+    require('./models/Session');
+    console.log('✅ Session model loaded');
+    require('./models/Assessment');
+    console.log('✅ Assessment model loaded');
+    require('./models/AssessmentResult');
+    console.log('✅ AssessmentResult model loaded');
+    require('./models/Feedback');
+    console.log('✅ Feedback model loaded');
+    require('./models/CheckIn');
+    console.log('✅ CheckIn model loaded');
+    require('./models/Blog');
+    console.log('✅ Blog model loaded');
+    require('./models/Resource');
+    console.log('✅ Resource model loaded');
+  } catch (error) {
+    console.error('❌ Error loading models:', error);
+    process.exit(1);
+  }
 
   // Define Routes
   console.log('Loading routes...');
@@ -118,9 +150,29 @@ const startServer = async () => {
     res.json({ message: 'Server is running', timestamp: new Date() });
   });
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server is running on port ${PORT}`);
+    console.log(`🌐 Server URL: http://0.0.0.0:${PORT}`);
+  });
+
+  server.on('error', (error) => {
+    console.error('❌ Server error:', error);
   });
 };
 
-startServer();
+// Global error handlers
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+console.log('🎯 Starting server process...');
+startServer().catch(error => {
+  console.error('❌ Fatal server error:', error);
+  process.exit(1);
+});
