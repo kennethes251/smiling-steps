@@ -15,6 +15,21 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+
+// Additional CORS headers as backup
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
 
 // Serve static files for uploaded images
@@ -89,7 +104,12 @@ const startServer = async () => {
 
   // Basic Route
   app.get('/', (req, res) => {
-    res.send('API is running...');
+    res.json({ 
+      message: 'Smiling Steps API is running!',
+      timestamp: new Date().toISOString(),
+      cors: 'Updated CORS configuration active',
+      version: '2.0'
+    });
   });
 
   // Test route for admin
