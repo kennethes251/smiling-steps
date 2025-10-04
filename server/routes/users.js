@@ -3,14 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-// Try complex rate limiter, fallback to simple one
-let loginRateLimiter;
-try {
-  loginRateLimiter = require('../middleware/rateLimiter').loginRateLimiter;
-} catch (error) {
-  console.log('⚠️ Using simple rate limiter fallback');
-  loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
-}
+// Use simple rate limiter to avoid 429 errors
+const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
 const { auth } = require('../middleware/auth');
 const User = require('../models/User');
 // Try email utility, fallback to simple one
