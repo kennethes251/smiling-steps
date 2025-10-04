@@ -1,0 +1,95 @@
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { auth } = require('../middleware/auth');
+const User = require('../models/User');
+
+const router = express.Router();
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, '../uploads/profiles');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    // Create unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const extension = path.extname(file.originalname);
+    cb(null, `profile-${req.user.id}-${uniqueSuffix}${extension}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Check file type
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Upload profile picture
+router.post('/profile-picture', auth, upload.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Update user's profile picture in database
+    const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+    
+    await User.findByIdAndUpdate(req.user.id, {
+      profilePicture: profilePictureUrl
+    });
+
+    res.json({
+      message: 'Profile picture uploaded successfully',
+      profilePicture: profilePictureUrl
+    });
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    res.status(500).json({ message: 'Server error during upload' });
+  }
+});
+
+// Delete profile picture
+router.delete('/profile-picture', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (user.profilePicture) {
+      // Delete file from filesystem
+      const filePath = path.join(__dirname, '..', user.profilePicture);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+
+      // Remove from database
+      await User.findByIdAndUpdate(req.user.id, {
+        $unset: { profilePicture: 1 }
+      });
+    }
+
+    res.json({ message: 'Profile picture removed successfully' });
+  } catch (error) {
+    console.error('Profile picture delete error:', error);
+    res.status(500).json({ message: 'Server error during deletion' });
+  }
+});
+
+module.exports = router;
