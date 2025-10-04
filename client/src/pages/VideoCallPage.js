@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import {
   Box,
   Paper,
@@ -38,7 +39,7 @@ const VideoCallPage = () => {
   const fetchSession = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/sessions/${sessionId}`, {
+      const response = await axios.get(`${API_ENDPOINTS.SESSIONS}/${sessionId}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -54,7 +55,7 @@ const VideoCallPage = () => {
   const startVideoCall = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/sessions/${sessionId}/start-call`, {}, {
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/start-call`, {}, {
         headers: { 'x-auth-token': token }
       });
       
@@ -70,7 +71,7 @@ const VideoCallPage = () => {
   const endVideoCall = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/sessions/${sessionId}/end-call`, {}, {
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/end-call`, {}, {
         headers: { 'x-auth-token': token }
       });
       
