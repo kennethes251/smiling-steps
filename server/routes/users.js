@@ -13,7 +13,14 @@ try {
 }
 const { auth } = require('../middleware/auth');
 const User = require('../models/User');
-const sendEmail = require('../utils/sendEmail');
+// Try email utility, fallback to simple one
+let sendEmail;
+try {
+  sendEmail = require('../utils/sendEmail');
+} catch (error) {
+  console.log('⚠️ Using simple email fallback');
+  sendEmail = require('../utils/sendEmail.simple');
+}
 const crypto = require('crypto');
 
 // Validation middleware
