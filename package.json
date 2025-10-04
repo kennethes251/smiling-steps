@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Smiling Steps - Mental Health Platform",
   "scripts": {
-    "start": "node server/index.js",
-    "build": "chmod +x build.sh && ./build.sh"
+    "start": "node index.js",
+    "build": "echo 'Build complete'"
   },
   "engines": {
     "node": "18.x"
