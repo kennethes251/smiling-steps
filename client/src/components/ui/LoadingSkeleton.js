@@ -170,7 +170,7 @@ const DashboardSkeleton = () => (
     <LoadingSkeleton variant="text" width={200} height={40} sx={{ mb: 3 }} />
     <Grid container spacing={3}>
       {[1, 2, 3, 4].map((item) => (
-        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={item}>
+        <Grid item xs={12} sm={6} md={3} key={item}>
           <CardSkeleton />
         </Grid>
       ))}

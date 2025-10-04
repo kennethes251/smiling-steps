@@ -272,7 +272,7 @@ const DeveloperDashboard = () => {
 
       {/* Stats Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Users"
             value={stats.totalUsers}
@@ -280,7 +280,7 @@ const DeveloperDashboard = () => {
             color="#663399"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Psychologists"
             value={stats.totalPsychologists}
@@ -288,7 +288,7 @@ const DeveloperDashboard = () => {
             color="#9C27B0"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Sessions"
             value={stats.totalSessions}
@@ -296,7 +296,7 @@ const DeveloperDashboard = () => {
             color="#2E7D32"
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Blog Posts"
             value={stats.totalBlogs}
@@ -341,7 +341,7 @@ const DeveloperDashboard = () => {
             <Box>
               <Typography variant="h5" gutterBottom>Platform Overview</Typography>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>Quick Actions</Typography>
@@ -374,7 +374,7 @@ const DeveloperDashboard = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>Recent Activity</Typography>
@@ -479,7 +479,7 @@ const DeveloperDashboard = () => {
               
               <Grid container spacing={3}>
                 {/* Sample blog posts */}
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -501,7 +501,7 @@ const DeveloperDashboard = () => {
                   </Card>
                 </Grid>
                 
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -542,7 +542,7 @@ const DeveloperDashboard = () => {
               
               <Grid container spacing={3}>
                 {/* Sample resources */}
-                <Grid size={{ xs: 12 }} sm={6} md={4}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -561,7 +561,7 @@ const DeveloperDashboard = () => {
                   </Card>
                 </Grid>
                 
-                <Grid size={{ xs: 12 }} sm={6} md={4}>
+                <Grid item xs={12} sm={6} md={4}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
@@ -588,7 +588,7 @@ const DeveloperDashboard = () => {
             <Box>
               <Typography variant="h5" gutterBottom>Platform Analytics</Typography>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>User Growth</Typography>
@@ -598,7 +598,7 @@ const DeveloperDashboard = () => {
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Card>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>Session Statistics</Typography>
@@ -645,7 +645,7 @@ const DeveloperDashboard = () => {
         <DialogTitle>Add New Psychologist</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -653,7 +653,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setPsychForm({ ...psychForm, name: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Email"
@@ -662,7 +662,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setPsychForm({ ...psychForm, email: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Password"
@@ -671,7 +671,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setPsychForm({ ...psychForm, password: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel>Specializations</InputLabel>
                 <Select
@@ -695,7 +695,7 @@ const DeveloperDashboard = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Years of Experience"
@@ -703,7 +703,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setPsychForm({ ...psychForm, experience: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Education"
@@ -711,7 +711,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setPsychForm({ ...psychForm, education: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 multiline
@@ -736,7 +736,7 @@ const DeveloperDashboard = () => {
         <DialogTitle>Create Blog Post</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Blog Title"
@@ -744,7 +744,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Category</InputLabel>
                 <Select
@@ -758,7 +758,7 @@ const DeveloperDashboard = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <FormControlLabel
                 control={
                   <Switch
@@ -769,7 +769,7 @@ const DeveloperDashboard = () => {
                 label="Publish immediately"
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 multiline
@@ -780,7 +780,7 @@ const DeveloperDashboard = () => {
                 helperText="Brief description for blog preview"
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 multiline
@@ -806,7 +806,7 @@ const DeveloperDashboard = () => {
         <DialogTitle>Add New Resource</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Resource Title"
@@ -814,7 +814,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
                 <InputLabel>Type</InputLabel>
                 <Select
@@ -828,7 +828,7 @@ const DeveloperDashboard = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={{ xs: 12 }} sm={6}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Category"
@@ -836,7 +836,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="URL or File Path"
@@ -845,7 +845,7 @@ const DeveloperDashboard = () => {
                 helperText="Link to resource or file upload path"
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 multiline
@@ -855,7 +855,7 @@ const DeveloperDashboard = () => {
                 onChange={(e) => setResourceForm({ ...resourceForm, description: e.target.value })}
               />
             </Grid>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <FormControlLabel
                 control={
                   <Switch

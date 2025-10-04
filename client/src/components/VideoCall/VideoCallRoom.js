@@ -423,7 +423,7 @@ const VideoCallRoom = () => {
 
           {/* Chat Panel */}
           {showChat && (
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Paper sx={{ height: '100%', bgcolor: '#2a2a2a', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ p: 2, borderBottom: '1px solid #444' }}>
                   <Typography variant="h6">Chat</Typography>

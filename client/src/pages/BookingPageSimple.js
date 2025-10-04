@@ -246,7 +246,7 @@ const BookingPageSimple = () => {
           </Typography>
           <Grid container spacing={3}>
             {sessionTypes.map((session) => (
-              <Grid size={{ xs: 12, md: 6 }} key={session.type}>
+              <Grid item xs={12} md={6} key={session.type}>
                 <Card 
                   sx={{ 
                     height: '100%',
@@ -356,7 +356,7 @@ const BookingPageSimple = () => {
           ) : psychologists.length > 0 ? (
             <Grid container spacing={3}>
               {psychologists.map((psychologist) => (
-                <Grid size={{ xs: 12, md: 6 }} key={psychologist._id}>
+                <Grid item xs={12} md={6} key={psychologist._id}>
                   <Card 
                     sx={{ 
                       cursor: 'pointer',
@@ -435,7 +435,7 @@ const BookingPageSimple = () => {
           </Typography>
           
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="h6" gutterBottom>
                 Choose Date
               </Typography>
@@ -456,13 +456,13 @@ const BookingPageSimple = () => {
               </Box>
             </Grid>
             
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <Typography variant="h6" gutterBottom>
                 Available Time Slots
               </Typography>
               <Grid container spacing={1}>
                 {getAvailableTimeSlots().map((time) => (
-                  <Grid size={{ xs: 6, sm: 4 }} key={time}>
+                  <Grid item xs={6} sm={4} key={time}>
                     <Button
                       variant={selectedTime === time ? "contained" : "outlined"}
                       fullWidth

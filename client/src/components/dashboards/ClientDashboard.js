@@ -218,7 +218,7 @@ const ClientDashboard = () => {
         }
       }}>
         <Grid container spacing={3} alignItems="flex-start">
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid item xs={12} md={8}>
             <Typography
               variant="h4"
               component="h1"
@@ -331,7 +331,7 @@ const ClientDashboard = () => {
         ) : (
           <Grid container spacing={3}>
             {/* Mental Health Assessments */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Paper sx={{ p: 3, height: '100%' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -365,7 +365,7 @@ const ClientDashboard = () => {
             </Grid>
 
             {/* Session Lists */}
-            <Grid size={{ xs: 12 }} md={6}>
+            <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3, height: '100%' }}>
                 <Typography variant="h6" component="h2" gutterBottom>Pending Approval</Typography>
                 {sessions.filter(s => s.status === 'Pending').length > 0 ? (
@@ -417,7 +417,7 @@ const ClientDashboard = () => {
               </Paper>
             </Grid>
 
-            <Grid size={{ xs: 12 }} md={6}>
+            <Grid item xs={12} md={6}>
               <Paper sx={{ p: 3, height: '100%' }}>
                 <Typography variant="h6" component="h2" gutterBottom>Upcoming Sessions</Typography>
                 {sessions.filter(s => s.status === 'Booked' && new Date(s.sessionDate) > new Date()).length > 0 ? (
@@ -500,7 +500,7 @@ const ClientDashboard = () => {
             </Grid>
 
             {/* Session History */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Paper sx={{ p: 3 }}>
                 <Typography variant="h6" component="h2" gutterBottom>Session History</Typography>
                 {sessions.filter(s => s.status === 'Booked' && new Date(s.sessionDate) < new Date()).length > 0 ? (

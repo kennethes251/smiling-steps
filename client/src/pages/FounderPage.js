@@ -138,7 +138,7 @@ const FounderPage = () => {
       >       
  <Container maxWidth="lg">
           <Grid container spacing={6} alignItems="center">
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -178,7 +178,7 @@ const FounderPage = () => {
               </motion.div>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid item xs={12} md={8}>
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -251,7 +251,7 @@ const FounderPage = () => {
         </motion.div>
 
         <Grid container spacing={6}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -276,7 +276,7 @@ const FounderPage = () => {
             </motion.div>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -319,7 +319,7 @@ const FounderPage = () => {
 
           <Grid container spacing={4}>
             {achievements.map((achievement, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+              <Grid item xs={12} sm={6} md={3} key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -359,7 +359,7 @@ const FounderPage = () => {
       <Box sx={{ py: { xs: 8, md: 12 }, backgroundColor: '#F8F9FA' }}>
         <Container maxWidth="lg">
           <Grid container spacing={6} alignItems="center">
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -394,7 +394,7 @@ const FounderPage = () => {
               </motion.div>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -454,7 +454,7 @@ const FounderPage = () => {
             </Typography>
 
             <Grid container spacing={4} justifyContent="center">
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid item xs={12} sm={4}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -475,7 +475,7 @@ const FounderPage = () => {
                 </Paper>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid item xs={12} sm={4}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -496,7 +496,7 @@ const FounderPage = () => {
                 </Paper>
               </Grid>
 
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid item xs={12} sm={4}>
                 <Paper
                   elevation={0}
                   sx={{

@@ -99,12 +99,12 @@ const AssessmentResultDetail = () => {
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Typography variant="body2" color="text.secondary">
               Completed on: {new Date(result.completedAt).toLocaleString()}
             </Typography>
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Typography variant="body2" color="text.secondary" align="right">
               Total Score: {result.totalScore}
             </Typography>

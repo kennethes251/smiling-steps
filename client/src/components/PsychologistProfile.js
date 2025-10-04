@@ -194,7 +194,7 @@ const PsychologistProfile = () => {
 
       <Grid container spacing={3}>
         {/* Left Column - Profile Picture & Basic Info */}
-        <Grid size={{ xs: 12, lg: 3 }}>
+        <Grid item xs={12} lg={3}>
           <Card sx={{ textAlign: 'center', p: 2, mb: 2 }}>
             <Avatar
               src={profile.profilePictureUrl}
@@ -257,16 +257,16 @@ const PsychologistProfile = () => {
         </Grid>
 
         {/* Right Column - Detailed Information */}
-        <Grid size={{ xs: 12, lg: 9 }}>
+        <Grid item xs={12} lg={9}>
           <Grid container spacing={2}>
             {/* Basic Information Row */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, color: 'primary.main' }}>
                 Basic Information
               </Typography>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 4 }}>
+            <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
                 label="Age"
@@ -279,7 +279,7 @@ const PsychologistProfile = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 8 }}>
+            <Grid item xs={12} sm={8}>
               <TextField
                 fullWidth
                 label="Years of Experience"
@@ -292,13 +292,13 @@ const PsychologistProfile = () => {
             </Grid>
 
             {/* Education & Bio Section */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, mt: 2, color: 'primary.main' }}>
                 Professional Background
               </Typography>
             </Grid>
 
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Education & Qualifications"
@@ -311,7 +311,7 @@ const PsychologistProfile = () => {
               />
             </Grid>
 
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Professional Bio"
@@ -327,13 +327,13 @@ const PsychologistProfile = () => {
             </Grid>
 
             {/* Specializations & Services Section */}
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2, mt: 2, color: 'primary.main' }}>
                 Specializations & Services
               </Typography>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <FormControl fullWidth disabled={!editMode}>
                 <InputLabel>Therapy Types Offered</InputLabel>
                 <Select
@@ -359,7 +359,7 @@ const PsychologistProfile = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12, md: 6 }}>
+            <Grid item xs={12} md={6}>
               <FormControl fullWidth disabled={!editMode}>
                 <InputLabel>Languages</InputLabel>
                 <Select
@@ -385,7 +385,7 @@ const PsychologistProfile = () => {
               </FormControl>
             </Grid>
 
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <FormControl fullWidth disabled={!editMode}>
                 <InputLabel>Areas of Specialization</InputLabel>
                 <Select
@@ -412,7 +412,7 @@ const PsychologistProfile = () => {
             </Grid>
 
             {editMode && (
-              <Grid size={{ xs: 12 }}>
+              <Grid item xs={12}>
                 <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                   <Button
                     variant="outlined"

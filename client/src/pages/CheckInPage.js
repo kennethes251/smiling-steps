@@ -230,7 +230,7 @@ const CheckInPage = () => {
 
                 <Grid container spacing={4}>
                     {/* Mood Section */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -256,7 +256,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Energy Section */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -282,7 +282,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Sleep Section */}
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid item xs={12} md={6}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -318,7 +318,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Stress & Anxiety */}
-                    <Grid size={{ xs: 12, md: 6 }}>
+                    <Grid item xs={12} md={6}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>
@@ -352,7 +352,7 @@ const CheckInPage = () => {
                         </Card>
                     </Grid>
                     {/* Activities */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -380,7 +380,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Symptoms */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>
@@ -405,7 +405,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Gratitude */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Card variant="outlined">
                             <CardContent>
                                 <Typography variant="h6" gutterBottom>
@@ -435,7 +435,7 @@ const CheckInPage = () => {
                     </Grid>
 
                     {/* Submit Button */}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid item xs={12}>
                         <Box sx={{ textAlign: 'center', mt: 3 }}>
                             <Button
                                 variant="contained"

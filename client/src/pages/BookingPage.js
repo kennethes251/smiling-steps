@@ -234,7 +234,7 @@ const BookingPage = () => {
         <Fade in timeout={500}>
           <Grid container spacing={3}>
             {sessionTypes.map((session, index) => (
-              <Grid size={{ xs: 12, md: 6 }} key={session.type}>
+              <Grid item xs={12} md={6} key={session.type}>
                 <div>
                   <Card
                     sx={{
@@ -310,7 +310,7 @@ const BookingPage = () => {
             ) : (
               <Grid container spacing={3}>
                 {psychologists.map((psychologist, index) => (
-                  <Grid size={{ xs: 12, md: 6 }} key={psychologist._id}>
+                  <Grid item xs={12} md={6} key={psychologist._id}>
                     <div>
                       <Card
                         sx={{
@@ -380,7 +380,7 @@ const BookingPage = () => {
             </Typography>
 
             <Grid container spacing={4}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>
                   Choose Date
                 </Typography>
@@ -401,13 +401,13 @@ const BookingPage = () => {
                 </Box>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <Typography variant="h6" gutterBottom>
                   Available Time Slots
                 </Typography>
                 <Grid container spacing={1}>
                   {getAvailableTimeSlots().map((time) => (
-                    <Grid size={{ xs: 6, sm: 4 }} key={time}>
+                    <Grid item xs={6} sm={4} key={time}>
                       <Button
                         variant={startDate?.toTimeString().includes(time) ? "contained" : "outlined"}
                         fullWidth
@@ -441,7 +441,7 @@ const BookingPage = () => {
             </Typography>
 
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 8 }}>
+              <Grid item xs={12} md={8}>
                 <Card variant="outlined" sx={{ p: 3 }}>
                   <Typography variant="h6" gutterBottom color="primary">
                     Booking Summary
@@ -495,7 +495,7 @@ const BookingPage = () => {
                 </Card>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid item xs={12} md={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Button
                     variant="contained"

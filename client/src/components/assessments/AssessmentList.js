@@ -44,7 +44,7 @@ const AssessmentList = () => {
       ) : (
         <Grid container spacing={3}>
           {assessments.map((assessment) => (
-            <Grid size={{ xs: 12, md: 6 }} key={assessment._id}>
+            <Grid item xs={12} md={6} key={assessment._id}>
               <Card>
                 <CardContent>
                   <Typography variant="h5" component="div">

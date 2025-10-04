@@ -207,7 +207,7 @@ const PsychologistDashboard = () => {
       ) : (
         <Grid container spacing={3}>
           {/* Pending Sessions */}
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 2, border: sessions.filter(s => s.status === 'Pending').length > 0 ? '2px solid #ff9800' : 'none' }}>
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 Pending Session Requests
@@ -272,7 +272,7 @@ const PsychologistDashboard = () => {
           </Grid>
 
           {/* Upcoming Sessions */}
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>Upcoming Confirmed Sessions</Typography>
               <List>
@@ -350,7 +350,7 @@ const PsychologistDashboard = () => {
           </Grid>
 
           {/* Client Assessment Results */}
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 2 }}>
               <Typography variant="h6" gutterBottom>Recent Client Assessments</Typography>
               <List>

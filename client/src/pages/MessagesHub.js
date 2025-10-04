@@ -101,7 +101,7 @@ const MessagesHub = () => {
           Quick Actions
         </Typography>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 6, sm: 3 }}>
+          <Grid item xs={6} sm={3}>
             <Button
               fullWidth
               variant="outlined"
@@ -112,7 +112,7 @@ const MessagesHub = () => {
               New Chat
             </Button>
           </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
+          <Grid item xs={6} sm={3}>
             <Button
               fullWidth
               variant="outlined"
@@ -123,7 +123,7 @@ const MessagesHub = () => {
               Book Session
             </Button>
           </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
+          <Grid item xs={6} sm={3}>
             <Button
               fullWidth
               variant="outlined"
@@ -133,7 +133,7 @@ const MessagesHub = () => {
               Video Call
             </Button>
           </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
+          <Grid item xs={6} sm={3}>
             <Button
               fullWidth
               variant="outlined"
@@ -291,13 +291,13 @@ const MessagesHub = () => {
       </Paper>
 
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           {activeTab === 0 && <ConversationsList />}
           {activeTab === 1 && <NotificationsList />}
           {activeTab === 2 && <UpcomingSessions />}
         </Grid>
         
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2, mb: 2 }}>
             <Typography variant="h6" gutterBottom>
               Contact Support

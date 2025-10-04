@@ -170,7 +170,7 @@ const ProgressPage = () => {
 
       {/* Key Metrics Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
             <TrendingUpIcon sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -181,7 +181,7 @@ const ProgressPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
             <GoalsIcon sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -192,7 +192,7 @@ const ProgressPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', color: 'info.contrastText' }}>
             <ScheduleIcon sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -203,7 +203,7 @@ const ProgressPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
           <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', color: 'warning.contrastText' }}>
             <MoodIcon sx={{ fontSize: 40, mb: 1 }} />
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
@@ -230,14 +230,14 @@ const ProgressPage = () => {
       {/* Tab Content */}
       {activeTab === 0 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Assessment Scores Over Time
               </Typography>
               <Grid container spacing={2} sx={{ mt: 2 }}>
                 {assessmentHistory.map((entry, index) => (
-                  <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+                  <Grid item xs={12} sm={6} md={3} key={index}>
                     <Card sx={{ p: 2, textAlign: 'center' }}>
                       <Typography variant="caption" color="text.secondary">
                         {new Date(entry.date).toLocaleDateString()}
@@ -282,7 +282,7 @@ const ProgressPage = () => {
 
       {activeTab === 1 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid item xs={12} md={8}>
             <Paper sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">
@@ -298,7 +298,7 @@ const ProgressPage = () => {
               </Box>
               <Grid container spacing={2}>
                 {moodEntries.map((entry, index) => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={index}>
+                  <Grid item xs={12} sm={6} md={4} key={index}>
                     <Card sx={{ p: 2 }}>
                       <Typography variant="subtitle2" gutterBottom>
                         {new Date(entry.date).toLocaleDateString()}
@@ -339,7 +339,7 @@ const ProgressPage = () => {
               </Grid>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Recent Mood Entries
@@ -364,7 +364,7 @@ const ProgressPage = () => {
 
       {activeTab === 2 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6">
                 Personal Goals & Milestones
@@ -379,7 +379,7 @@ const ProgressPage = () => {
             </Box>
           </Grid>
           {goals.map((goal) => (
-            <Grid size={{ xs: 12, md: 6 }} key={goal.id}>
+            <Grid item xs={12} md={6} key={goal.id}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -416,7 +416,7 @@ const ProgressPage = () => {
 
       {activeTab === 3 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Therapy Session History
@@ -466,7 +466,7 @@ const ProgressPage = () => {
 
       {activeTab === 4 && (
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Progress Insights
@@ -502,7 +502,7 @@ const ProgressPage = () => {
               </List>
             </Paper>
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Recommendations

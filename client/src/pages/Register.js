@@ -157,7 +157,7 @@ const Register = () => {
         
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 autoComplete="name"
                 name="name"
@@ -174,7 +174,7 @@ const Register = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 required
                 fullWidth
@@ -190,7 +190,7 @@ const Register = () => {
               />
             </Grid>
             
-            <Grid size={{ xs: 12 }}>
+            <Grid item xs={12}>
               <TextField
                 required
                 fullWidth

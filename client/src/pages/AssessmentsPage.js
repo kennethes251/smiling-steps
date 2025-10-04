@@ -190,7 +190,7 @@ const AssessmentsPage = () => {
 
       {/* Enhanced Progress Overview */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 8 }}>
+        <Grid item xs={12} md={8}>
           <Paper sx={{ p: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
             <Typography variant="h6" gutterBottom>
               Your Assessment Journey
@@ -219,7 +219,7 @@ const AssessmentsPage = () => {
           </Paper>
         </Grid>
         
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid item xs={12} md={4}>
           <Paper sx={{ p: 3, textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography variant="h2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
               {getCompletionRate()}%
@@ -241,7 +241,7 @@ const AssessmentsPage = () => {
 
       {/* Quick Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid item xs={6} sm={3}>
           <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               {completedAssessments.length}
@@ -251,7 +251,7 @@ const AssessmentsPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid item xs={6} sm={3}>
           <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'warning.light', color: 'warning.contrastText' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               {assessmentTests.length - completedAssessments.length}
@@ -261,7 +261,7 @@ const AssessmentsPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid item xs={6} sm={3}>
           <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'info.light', color: 'info.contrastText' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               {assessmentTests.reduce((total, test) => total + test.questions, 0)}
@@ -271,7 +271,7 @@ const AssessmentsPage = () => {
             </Typography>
           </Card>
         </Grid>
-        <Grid size={{ xs: 6, sm: 3 }}>
+        <Grid item xs={6} sm={3}>
           <Card sx={{ p: 2, textAlign: 'center', bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
               ~{Math.round(assessmentTests.reduce((total, test) => {
@@ -292,7 +292,7 @@ const AssessmentsPage = () => {
           const completed = isCompleted(assessment.id);
           
           return (
-            <Grid size={{ xs: 12, md: 6, lg: 4 }} key={assessment.id}>
+            <Grid item xs={12} md={6} lg={4} key={assessment.id}>
               <Card 
                 sx={{ 
                   height: '100%',

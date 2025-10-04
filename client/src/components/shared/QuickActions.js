@@ -98,7 +98,7 @@ const QuickActions = ({ userRole }) => {
       </Typography>
       <Grid container spacing={2}>
         {actions.map((action) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={action.id}>
+          <Grid item xs={12} sm={6} md={3} key={action.id}>
             <Button
               variant="outlined"
               fullWidth

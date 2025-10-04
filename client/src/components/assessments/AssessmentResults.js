@@ -79,7 +79,7 @@ const AssessmentResults = () => {
       ) : (
         <Grid container spacing={3}>
           {results.map((result) => (
-            <Grid size={{ xs: 12 }} key={result._id}>
+            <Grid item xs={12} key={result._id}>
               <Paper sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">{result.assessment.title}</Typography>
@@ -91,12 +91,12 @@ const AssessmentResults = () => {
                 </Box>
                 <Divider sx={{ mb: 2 }} />
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="text.secondary">
                       Completed on: {new Date(result.completedAt).toLocaleString()}
                     </Typography>
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid item xs={12} md={6}>
                     <Typography variant="body2" color="text.secondary" align="right">
                       Score: {result.totalScore}
                     </Typography>

@@ -340,7 +340,7 @@ const MarketingPage = () => {
 
       <Container maxWidth="lg">
         <Grid container spacing={4} alignItems="center">
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -424,7 +424,7 @@ const MarketingPage = () => {
             </motion.div>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -558,7 +558,7 @@ const MarketingPage = () => {
                 color: '#7B1FA2'
               }
             ].map((value, index) => (
-              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+              <Grid item xs={12} sm={6} md={3} key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -622,7 +622,7 @@ const MarketingPage = () => {
                 description: 'You are the expert of your own life. We provide tools and support while you lead your healing journey'
               }
             ].map((pillar, index) => (
-              <Grid size={{ xs: 12, md: 4 }} key={index}>
+              <Grid item xs={12} md={4} key={index}>
                 <motion.div
                   initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -659,7 +659,7 @@ const MarketingPage = () => {
             </Typography>
 
             <Grid container spacing={4} alignItems="center">
-              <Grid size={{ xs: 12, md: 4 }}>
+              <Grid item xs={12} md={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Avatar
                     sx={{
@@ -680,7 +680,7 @@ const MarketingPage = () => {
                 </Box>
               </Grid>
 
-              <Grid size={{ xs: 12, md: 8 }}>
+              <Grid item xs={12} md={8}>
                 <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.7 }}>
                   Kenneth Esilo, a licensed addiction counselor and founder of Smiling Steps, blends clinical expertise with creative healing. His approach is rooted in confidentiality, empowerment, and hope.
                 </Typography>
@@ -791,7 +791,7 @@ const MarketingPage = () => {
         {/* Services Grid - 2 rows of 3 columns */}
         <Grid container spacing={4} sx={{ mb: 8 }}>
           {services.map((service, index) => (
-            <Grid size={{ xs: 12, md: 4 }} key={service.id}>
+            <Grid item xs={12} md={4} key={service.id}>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -965,7 +965,7 @@ const MarketingPage = () => {
 
         <Grid container spacing={6}>
           {appFeatures.map((feature, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+            <Grid item xs={12} sm={6} md={3} key={index}>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1037,7 +1037,7 @@ const MarketingPage = () => {
               </Typography>
 
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <Box
                     sx={{
                       backgroundColor: 'rgba(255,255,255,0.1)',
@@ -1055,7 +1055,7 @@ const MarketingPage = () => {
                   </Box>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <Box
                     sx={{
                       backgroundColor: 'rgba(255,255,255,0.1)',
@@ -1157,7 +1157,7 @@ const MarketingPage = () => {
               color: '#7B1FA2'
             }
           ].map((resource, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+            <Grid item xs={12} sm={6} md={3} key={index}>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1250,7 +1250,7 @@ const MarketingPage = () => {
 
         <Grid container spacing={4}>
           {testimonials.map((testimonial, index) => (
-            <Grid size={{ xs: 12, md: 4 }} key={index}>
+            <Grid item xs={12} md={4} key={index}>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -1322,7 +1322,7 @@ const MarketingPage = () => {
               }}
             >
               <Grid container spacing={4} textAlign="center">
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1, color: '#1976D2' }}>
                     500+
                   </Typography>
@@ -1331,7 +1331,7 @@ const MarketingPage = () => {
                   </Typography>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1, color: '#1976D2' }}>
                     50+
                   </Typography>
@@ -1340,7 +1340,7 @@ const MarketingPage = () => {
                   </Typography>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1, color: '#1976D2' }}>
                     95%
                   </Typography>
@@ -1349,7 +1349,7 @@ const MarketingPage = () => {
                   </Typography>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 3 }}>
+                <Grid item xs={12} md={3}>
                   <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 1, color: '#1976D2' }}>
                     24/7
                   </Typography>
@@ -1593,7 +1593,7 @@ const MarketingPage = () => {
         </Typography>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '15px', backgroundColor: '#E3F2FD' }}>
               <Typography variant="h6" sx={{ mb: 2, color: '#1976D2' }}>
                 🎥 Video Sessions
@@ -1617,7 +1617,7 @@ const MarketingPage = () => {
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: '15px', backgroundColor: '#E8F5E8' }}>
               <Typography variant="h6" sx={{ mb: 2, color: '#2E7D32' }}>
                 💬 Real-time Chat
@@ -1641,7 +1641,7 @@ const MarketingPage = () => {
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12 }}>
+          <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 4, borderRadius: '15px', backgroundColor: '#FFF3E0' }}>
               <Typography variant="h6" sx={{ mb: 3, color: '#F57C00' }}>
                 📊 Your Journey Steps
@@ -1723,7 +1723,7 @@ const MarketingPage = () => {
         </motion.div>
 
         <Grid container spacing={4} justifyContent="center">
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid item xs={12} sm={4}>
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1754,7 +1754,7 @@ const MarketingPage = () => {
             </motion.div>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid item xs={12} sm={4}>
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1785,7 +1785,7 @@ const MarketingPage = () => {
             </motion.div>
           </Grid>
 
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid item xs={12} sm={4}>
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}

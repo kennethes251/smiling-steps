@@ -397,7 +397,7 @@ const ProfilePage = () => {
 
       <Grid container spacing={3}>
         {/* Basic Information */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -484,7 +484,7 @@ const ProfilePage = () => {
         </Grid>
 
         {/* Contact Information */}
-        <Grid size={{ xs: 12, md: 6 }}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -579,7 +579,7 @@ const ProfilePage = () => {
         </Grid>
 
         {/* Health & Wellness */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -665,7 +665,7 @@ const ProfilePage = () => {
         </Grid>
 
         {/* Save All Button */}
-        <Grid size={{ xs: 12 }}>
+        <Grid item xs={12}>
           <Box sx={{ textAlign: 'center', mt: 3 }}>
             <Button
               variant="contained"

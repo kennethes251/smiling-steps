@@ -200,7 +200,7 @@ const AdminCreatePsychologist = () => {
 
           <Box component="form" onSubmit={handleSubmit}>
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   label="Full Name"
@@ -211,7 +211,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   label="Email Address"
@@ -223,7 +223,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   label="Password"
@@ -235,7 +235,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12, md: 6 }}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   label="Years of Experience"
@@ -245,7 +245,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12 }}>
+              <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel>Specializations</InputLabel>
                   <Select
@@ -270,7 +270,7 @@ const AdminCreatePsychologist = () => {
                 </FormControl>
               </Grid>
 
-              <Grid size={{ xs: 12 }}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Education & Qualifications"
@@ -282,7 +282,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12 }}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Professional Bio"
@@ -294,7 +294,7 @@ const AdminCreatePsychologist = () => {
                 />
               </Grid>
 
-              <Grid size={{ xs: 12 }}>
+              <Grid item xs={12}>
                 <Box sx={{ textAlign: 'center', mt: 2 }}>
                   <Button
                     type="submit"

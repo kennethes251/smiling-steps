@@ -160,7 +160,7 @@ const TherapistsPage = () => {
       {/* Search and Filters */}
       <Box sx={{ mb: 4 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               placeholder="Search by name, specialty, or keywords..."
@@ -175,7 +175,7 @@ const TherapistsPage = () => {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid item xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>Filter by Specialty</InputLabel>
               <Select
@@ -192,7 +192,7 @@ const TherapistsPage = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
+          <Grid item xs={12} md={2}>
             <Typography variant="body2" color="text.secondary">
               {filteredTherapists.length} therapist{filteredTherapists.length !== 1 ? 's' : ''} found
             </Typography>
@@ -203,7 +203,7 @@ const TherapistsPage = () => {
       {/* Therapists Grid */}
       <Grid container spacing={3}>
         {filteredTherapists.map((therapist) => (
-          <Grid size={{ xs: 12, md: 6, lg: 4 }} key={therapist._id}>
+          <Grid item xs={12} md={6} lg={4} key={therapist._id}>
             <Card sx={{ 
               height: '100%', 
               display: 'flex', 
@@ -305,7 +305,7 @@ const TherapistsPage = () => {
               {/* Action Buttons */}
               <Box sx={{ p: 2, pt: 0 }}>
                 <Grid container spacing={1}>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid item xs={6}>
                     <Button
                       fullWidth
                       variant="outlined"
@@ -315,7 +315,7 @@ const TherapistsPage = () => {
                       View Details
                     </Button>
                   </Grid>
-                  <Grid size={{ xs: 6 }}>
+                  <Grid item xs={6}>
                     <Button
                       fullWidth
                       variant="contained"
@@ -434,7 +434,7 @@ const TherapistsPage = () => {
                   Session Rates
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }} md={3}>
+                  <Grid item xs={6} md={3}>
                     <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                       <Typography variant="h6" color="primary.main">
                         ${((selectedTherapist.rates?.individual || 2000) / 100).toFixed(0)}
@@ -444,7 +444,7 @@ const TherapistsPage = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }} md={3}>
+                  <Grid item xs={6} md={3}>
                     <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                       <Typography variant="h6" color="primary.main">
                         ${((selectedTherapist.rates?.couples || 3500) / 100).toFixed(0)}
@@ -454,7 +454,7 @@ const TherapistsPage = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }} md={3}>
+                  <Grid item xs={6} md={3}>
                     <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                       <Typography variant="h6" color="primary.main">
                         ${((selectedTherapist.rates?.family || 4000) / 100).toFixed(0)}
@@ -464,7 +464,7 @@ const TherapistsPage = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid size={{ xs: 6 }} md={3}>
+                  <Grid item xs={6} md={3}>
                     <Box sx={{ textAlign: 'center', p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                       <Typography variant="h6" color="primary.main">
                         ${((selectedTherapist.rates?.group || 1500) / 100).toFixed(0)}
@@ -479,7 +479,7 @@ const TherapistsPage = () => {
 
               {/* Education & Experience */}
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                     <EducationIcon sx={{ mr: 1 }} />
                     Education
@@ -488,7 +488,7 @@ const TherapistsPage = () => {
                     {selectedTherapist.education || 'Ph.D. in Clinical Psychology\nMaster\'s in Counseling Psychology'}
                   </Typography>
                 </Grid>
-                <Grid size={{ xs: 12 }} md={6}>
+                <Grid item xs={12} md={6}>
                   <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
                     <ExperienceIcon sx={{ mr: 1 }} />
                     Experience
