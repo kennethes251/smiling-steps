@@ -108,7 +108,8 @@ const startServer = async () => {
       message: 'Smiling Steps API is running!',
       timestamp: new Date().toISOString(),
       cors: 'Updated CORS configuration active',
-      version: '2.0'
+      version: '2.1',
+      status: 'Railway deployment active'
     });
   });
 
