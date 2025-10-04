@@ -1,0 +1,46 @@
+{
+  "short_name": "Smiling Steps",
+  "name": "Smiling Steps - Mental Wellness Platform",
+  "description": "Your journey to better mental health and wellness",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#77B5FE",
+  "background_color": "#F0F8FF",
+  "categories": ["health", "lifestyle", "medical", "mental health"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Book a Session",
+      "short_name": "Book",
+      "description": "Book a therapy session",
+      "url": "/book-session"
+    },
+    {
+      "name": "My Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your dashboard",
+      "url": "/dashboard"
+    }
+  ]
+}
