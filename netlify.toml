@@ -7,6 +7,7 @@
   NODE_VERSION = "18"
   CI = "false"
   GENERATE_SOURCEMAP = "false"
+  # Note: Add REACT_APP_API_URL in Netlify Dashboard → Site Settings → Environment Variables
 
 [[redirects]]
   from = "/*"

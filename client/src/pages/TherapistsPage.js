@@ -70,7 +70,7 @@ const TherapistsPage = () => {
   const fetchTherapists = async () => {
     try {
       console.log('🔍 Fetching therapists from API...');
-      const response = await axios.get(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api/public/psychologists` : 'http://localhost:5000/api/public/psychologists');
+      const response = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
       console.log('✅ API Response:', response.data);
       console.log('📊 Number of therapists:', response.data?.length || 0);
       setTherapists(response.data || []);
@@ -113,7 +113,7 @@ const TherapistsPage = () => {
     if (!profilePicture) return null;
     return profilePicture.startsWith('http') 
       ? profilePicture 
-      : `http://localhost:5000${profilePicture}`;
+      : `${API_ENDPOINTS.BASE_URL}${profilePicture}`;
   };
 
   const getInitials = (name) => {

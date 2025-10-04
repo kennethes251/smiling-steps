@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import setAuthToken from '../utils/setAuthToken';
+import { API_ENDPOINTS } from '../config/api';
 
 // Initial State
 const initialState = {
@@ -88,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         if (token) {
           setAuthToken(token);
           try {
-            const res = await axios.get('http://localhost:5000/api/auth');
+            const res = await axios.get(`${API_ENDPOINTS.AUTH}`);
             dispatch({ 
               type: 'USER_LOADED', 
               payload: res.data 
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
       };
       
       const res = await axios.post(
-        'http://localhost:5000/api/users/register', 
+        `${API_ENDPOINTS.USERS}/register`, 
         userData,
         config
       );
@@ -164,7 +165,7 @@ export const AuthProvider = ({ children }) => {
       
       console.log('Sending login request to /api/users/login');
       const res = await axios.post(
-        'http://localhost:5000/api/users/login', 
+        `${API_ENDPOINTS.USERS}/login`, 
         { email, password }, 
         config
       );
@@ -207,7 +208,7 @@ export const AuthProvider = ({ children }) => {
       setAuthToken(token);
       
       try {
-        const userRes = await axios.get('http://localhost:5000/api/auth');
+        const userRes = await axios.get(`${API_ENDPOINTS.AUTH}`);
         const userData = userRes.data;
         
         // If we got user data, consider the login successful

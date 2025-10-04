@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import {
   Container,
   Typography,
@@ -121,7 +122,7 @@ const ProfilePage = () => {
         // Convert relative path to full URL with cache busting
         const imageUrl = user.profilePicture.startsWith('http') 
           ? user.profilePicture 
-          : `http://localhost:5000${user.profilePicture}?t=${Date.now()}`;
+          : `${API_ENDPOINTS.BASE_URL}${user.profilePicture}?t=${Date.now()}`;
         console.log('🖼️ Setting profile picture URL:', imageUrl);
         setImagePreview(imageUrl);
       }
@@ -214,7 +215,7 @@ const ProfilePage = () => {
           }
         });
 
-        const response = await axios.put('http://localhost:5000/api/users/profile', formDataWithFile, {
+        const response = await axios.put(`${API_ENDPOINTS.USERS}/profile`, formDataWithFile, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -232,7 +233,7 @@ const ProfilePage = () => {
           if (response.data.user.profilePicture) {
             const imageUrl = response.data.user.profilePicture.startsWith('http') 
               ? response.data.user.profilePicture 
-              : `http://localhost:5000${response.data.user.profilePicture}?t=${Date.now()}`;
+              : `${API_ENDPOINTS.BASE_URL}${response.data.user.profilePicture}?t=${Date.now()}`;
             console.log('🖼️ Updated profile picture URL:', imageUrl);
             setImagePreview(imageUrl);
           }
@@ -258,7 +259,7 @@ const ProfilePage = () => {
       }
 
       // For JSON-only updates (no file upload)
-      const response = await axios.put('http://localhost:5000/api/users/profile', cleanedFormData, {
+      const response = await axios.put(`${API_ENDPOINTS.USERS}/profile`, cleanedFormData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -276,7 +277,7 @@ const ProfilePage = () => {
         if (response.data.user.profilePicture) {
           const imageUrl = response.data.user.profilePicture.startsWith('http') 
             ? response.data.user.profilePicture 
-            : `http://localhost:5000${response.data.user.profilePicture}?t=${Date.now()}`;
+            : `${API_ENDPOINTS.BASE_URL}${response.data.user.profilePicture}?t=${Date.now()}`;
           console.log('🖼️ Updated profile picture URL (JSON):', imageUrl);
           setImagePreview(imageUrl);
         }
