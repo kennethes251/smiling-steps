@@ -896,12 +896,13 @@ router.post('/create-psychologist', async (req, res) => {
       });
     }
 
-    // Create psychologist user
+    // Create psychologist user (or admin if specified)
+    const { role } = req.body;
     const psychologistData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
-      role: 'psychologist',
+      role: role === 'admin' ? 'admin' : 'psychologist',
       psychologistDetails: {
         approvalStatus: 'approved', // Auto-approve backend created accounts
         specializations: specializations || [],
