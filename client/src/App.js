@@ -9,6 +9,7 @@ import PrivateRoute from './components/PrivateRoute';
 // Import components
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ApiTest from './components/ApiTest';
 import LandingPage from './pages/LandingPage';
 import Login from './components/auth/Login';
 import Register from './pages/Register';
@@ -39,6 +40,7 @@ function App() {
     <ThemeProvider theme={theme}>
       <SnackbarProvider>
         <AuthProvider>
+          <ApiTest />
           <Header />
           <Routes>
             {/* Public Routes */}

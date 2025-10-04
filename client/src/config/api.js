@@ -18,7 +18,9 @@ console.log('🌐 API Configuration:', {
   hostname: window.location.hostname,
   isProduction,
   isDevelopment,
-  API_BASE_URL
+  API_BASE_URL,
+  NODE_ENV: process.env.NODE_ENV,
+  REACT_APP_API_URL: process.env.REACT_APP_API_URL
 });
 
 // Helper function to get full API URL

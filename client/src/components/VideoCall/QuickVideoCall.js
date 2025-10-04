@@ -23,6 +23,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/api';
 
 const QuickVideoCall = ({ open, onClose, session = null, psychologists = [] }) => {
   const { user } = useContext(AuthContext);
@@ -64,7 +65,7 @@ const QuickVideoCall = ({ open, onClose, session = null, psychologists = [] }) =
       // Generate a meeting link for the session
       const meetingLink = `${window.location.origin}/video-call/${session._id}`;
       
-      await axios.put(`http://localhost:5000/api/sessions/${session._id}/link`, {
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${session._id}/link`, {
         meetingLink
       }, {
         headers: { 'x-auth-token': token }
