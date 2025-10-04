@@ -1,22 +1,17 @@
 {
-  "name": "test-app",
+  "name": "smiling-steps-monorepo",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Smiling Steps - Mental Health Platform",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server/index.js"
+    "start": "cd server && npm start",
+    "build": "cd server && npm install",
+    "dev": "cd server && npm run dev"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.0",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.16.3",
-    "nodemon": "^3.1.10"
-  }
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": ["mental-health", "therapy", "counseling"],
+  "author": "Smiling Steps Team",
+  "license": "MIT"
 }
