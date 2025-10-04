@@ -8,7 +8,7 @@ Go to your Netlify Dashboard:
 
 ### Production API Configuration
 ```
-REACT_APP_API_URL = https://your-railway-app.railway.app
+REACT_APP_API_URL = https://smiling-steps-production.up.railway.app
 REACT_APP_ENVIRONMENT = production
 ```
 
