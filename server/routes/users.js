@@ -3,7 +3,14 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
-const { loginRateLimiter } = require('../middleware/rateLimiter');
+// Try complex rate limiter, fallback to simple one
+let loginRateLimiter;
+try {
+  loginRateLimiter = require('../middleware/rateLimiter').loginRateLimiter;
+} catch (error) {
+  console.log('⚠️ Using simple rate limiter fallback');
+  loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
+}
 const { auth } = require('../middleware/auth');
 const User = require('../models/User');
 const sendEmail = require('../utils/sendEmail');
