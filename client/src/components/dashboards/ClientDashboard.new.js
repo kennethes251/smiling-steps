@@ -36,7 +36,7 @@ const ClientDashboard = () => {
 
       <Grid container spacing={4}>
         {/* Quick Actions */}
-        <Grid item xs={12} md={4}>
+        <Grid size={{ xs: 12 }} md={4}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>Quick Actions</Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -61,7 +61,7 @@ const ClientDashboard = () => {
         </Grid>
 
         {/* Upcoming Sessions */}
-        <Grid item xs={12} md={8}>
+        <Grid size={{ xs: 12 }} md={8}>
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
               <Typography variant="h6">Upcoming Sessions</Typography>
@@ -79,7 +79,7 @@ const ClientDashboard = () => {
         </Grid>
 
         {/* Recent Activity */}
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>Recent Activity</Typography>
             <Box sx={{ textAlign: 'center', py: 4 }}>

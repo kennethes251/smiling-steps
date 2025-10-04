@@ -386,7 +386,7 @@ const LandingPage = () => {
 
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 3 }}>
           <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12 }} md={6}>
               <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -474,7 +474,7 @@ const LandingPage = () => {
               </motion.div>
             </Grid>
             {!isMobile && (
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12 }} md={6}>
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -591,7 +591,7 @@ const LandingPage = () => {
             </Typography>
 
             <Grid container spacing={6} alignItems="center" sx={{ mt: 4 }}>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12 }} md={6}>
                 <motion.div
                   initial={{ opacity: 0, x: -50 }}
                   animate={inView ? { opacity: 1, x: 0 } : {}}
@@ -626,7 +626,7 @@ const LandingPage = () => {
                   </List>
                 </motion.div>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12 }} md={6}>
                 <motion.div
                   initial={{ opacity: 0, x: 50 }}
                   animate={inView ? { opacity: 1, x: 0 } : {}}
@@ -716,7 +716,7 @@ const LandingPage = () => {
 
             <Grid container spacing={4}>
               {benefits.map((benefit, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
+                <Grid size={{ xs: 12 }} sm={6} md={3} key={index}>
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -812,21 +812,21 @@ const LandingPage = () => {
           </Box>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12 }} md={4}>
               <FeatureCard
                 icon={<PsychologyIcon color="primary" sx={{ fontSize: 40 }} />}
                 title="Licensed Therapists"
                 description="Connect with experienced, licensed professionals who specialize in various areas of mental health."
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12 }} md={4}>
               <FeatureCard
                 icon={<ScheduleIcon color="primary" sx={{ fontSize: 40 }} />}
                 title="Flexible Scheduling"
                 description="Book sessions at your convenience with our easy-to-use scheduling system."
               />
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12 }} md={4}>
               <FeatureCard
                 icon={<LockIcon color="primary" sx={{ fontSize: 40 }} />}
                 title="Secure & Private"
@@ -856,7 +856,7 @@ const LandingPage = () => {
           </Box>
 
           <Grid container spacing={6} alignItems="center">
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12 }} md={6}>
               <Box sx={{
                 p: 4,
                 borderRadius: 2,
@@ -940,7 +940,7 @@ const LandingPage = () => {
               </Box>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12 }} md={6}>
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -991,7 +991,7 @@ const LandingPage = () => {
 
           <Grid container spacing={{ xs: 4, sm: 6, md: 8 }} justifyContent="center" alignItems="flex-end">
             {featuredTherapists.map((therapist, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Grid size={{ xs: 12 }} sm={6} md={4} key={index}>
                 <Box sx={{
                   display: 'flex',
                   justifyContent: 'center',
@@ -1094,7 +1094,7 @@ const LandingPage = () => {
       <Box sx={{ bgcolor: 'background.paper', py: 6, borderTop: '1px solid', borderColor: 'divider' }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12 }} md={4}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
                 Teletherapy Pro
               </Typography>
@@ -1102,7 +1102,7 @@ const LandingPage = () => {
                 Professional online therapy services to help you live a happier, healthier life.
               </Typography>
             </Grid>
-            <Grid item xs={6} sm={3} md={2}>
+            <Grid size={{ xs: 6 }} sm={3} md={2}>
               <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Company
               </Typography>
@@ -1113,7 +1113,7 @@ const LandingPage = () => {
                 <li><Typography component={RouterLink} to="/careers" sx={{ textDecoration: 'none', color: 'text.secondary', '&:hover': { color: 'primary.main' }, mt: 1, display: 'block' }}>Careers</Typography></li>
               </Box>
             </Grid>
-            <Grid item xs={6} sm={3} md={2}>
+            <Grid size={{ xs: 6 }} sm={3} md={2}>
               <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Resources
               </Typography>
@@ -1124,7 +1124,7 @@ const LandingPage = () => {
                 <li><Typography component={RouterLink} to="/contact" sx={{ textDecoration: 'none', color: 'text.secondary', '&:hover': { color: 'primary.main' }, mt: 1, display: 'block' }}>Contact Us</Typography></li>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid size={{ xs: 12 }} sm={6} md={4}>
               <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
                 Newsletter
               </Typography>
