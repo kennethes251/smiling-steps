@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -76,7 +77,7 @@ const BookingPage = () => {
         setLoading(true);
         setError('');
         try {
-          const res = await axios.get('http://localhost:5000/api/users/psychologists');
+          const res = await axios.get(`${API_ENDPOINTS.USERS}/psychologists`);
           if (res.data.success) {
             // Add mock ratings and specializations for demo
             const enhancedPsychologists = res.data.data.map(psych => ({
@@ -135,7 +136,7 @@ const BookingPage = () => {
 
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/api/sessions', bookingData);
+      const response = await axios.post(`${API_ENDPOINTS.SESSIONS}`, bookingData);
       if (response.status === 200) {
         setBookingSuccess(true);
         setConfirmDialogOpen(false);

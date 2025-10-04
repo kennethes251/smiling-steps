@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import { 
   Box, 
   Container, 
@@ -57,16 +58,16 @@ const ChatPage = () => {
         const config = { headers: { 'x-auth-token': token } };
         
         // Find or create a conversation
-        const res = await axios.post('http://localhost:5000/api/chat/conversations', { assessmentResultId: assessmentId }, config);
+        const res = await axios.post(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations`, { assessmentResultId: assessmentId }, config);
         setConversation(res.data);
         
         // Fetch messages for this conversation
-        const messagesRes = await axios.get(`http://localhost:5000/api/chat/conversations/${res.data._id}/messages`, config);
+        const messagesRes = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations/${res.data._id}/messages`, config);
         setMessages(messagesRes.data);
 
         // Fetch psychologist details
         const psychologistId = user.role === 'client' ? res.data.psychologist : res.data.client;
-        const psychologistRes = await axios.get(`http://localhost:5000/api/users/${psychologistId}`, config);
+        const psychologistRes = await axios.get(`${API_ENDPOINTS.USERS}/${psychologistId}`, config);
         setPsychologist(psychologistRes.data);
 
       } catch (error) {
@@ -85,7 +86,7 @@ const ChatPage = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      const res = await axios.post(`http://localhost:5000/api/chat/conversations/${conversation._id}/messages`, { text: newMessage }, config);
+      const res = await axios.post(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations/${conversation._id}/messages`, { text: newMessage }, config);
       setMessages([...messages, res.data]);
       setNewMessage('');
     } catch (error) {

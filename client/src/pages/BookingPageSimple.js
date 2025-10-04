@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { 
@@ -136,7 +137,7 @@ const BookingPageSimple = () => {
       console.log('📤 Sending booking data:', bookingData);
       console.log('🔑 Auth config:', config);
 
-      const response = await axios.post('http://localhost:5000/api/sessions', bookingData, config);
+      const response = await axios.post(`${API_ENDPOINTS.SESSIONS}`, bookingData, config);
       
       if (response.status === 200) {
         setConfirmDialogOpen(false);
@@ -178,7 +179,7 @@ const BookingPageSimple = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get(process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api/public/psychologists` : 'http://localhost:5000/api/public/psychologists');
+      const res = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
       // The public endpoint returns data directly (not wrapped in success object)
       const psychologists = res.data || [];
       

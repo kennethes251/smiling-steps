@@ -53,6 +53,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const DeveloperDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -151,10 +152,10 @@ const DeveloperDashboard = () => {
 
       // Fetch real-time statistics
       const [statsRes, psychologistsRes, blogsRes, resourcesRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/stats', config),
-        axios.get('http://localhost:5000/api/admin/psychologists', config),
-        axios.get('http://localhost:5000/api/admin/blogs', config),
-        axios.get('http://localhost:5000/api/admin/resources', config)
+        axios.get(`${API_ENDPOINTS.ADMIN}/stats`, config),
+        axios.get(`${API_ENDPOINTS.ADMIN}/psychologists`, config),
+        axios.get(`${API_ENDPOINTS.ADMIN}/blogs`, config),
+        axios.get(`${API_ENDPOINTS.ADMIN}/resources`, config)
       ]);
 
       setStats(statsRes.data);
@@ -172,7 +173,7 @@ const DeveloperDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      const response = await axios.post('http://localhost:5000/api/admin/psychologists', psychForm, config);
+      const response = await axios.post(`${API_ENDPOINTS.ADMIN}/psychologists`, psychForm, config);
       setMessage({ type: 'success', text: 'Psychologist created successfully!' });
       setOpenPsychDialog(false);
       setPsychForm({
@@ -196,7 +197,7 @@ const DeveloperDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      await axios.post('http://localhost:5000/api/admin/blogs', blogForm, config);
+      await axios.post(`${API_ENDPOINTS.ADMIN}/blogs`, blogForm, config);
       setMessage({ type: 'success', text: 'Blog post created successfully!' });
       setOpenBlogDialog(false);
       setBlogForm({
@@ -219,7 +220,7 @@ const DeveloperDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      await axios.post('http://localhost:5000/api/admin/resources', resourceForm, config);
+      await axios.post(`${API_ENDPOINTS.ADMIN}/resources`, resourceForm, config);
       setMessage({ type: 'success', text: 'Resource created successfully!' });
       setOpenResourceDialog(false);
       setResourceForm({

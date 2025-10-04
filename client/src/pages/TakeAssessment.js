@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import {
   Container,
   Typography,
@@ -329,7 +330,7 @@ const TakeAssessment = () => {
         recommendations: results.recommendations
       };
 
-      await axios.post('http://localhost:5000/api/assessments/results', resultData, config);
+      await axios.post(`${API_ENDPOINTS.BASE_URL}/api/assessments/results`, resultData, config);
       navigate('/assessment-results');
     } catch (err) {
       console.error('Failed to save results:', err);

@@ -19,6 +19,7 @@ import {
   CloudUpload as UploadIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const ProfilePictureUpload = ({ 
   currentImage, 
@@ -107,7 +108,7 @@ const ProfilePictureUpload = ({
         }
       };
 
-      const uploadResponse = await axios.post('http://localhost:5000/api/upload/profile-picture', formData, config);
+      const uploadResponse = await axios.post(`${API_ENDPOINTS.UPLOAD}/profile-picture`, formData, config);
       
       // Update parent component
       if (onImageUpdate) {
@@ -129,7 +130,7 @@ const ProfilePictureUpload = ({
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      await axios.delete('http://localhost:5000/api/upload/profile-picture', config);
+      await axios.delete(`${API_ENDPOINTS.UPLOAD}/profile-picture`, config);
       
       if (onImageUpdate) {
         onImageUpdate(null);
@@ -145,7 +146,7 @@ const ProfilePictureUpload = ({
       <Box sx={{ position: 'relative', display: 'inline-block' }}>
         {/* Profile Avatar */}
         <Avatar
-          src={currentImage ? (currentImage.startsWith('http') ? currentImage : `http://localhost:5000${currentImage}?t=${Date.now()}`) : null}
+          src={currentImage ? (currentImage.startsWith('http') ? currentImage : `${API_ENDPOINTS.BASE_URL}${currentImage}?t=${Date.now()}`) : null}
           sx={{
             width: size,
             height: size,
@@ -196,7 +197,7 @@ const ProfilePictureUpload = ({
           {/* Current/Preview Image */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <Avatar
-              src={previewImage || (currentImage ? (currentImage.startsWith('http') ? currentImage : `http://localhost:5000${currentImage}?t=${Date.now()}`) : null)}
+              src={previewImage || (currentImage ? (currentImage.startsWith('http') ? currentImage : `${API_ENDPOINTS.BASE_URL}${currentImage}?t=${Date.now()}`) : null)}
               sx={{
                 width: 150,
                 height: 150,

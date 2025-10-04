@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import axios from 'axios';
 import {
   Container,
@@ -154,7 +155,7 @@ const AssessmentsPage = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      const res = await axios.get('http://localhost:5000/api/assessments/results/me', config);
+      const res = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/assessments/results/me`, config);
       setCompletedAssessments(res.data || []);
     } catch (err) {
       console.error('Failed to fetch completed assessments:', err);

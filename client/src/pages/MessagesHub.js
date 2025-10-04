@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../config/api';
 import axios from 'axios';
 import {
   Container,
@@ -55,8 +56,8 @@ const MessagesHub = () => {
 
       // Fetch conversations, notifications, and sessions
       const [conversationsRes, sessionsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/chat/conversations', config).catch(() => ({ data: [] })),
-        axios.get('http://localhost:5000/api/sessions', config).catch(() => ({ data: [] }))
+        axios.get(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations`, config).catch(() => ({ data: [] })),
+        axios.get(`${API_ENDPOINTS.SESSIONS}`, config).catch(() => ({ data: [] }))
       ]);
 
       setConversations(conversationsRes.data || []);
