@@ -1136,25 +1136,45 @@ const MarketingPage = () => {
               title: 'Recovery Guides',
               description: 'Downloadable guides on addiction recovery, mental health, and harm reduction',
               icon: '📖',
-              color: '#1976D2'
+              color: '#1976D2',
+              items: [
+                'Understanding Addiction: A Comprehensive Guide',
+                'Mental Health First Aid Handbook',
+                'Harm Reduction Strategies for Families'
+              ]
             },
             {
               title: 'Community Education',
               description: 'Educational materials, slides, and infographics for families and communities',
               icon: '🎓',
-              color: '#2E7D32'
+              color: '#2E7D32',
+              items: [
+                'Breaking the Stigma: Community Workshop Materials',
+                'Supporting a Loved One in Recovery',
+                'Mental Health Awareness Infographics'
+              ]
             },
             {
               title: 'Blog & Articles',
               description: 'Articles on healing, stigma reduction, empowerment, and hope in recovery',
               icon: '✍️',
-              color: '#F57C00'
+              color: '#F57C00',
+              items: [
+                'The Journey to Healing: Personal Stories',
+                'Overcoming Mental Health Stigma in Kenya',
+                'Building Resilience Through Community Support'
+              ]
             },
             {
               title: 'Support Tools',
               description: 'Digital tools for tracking progress, coping strategies, and daily support',
               icon: '🛠️',
-              color: '#7B1FA2'
+              color: '#7B1FA2',
+              items: [
+                'Daily Mood Tracker & Journal',
+                'Coping Strategies Toolkit',
+                'Crisis Support Contact Directory'
+              ]
             }
           ].map((resource, index) => (
             <Grid item xs={12} sm={6} md={3} key={index}>
@@ -1189,6 +1209,33 @@ const MarketingPage = () => {
                     {resource.description}
                   </Typography>
 
+                  <Box sx={{ textAlign: 'left', mb: 3 }}>
+                    {resource.items.map((item, itemIndex) => (
+                      <Typography 
+                        key={itemIndex}
+                        variant="body2" 
+                        sx={{ 
+                          mb: 1, 
+                          display: 'flex', 
+                          alignItems: 'center',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        <Box 
+                          sx={{ 
+                            width: 6, 
+                            height: 6, 
+                            borderRadius: '50%', 
+                            backgroundColor: resource.color, 
+                            mr: 1,
+                            flexShrink: 0
+                          }} 
+                        />
+                        {item}
+                      </Typography>
+                    ))}
+                  </Box>
+
                   <Button
                     variant="outlined"
                     size="small"
@@ -1201,7 +1248,7 @@ const MarketingPage = () => {
                       }
                     }}
                   >
-                    Coming Soon
+                    Explore Resources
                   </Button>
                 </Card>
               </motion.div>
