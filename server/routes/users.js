@@ -71,7 +71,13 @@ router.post('/register', validateRegisterInput, async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
     
-    console.log('📝 Registration attempt:', { name, email, role });
+    console.log('📝 Registration attempt:', { 
+      name, 
+      email, 
+      role,
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
+    });
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -272,8 +278,16 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log('🔐 Login attempt:', { 
+      email, 
+      hasPassword: !!password,
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
+    });
+
     // Basic validation
     if (!email || !password) {
+      console.log('❌ Login validation failed: missing email or password');
       return res.status(400).json({
         success: false,
         message: 'Validation failed',

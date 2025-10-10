@@ -31,6 +31,8 @@ app.use((req, res, next) => {
     'https://smiling-steps-frontend.onrender.com'
   ];
   
+  console.log('🌐 CORS Check - Origin:', origin, 'Allowed:', allowedOrigins.includes(origin));
+  
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
