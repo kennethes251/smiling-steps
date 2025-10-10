@@ -275,6 +275,7 @@ const LandingPage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [featuredTherapists, setFeaturedTherapists] = useState([]);
+  const [apiTestResult, setApiTestResult] = useState('');
 
   useEffect(() => {
     setInView(true);
@@ -299,6 +300,17 @@ const LandingPage = () => {
         { name: 'Dr. Michael Chen', specialization: 'Marriage & Family Therapist', image: null },
         { name: 'Dr. Emily Rodriguez', specialization: 'Cognitive Behavioral Therapist', image: null }
       ]);
+    }
+  };
+
+  const testApiConnection = async () => {
+    setApiTestResult('Testing...');
+    try {
+      // Test backend health
+      const healthResponse = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/test`);
+      setApiTestResult(`✅ Backend: ${healthResponse.data.message} | API URL: ${API_ENDPOINTS.BASE_URL}`);
+    } catch (error) {
+      setApiTestResult(`❌ Backend Error: ${error.message} | Trying: ${API_ENDPOINTS.BASE_URL}/api/test`);
     }
   };
 
@@ -470,6 +482,22 @@ const LandingPage = () => {
                   >
                     Learn More
                   </Button>
+                  
+                  {/* Temporary API Test Button */}
+                  <Button
+                    onClick={testApiConnection}
+                    variant="text"
+                    size="small"
+                    sx={{ mt: 2, display: 'block', fontSize: '0.9rem' }}
+                  >
+                    🧪 Test API Connection
+                  </Button>
+                  
+                  {apiTestResult && (
+                    <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1, fontSize: '0.8rem' }}>
+                      {apiTestResult}
+                    </Box>
+                  )}
                 </Box>
               </motion.div>
             </Grid>
