@@ -92,6 +92,10 @@ router.get('/', (req, res, next) => {
         console.log('✅ User is psychologist, fetching psychologist sessions');
         sessions = await Session.find({ psychologist: req.user.id }).populate('client', 'name email');
         console.log('📊 Found sessions for psychologist:', sessions.length);
+      } else if (user.role === 'admin') {
+        console.log('✅ User is admin, fetching all sessions');
+        sessions = await Session.find({}).populate('client', 'name email').populate('psychologist', 'name email');
+        console.log('📊 Found sessions for admin:', sessions.length);
       } else {
         console.log('❌ User role not recognized:', user.role);
         return res.status(403).json({ msg: `User role '${user.role}' not authorized to view sessions` });
