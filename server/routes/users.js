@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
+const crypto = require('crypto');
 // Use simple rate limiter to avoid 429 errors
 const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
 const { auth } = require('../middleware/auth');
@@ -83,19 +84,27 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       });
     }
 
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     // Create and save user
     const userPayload = {
       name,
       email,
       password,
       role,
+      isVerified: false,
+      verificationToken,
+      verificationTokenExpires
     };
 
     const user = new User(userPayload);
-
-    // Frontend registration is only for clients - no special handling needed
-
     await user.save();
+
+    // Send verification email (for now just log the token)
+    console.log('📧 Email verification token for', email, ':', verificationToken);
+    console.log('🔗 Verification URL: https://smiling-steps.netlify.app/verify-email?token=' + verificationToken);
 
     // Create JWT payload
     const payload = {
@@ -123,7 +132,8 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     // Return success response
     res.status(201).json({
       success: true,
-      token,
+      message: 'Registration successful! Please check your email to verify your account.',
+      requiresVerification: true,
       user: userData
     });
 
@@ -158,6 +168,50 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'An error occurred during registration. Please try again later.'
+    });
+  }
+});
+
+// @route   GET api/users/verify-email/:token
+// @desc    Verify user email
+// @access  Public
+router.get('/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    console.log('📧 Email verification attempt with token:', token);
+
+    // Find user with this verification token
+    const user = await User.findOne({
+      verificationToken: token,
+      verificationTokenExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    // Verify the user
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
+    await user.save();
+
+    console.log('✅ Email verified for user:', user.email);
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now login.'
+    });
+
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred during email verification'
     });
   }
 });
@@ -211,6 +265,16 @@ router.post('/login', loginRateLimiter, async (req, res) => {
         success: false,
         message: 'Authentication failed',
         errors: ['Invalid email or password']
+      });
+    }
+
+    // Check if email is verified (only for clients)
+    if (user.role === 'client' && !user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email not verified',
+        errors: ['Please verify your email before logging in. Check your inbox for verification link.'],
+        requiresVerification: true
       });
     }
 

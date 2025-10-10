@@ -250,6 +250,27 @@ const UserSchema = new mongoose.Schema({
   lockUntil: {
     type: Number,
     select: false
+  },
+  
+  // Email verification fields
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: {
+    type: String,
+    select: false
+  },
+  verificationTokenExpires: {
+    type: Date,
+    select: false
+  },
+  
+  // Session rates for psychologists
+  sessionRate: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true,
