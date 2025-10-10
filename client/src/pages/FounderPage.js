@@ -470,7 +470,7 @@ const FounderPage = () => {
                   <EmailIcon sx={{ fontSize: '2.5rem', mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>Email</Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    kenneth@smilingsteps.com
+                    kennethes251@gmail.com
                   </Typography>
                 </Paper>
               </Grid>
@@ -488,10 +488,10 @@ const FounderPage = () => {
                     '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' }
                   }}
                 >
-                  <LinkedInIcon sx={{ fontSize: '2.5rem', mb: 2 }} />
-                  <Typography variant="h6" sx={{ mb: 1 }}>LinkedIn</Typography>
+                  <PhoneIcon sx={{ fontSize: '2.5rem', mb: 2 }} />
+                  <Typography variant="h6" sx={{ mb: 1 }}>Phone</Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Connect professionally
+                    0707439299
                   </Typography>
                 </Paper>
               </Grid>
