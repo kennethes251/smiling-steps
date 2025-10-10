@@ -15,6 +15,7 @@ import {
   Grid,
   FormHelperText
 } from '@mui/material';
+import { Email as EmailIcon } from '@mui/icons-material';
 import Logo from '../components/Logo';
 
 const Register = () => {
@@ -31,6 +32,8 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -97,12 +100,19 @@ const Register = () => {
         // Note: Not logging password for security
       });
       
-      await register({
+      const result = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
         role: formData.role
       });
+      
+      // Check if email verification is required
+      if (result.requiresVerification) {
+        setShowVerificationMessage(true);
+        setVerificationEmail(formData.email);
+        setIsLoading(false);
+      }
       // The useEffect will handle the redirect when isAuthenticated becomes true
     } catch (error) {
       console.error('Registration error:', error);
@@ -154,6 +164,38 @@ const Register = () => {
             {submitError}
           </Typography>
         )}
+
+        {showVerificationMessage ? (
+          <Box sx={{ textAlign: 'center', p: 3 }}>
+            <EmailIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h5" gutterBottom color="primary.main">
+              Check Your Email!
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              We've sent a verification link to:
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main' }}>
+              {verificationEmail}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Please click the verification link in your email to activate your account. 
+              You won't be able to login until your email is verified.
+            </Typography>
+            <Button 
+              variant="outlined" 
+              onClick={() => setShowVerificationMessage(false)}
+              sx={{ mr: 2 }}
+            >
+              Register Another Account
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => navigate('/login')}
+            >
+              Go to Login
+            </Button>
+          </Box>
+        ) : (
         
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <Grid container spacing={2}>
@@ -240,6 +282,7 @@ const Register = () => {
             </Typography>
           </Box>
         </Box>
+        )}
       </Box>
     </Container>
   );

@@ -34,6 +34,7 @@ import TestVideoCall from './pages/TestVideoCall';
 import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import TherapistsPage from './pages/TherapistsPage';
+import EmailVerification from './pages/EmailVerification';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route path="/founder" element={<FounderPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<EmailVerification />} />
             
             {/* Protected Routes */}
             <Route path="/psychologist-dashboard" element={<PrivateRoute roles={['psychologist']}><PsychologistDashboard /></PrivateRoute>} />

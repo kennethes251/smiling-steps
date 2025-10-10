@@ -9,7 +9,9 @@ const initialState = {
   isAuthenticated: null,
   loading: true,
   user: null,
-  error: null
+  error: null,
+  pendingVerification: false,
+  verificationMessage: null
 };
 
 // Create Context
@@ -57,6 +59,17 @@ const authReducer = (state, action) => {
         loading: false,
         user: payload.user,
         error: null
+      };
+    case 'REGISTER_PENDING_VERIFICATION':
+      return {
+        ...state,
+        token: null,
+        isAuthenticated: false,
+        loading: false,
+        user: null,
+        error: null,
+        pendingVerification: true,
+        verificationMessage: payload.message
       };
     case 'REGISTER_FAIL':
     case 'AUTH_ERROR':
@@ -137,8 +150,17 @@ export const AuthProvider = ({ children }) => {
       );
       
       console.log('Registration successful:', res.data);
-      dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
-      return res.data;
+      
+      // Check if email verification is required
+      if (res.data.requiresVerification) {
+        // Don't set as authenticated yet, user needs to verify email
+        dispatch({ type: 'REGISTER_PENDING_VERIFICATION', payload: res.data });
+        return res.data;
+      } else {
+        // Normal registration (for psychologists/admins)
+        dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
+        return res.data;
+      }
     } catch (err) {
       console.error('Registration error details:', {
         status: err.response?.status,
