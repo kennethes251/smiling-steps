@@ -172,6 +172,56 @@ router.post('/register', validateRegisterInput, async (req, res) => {
   }
 });
 
+// @route   PUT api/users/session-rate
+// @desc    Update psychologist session rate
+// @access  Private (Psychologist only)
+router.put('/session-rate', auth, async (req, res) => {
+  try {
+    const { sessionRate } = req.body;
+    
+    // Validate input
+    if (sessionRate < 0 || isNaN(sessionRate)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid session rate'
+      });
+    }
+
+    // Find and update user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if user is psychologist
+    if (user.role !== 'psychologist') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only psychologists can set session rates'
+      });
+    }
+
+    user.sessionRate = sessionRate;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Session rate updated successfully',
+      sessionRate: user.sessionRate
+    });
+
+  } catch (err) {
+    console.error('Session rate update error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   GET api/users/verify-email/:token
 // @desc    Verify user email
 // @access  Public
@@ -1089,5 +1139,57 @@ router.put('/profile/psychologist', auth, async (req, res) => {
 });
 
 
+// @route   PUT api/users/session-rate
+// @desc    Update psychologist session rate
+// @access  Private (Psychologist only)
+router.put('/session-rate', auth, async (req, res) => {
+  try {
+    const { sessionRate } = req.body;
+    
+    // Validation
+    if (sessionRate < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session rate cannot be negative'
+      });
+    }
+
+    // Find and update user
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if user is psychologist
+    if (user.role !== 'psychologist') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only psychologists can set session rates'
+      });
+    }
+
+    // Update session rate
+    user.sessionRate = sessionRate;
+    await user.save();
+
+    console.log('✅ Session rate updated for', user.email, ':', sessionRate);
+
+    res.json({
+      success: true,
+      message: 'Session rate updated successfully',
+      sessionRate: user.sessionRate
+    });
+
+  } catch (err) {
+    console.error('Session rate update error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while updating session rate'
+    });
+  }
+});
 
 module.exports = router;

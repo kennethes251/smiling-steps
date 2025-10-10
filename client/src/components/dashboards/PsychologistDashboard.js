@@ -28,6 +28,11 @@ const PsychologistDashboard = () => {
   
   // Video call state
   const [videoCallDialogOpen, setVideoCallDialogOpen] = useState(false);
+  
+  // Session rate management
+  const [sessionRate, setSessionRate] = useState(0);
+  const [rateDialogOpen, setRateDialogOpen] = useState(false);
+  const [newRate, setNewRate] = useState('');
   const [selectedSessionForCall, setSelectedSessionForCall] = useState(null);
 
   const fetchData = async () => {
@@ -56,6 +61,10 @@ const PsychologistDashboard = () => {
         .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       
       setClientAssessments(allClientAssessments);
+
+      // Fetch current session rate
+      const profileRes = await axios.get(`${API_ENDPOINTS.USERS}/profile`, config);
+      setSessionRate(profileRes.data.sessionRate || 0);
 
     } catch (err) {
       console.error('Failed to fetch data', err);
@@ -177,6 +186,26 @@ const PsychologistDashboard = () => {
     }
   };
 
+  // Update session rate
+  const updateSessionRate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+      
+      await axios.put(`${API_ENDPOINTS.USERS}/session-rate`, {
+        sessionRate: parseFloat(newRate)
+      }, config);
+      
+      setSessionRate(parseFloat(newRate));
+      setRateDialogOpen(false);
+      setNewRate('');
+      alert('Session rate updated successfully!');
+    } catch (err) {
+      console.error('Failed to update session rate:', err);
+      alert('Failed to update session rate');
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 4 }}><QuickActions userRole="Psychologist" /></Box>
@@ -203,10 +232,62 @@ const PsychologistDashboard = () => {
       
       {/* Compact Profile Section */}
       <CompactProfile userType="psychologist" />
+      
+      {/* Session Rate Management */}
+      <Paper sx={{ p: 3, mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              Session Rate Management
+            </Typography>
+            <Typography variant="body1">
+              Current Rate: KES {sessionRate.toLocaleString()} per session
+            </Typography>
+          </Box>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setNewRate(sessionRate.toString());
+              setRateDialogOpen(true);
+            }}
+            sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
+          >
+            Update Rate
+          </Button>
+        </Box>
+      </Paper>
+      
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
       ) : (
         <Grid container spacing={3}>
+          {/* Session Rate Management */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Session Rate Management
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography variant="body1">
+                  Current Rate: <strong>KES {user?.sessionRate || 0}</strong> per session
+                </Typography>
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => {
+                    setNewRate(user?.sessionRate || 0);
+                    setRateDialogOpen(true);
+                  }}
+                >
+                  Update Rate
+                </Button>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Set your session rate. Clients will be prompted to pay this amount after session approval.
+              </Typography>
+            </Paper>
+          </Grid>
+
           {/* Pending Sessions */}
           <Grid item xs={12}>
             <Paper sx={{ p: 2, border: sessions.filter(s => s.status === 'Pending').length > 0 ? '2px solid #ff9800' : 'none' }}>
@@ -409,6 +490,33 @@ const PsychologistDashboard = () => {
         session={selectedSessionForCall}
         psychologists={[]} // Psychologists don't need this for their own calls
       />
+    </Container>
+  );
+      
+      {/* Session Rate Dialog */}
+      <Dialog open={rateDialogOpen} onClose={() => setRateDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Update Session Rate</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Set your rate per therapy session. This will be displayed to clients when they book sessions.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Session Rate (KES)"
+            type="number"
+            fullWidth
+            variant="outlined"
+            value={newRate}
+            onChange={(e) => setNewRate(e.target.value)}
+            inputProps={{ min: 0, step: 50 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRateDialogOpen(false)}>Cancel</Button>
+          <Button onClick={updateSessionRate} variant="contained">Update Rate</Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
