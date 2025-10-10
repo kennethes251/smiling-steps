@@ -16,7 +16,6 @@ try {
   console.log('⚠️ Using simple email fallback');
   sendEmail = require('../utils/sendEmail.simple');
 }
-const crypto = require('crypto');
 
 // Validation middleware
 const validateRegisterInput = (req, res, next) => {
