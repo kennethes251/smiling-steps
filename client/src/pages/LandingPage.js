@@ -306,9 +306,21 @@ const LandingPage = () => {
   const testApiConnection = async () => {
     setApiTestResult('Testing...');
     try {
-      // Test backend health
+      // Test 1: Backend health
       const healthResponse = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/test`);
-      setApiTestResult(`✅ Backend: ${healthResponse.data.message} | API URL: ${API_ENDPOINTS.BASE_URL}`);
+      
+      // Test 2: Registration endpoint
+      try {
+        const regResponse = await axios.post(`${API_ENDPOINTS.USERS}/register`, {
+          name: 'Test User',
+          email: 'test' + Date.now() + '@example.com',
+          password: 'test123',
+          role: 'client'
+        });
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | Registration: Works | API: ${API_ENDPOINTS.BASE_URL}`);
+      } catch (regError) {
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} ${regError.response?.data?.message || regError.message} | API: ${API_ENDPOINTS.BASE_URL}`);
+      }
     } catch (error) {
       setApiTestResult(`❌ Backend Error: ${error.message} | Trying: ${API_ENDPOINTS.BASE_URL}/api/test`);
     }
