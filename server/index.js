@@ -11,7 +11,8 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://smiling-steps.netlify.app',
-    'https://smiling-steps.onrender.com'
+    'https://smiling-steps.onrender.com',
+    'https://smiling-steps-frontend.onrender.com'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -20,13 +21,14 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Additional CORS headers for Netlify
+// Additional CORS headers for frontend deployments
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
     'http://localhost:3000',
     'https://smiling-steps.netlify.app',
-    'https://smiling-steps.onrender.com'
+    'https://smiling-steps.onrender.com',
+    'https://smiling-steps-frontend.onrender.com'
   ];
   
   if (allowedOrigins.includes(origin)) {

@@ -1,6 +1,8 @@
 // API Configuration
 // Detect environment and set appropriate API URL
-const isProduction = process.env.NODE_ENV === 'production' || window.location.hostname.includes('netlify');
+const isProduction = process.env.NODE_ENV === 'production' || 
+                    window.location.hostname.includes('netlify') || 
+                    window.location.hostname.includes('onrender.com');
 const isDevelopment = window.location.hostname === 'localhost';
 
 let API_BASE_URL;

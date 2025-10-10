@@ -1,16 +1,27 @@
 services:
+  # Backend service (already deployed)
   - type: web
     name: smiling-steps-backend
     env: node
-    plan: free
     buildCommand: npm install
     startCommand: node server/index.js
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: MONGODB_URI
-        sync: false
+        fromDatabase:
+          name: smiling-steps-db
+          property: connectionString
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
+
+  # Frontend service (new)
+  - type: web
+    name: smiling-steps-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
