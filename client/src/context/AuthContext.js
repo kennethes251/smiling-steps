@@ -137,6 +137,9 @@ export const AuthProvider = ({ children }) => {
         password: userData.password ? '[HIDDEN]' : 'MISSING'
       });
       
+      console.log('🔍 Full registration URL:', `${API_ENDPOINTS.USERS}/register`);
+      console.log('🔍 API_ENDPOINTS.USERS:', API_ENDPOINTS.USERS);
+      
       const config = {
         headers: {
           'Content-Type': 'application/json'
@@ -186,6 +189,8 @@ export const AuthProvider = ({ children }) => {
       };
       
       console.log('Sending login request to /api/users/login');
+      console.log('🔍 Full login URL:', `${API_ENDPOINTS.USERS}/login`);
+      console.log('🔍 API_ENDPOINTS.USERS:', API_ENDPOINTS.USERS);
       const res = await axios.post(
         `${API_ENDPOINTS.USERS}/login`, 
         { email, password }, 
