@@ -8,6 +8,7 @@ import { Videocam as VideocamIcon, Schedule as ScheduleIcon } from '@mui/icons-m
 import QuickActions from '../shared/QuickActions';
 import QuickVideoCall from '../VideoCall/QuickVideoCall';
 import CompactProfile from '../CompactProfile';
+import PaymentNotification from '../PaymentNotification';
 import Logo from '../Logo';
 
 const ClientDashboard = () => {
@@ -25,6 +26,10 @@ const ClientDashboard = () => {
   const [psychologists, setPsychologists] = useState([]);
   const [company, setCompany] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  
+  // Payment notification state
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentSession, setPaymentSession] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,10 +92,10 @@ const ClientDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      await axios.delete(`http://localhost:5000/api/sessions/${selectedSession._id}`, config);
+      await axios.delete(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}`, config);
 
       // Refresh sessions list after cancellation
-      const res = await axios.get('http://localhost:5000/api/sessions', config);
+      const res = await axios.get(API_ENDPOINTS.SESSIONS, config);
       const sortedSessions = res.data.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
       setSessions(sortedSessions);
       setCancelDialogOpen(false);
@@ -126,7 +131,7 @@ const ClientDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { sessionId: selectedSession._id, rating, comment };
-      await axios.post('http://localhost:5000/api/feedback', body, config);
+      await axios.post(`${API_ENDPOINTS.BASE_URL}/api/feedback`, body, config);
       alert('Feedback submitted successfully!');
       setSubmittedFeedback([...submittedFeedback, selectedSession._id]);
       handleFeedbackClose();
@@ -139,6 +144,36 @@ const ClientDashboard = () => {
   const handleVideoCallClick = (session = null) => {
     setSelectedSessionForCall(session);
     setVideoCallDialogOpen(true);
+  };
+
+  // Payment notification functions
+  const handlePaymentNotification = (session) => {
+    setPaymentSession(session);
+    setPaymentDialogOpen(true);
+  };
+
+  const handlePaymentSent = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+      
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${paymentSession._id}/payment-sent`, {}, config);
+      
+      // Update session status locally
+      setSessions(prev => prev.map(s => 
+        s._id === paymentSession._id 
+          ? { ...s, paymentStatus: 'Paid' }
+          : s
+      ));
+      
+      alert('Payment notification sent! Your session will be confirmed once payment is verified.');
+      setPaymentDialogOpen(false);
+      setPaymentSession(null);
+      
+    } catch (err) {
+      console.error('Failed to notify payment', err);
+      alert('Failed to send payment notification. Please try again.');
+    }
   };
 
   const isSessionLive = (session) => {
@@ -633,6 +668,16 @@ const ClientDashboard = () => {
         onClose={() => setVideoCallDialogOpen(false)}
         session={selectedSessionForCall}
         psychologists={psychologists}
+      />
+
+      {/* Payment Notification Dialog */}
+      <PaymentNotification
+        open={paymentDialogOpen}
+        onClose={() => setPaymentDialogOpen(false)}
+        sessionDetails={paymentSession}
+        psychologistName={paymentSession?.psychologist?.name}
+        sessionRate={paymentSession?.paymentAmount}
+        onPaymentSent={handlePaymentSent}
       />
     </Container>
   );

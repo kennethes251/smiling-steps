@@ -6,9 +6,13 @@ const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware - Temporary very permissive CORS for debugging
+// CORS Configuration
 const corsOptions = {
-  origin: true, // Allow all origins temporarily
+  origin: [
+    'http://localhost:3000',
+    'https://smiling-steps.netlify.app',
+    'https://smiling-steps.onrender.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
@@ -16,9 +20,19 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Additional CORS headers as backup
+// Additional CORS headers for Netlify
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'https://smiling-steps.netlify.app',
+    'https://smiling-steps.onrender.com'
+  ];
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
   res.header('Access-Control-Allow-Credentials', 'true');

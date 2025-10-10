@@ -71,6 +71,25 @@ const SessionSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  
+  // Payment fields
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Paid', 'Confirmed'],
+    default: 'Pending'
+  },
+  paymentAmount: {
+    type: Number,
+    default: 0
+  },
+  paymentInstructions: {
+    type: String,
+    default: 'Send payment to M-Pesa number: 0707439299'
+  },
+  paymentNotifiedAt: {
+    type: Date
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now,

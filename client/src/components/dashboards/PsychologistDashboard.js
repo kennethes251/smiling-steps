@@ -51,7 +51,7 @@ const PsychologistDashboard = () => {
       
       const clientIds = clientsRes.data.map(client => client._id);
       const assessmentPromises = clientIds.map(clientId => 
-        axios.get(`http://localhost:5000/api/assessments/results/client/${clientId}`, config)
+        axios.get(`${API_ENDPOINTS.BASE_URL}/api/assessments/results/client/${clientId}`, config)
           .catch(err => ({ data: [] }))
       );
       
@@ -81,9 +81,20 @@ const PsychologistDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      await axios.put(`http://localhost:5000/api/sessions/${sessionId}/approve`, {}, config);
-      setSessions(prev => prev.map(s => s._id === sessionId ? { ...s, status: 'Booked' } : s));
-      alert('Session approved successfully!');
+      
+      // Include psychologist's session rate in approval
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/approve`, {
+        sessionRate: user?.sessionRate || 0
+      }, config);
+      
+      setSessions(prev => prev.map(s => s._id === sessionId ? { 
+        ...s, 
+        status: 'Booked',
+        paymentAmount: user?.sessionRate || 0,
+        paymentStatus: 'Pending'
+      } : s));
+      
+      alert('Session approved successfully! Client will be notified about payment.');
     } catch (err) {
       console.error('Failed to approve session', err);
       alert(err.response?.data?.msg || 'Failed to approve session.');
@@ -109,7 +120,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { meetingLink };
-      const res = await axios.put(`http://localhost:5000/api/sessions/${selectedSession._id}/link`, body, config);
+      const res = await axios.put(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}/link`, body, config);
       setSessions(prev => prev.map(s => s._id === selectedSession._id ? res.data : s));
       alert('Meeting link updated!');
       handleCloseLinkDialog();
@@ -140,7 +151,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { sessionNotes, sessionProof };
-      const res = await axios.post(`http://localhost:5000/api/sessions/${selectedSession._id}/complete`, body, config);
+      const res = await axios.post(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}/complete`, body, config);
       setSessions(prev => prev.map(s => s._id === selectedSession._id ? res.data : s));
       alert('Session marked as complete!');
       handleCloseCompleteDialog();
@@ -168,7 +179,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       
-      await axios.put(`http://localhost:5000/api/sessions/${sessionId}/link`, {
+      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/link`, {
         meetingLink: videoCallLink
       }, config);
       
@@ -490,9 +501,7 @@ const PsychologistDashboard = () => {
         session={selectedSessionForCall}
         psychologists={[]} // Psychologists don't need this for their own calls
       />
-    </Container>
-  );
-      
+
       {/* Session Rate Dialog */}
       <Dialog open={rateDialogOpen} onClose={() => setRateDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>Update Session Rate</DialogTitle>

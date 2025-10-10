@@ -186,8 +186,23 @@ router.put('/:id/approve', auth, async (req, res) => {
       return res.status(400).json({ msg: 'Session is not pending and cannot be approved' });
     }
 
+    // Get psychologist's session rate
+    const psychologist = await User.findById(req.user.id);
+    const sessionRate = req.body.sessionRate || psychologist?.sessionRate || 0;
+    
     session.status = 'Booked';
+    session.paymentAmount = sessionRate;
+    session.paymentStatus = 'Pending';
+    session.paymentInstructions = 'Send payment to M-Pesa number: 0707439299';
+    session.paymentNotifiedAt = new Date();
+    
     await session.save();
+
+    console.log('✅ Session approved with payment info:', {
+      sessionId: session._id,
+      paymentAmount: sessionRate,
+      paymentStatus: 'Pending'
+    });
 
     res.json(session);
   } catch (err) {
