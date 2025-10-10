@@ -11,13 +11,24 @@ const router = express.Router();
 // Middleware to check admin access
 const adminAuth = async (req, res, next) => {
   try {
+    console.log('🔍 Admin auth check - User ID:', req.user?.id);
     const user = await User.findById(req.user.id);
-    if (!user || user.role !== 'admin') {
+    console.log('👤 Found user:', { id: user?._id, email: user?.email, role: user?.role });
+    
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    if (user.role !== 'admin') {
+      console.log('❌ User is not admin, role:', user.role);
       return res.status(403).json({ message: 'Admin access required' });
     }
+    
+    console.log('✅ Admin access granted');
     next();
   } catch (error) {
-    console.error('Admin auth error:', error);
+    console.error('❌ Admin auth error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -115,14 +126,16 @@ router.post('/psychologists', auth, adminAuth, async (req, res) => {
 
 // Get All Psychologists
 router.get('/psychologists', auth, adminAuth, async (req, res) => {
+  console.log('📋 GET /api/admin/psychologists - Route hit');
   try {
     const psychologists = await User.find({ role: 'psychologist' })
       .select('-password')
       .sort({ createdAt: -1 });
 
+    console.log('✅ Found psychologists:', psychologists.length);
     res.json(psychologists);
   } catch (error) {
-    console.error('Error fetching psychologists:', error);
+    console.error('❌ Error fetching psychologists:', error);
     res.status(500).json({ message: 'Error fetching psychologists' });
   }
 });
