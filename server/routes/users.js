@@ -116,7 +116,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     // Prepare response data (exclude sensitive fields)
@@ -344,7 +344,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     const token = jwt.sign(
       payload,
       process.env.JWT_SECRET || 'your_jwt_secret',
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     // Prepare response data (exclude sensitive fields)
