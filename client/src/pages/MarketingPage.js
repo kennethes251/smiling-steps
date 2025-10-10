@@ -1748,7 +1748,7 @@ const MarketingPage = () => {
                 <EmailIcon sx={{ fontSize: '3rem', mb: 2, color: '#663399' }} />
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>Email</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  info@smilingsteps.com
+                  kennethes251@gmail.com
                 </Typography>
               </Paper>
             </motion.div>
@@ -1779,7 +1779,7 @@ const MarketingPage = () => {
                 <PhoneIcon sx={{ fontSize: '3rem', mb: 2, color: '#663399' }} />
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>Phone</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  +254 XXX XXX XXX
+                  0707439299
                 </Typography>
               </Paper>
             </motion.div>
