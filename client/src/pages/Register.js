@@ -116,7 +116,19 @@ const Register = () => {
       // The useEffect will handle the redirect when isAuthenticated becomes true
     } catch (error) {
       console.error('Registration error:', error);
-      setSubmitError(error.response?.data?.msg || 'Registration failed. Please try again.');
+      // Get the specific error message from backend
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+        errorMessage = error.response.data.errors[0];
+      } else if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
       setIsLoading(false);
     }
   };
