@@ -309,17 +309,19 @@ const LandingPage = () => {
       // Test 1: Backend health
       const healthResponse = await axios.get('https://smiling-steps.onrender.com/api/test');
       
-      // Test 2: Registration endpoint with direct URL
+      // Test 2: Registration endpoint with guaranteed unique email
       try {
+        const uniqueEmail = 'test' + Date.now() + '@example.com';
         const regResponse = await axios.post('https://smiling-steps.onrender.com/api/users/register', {
           name: 'Test User',
-          email: 'test' + Date.now() + '@example.com',
+          email: uniqueEmail,
           password: 'test123',
           role: 'client'
         });
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ✅ Registration: Works | Direct URL Test Passed`);
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ✅ Registration: Works | User created: ${uniqueEmail}`);
       } catch (regError) {
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} ${regError.response?.data?.message || regError.message}`);
+        const errorDetails = regError.response?.data?.message || regError.response?.data?.errors?.[0] || regError.message;
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} - ${errorDetails}`);
       }
     } catch (error) {
       setApiTestResult(`❌ Backend Error: ${error.message}`);

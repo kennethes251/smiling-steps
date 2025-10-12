@@ -160,7 +160,17 @@ export const AuthProvider = ({ children }) => {
         data: err.response?.data,
         message: err.message
       });
-      const errorMsg = err.response?.data?.msg || 'Registration failed';
+      
+      // Get specific error message from backend
+      let errorMsg = 'Registration failed';
+      if (err.response?.data?.message) {
+        errorMsg = err.response.data.message;
+      } else if (err.response?.data?.errors && err.response.data.errors.length > 0) {
+        errorMsg = err.response.data.errors[0];
+      } else if (err.response?.data?.msg) {
+        errorMsg = err.response.data.msg;
+      }
+      
       dispatch({ type: 'REGISTER_FAIL', payload: errorMsg });
       throw new Error(errorMsg);
     }
