@@ -1,7 +1,6 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import setAuthToken from '../utils/setAuthToken';
-import { API_ENDPOINTS } from '../config/api';
 
 // Initial State
 const initialState = {

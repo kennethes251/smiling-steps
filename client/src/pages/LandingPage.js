@@ -307,22 +307,22 @@ const LandingPage = () => {
     setApiTestResult('Testing...');
     try {
       // Test 1: Backend health
-      const healthResponse = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/test`);
+      const healthResponse = await axios.get('https://smiling-steps.onrender.com/api/test');
       
-      // Test 2: Registration endpoint
+      // Test 2: Registration endpoint with direct URL
       try {
-        const regResponse = await axios.post(`${API_ENDPOINTS.USERS}/register`, {
+        const regResponse = await axios.post('https://smiling-steps.onrender.com/api/users/register', {
           name: 'Test User',
           email: 'test' + Date.now() + '@example.com',
           password: 'test123',
           role: 'client'
         });
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | Registration: Works | API: ${API_ENDPOINTS.BASE_URL}`);
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ✅ Registration: Works | Direct URL Test Passed`);
       } catch (regError) {
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} ${regError.response?.data?.message || regError.message} | API: ${API_ENDPOINTS.BASE_URL}`);
+        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} ${regError.response?.data?.message || regError.message}`);
       }
     } catch (error) {
-      setApiTestResult(`❌ Backend Error: ${error.message} | Trying: ${API_ENDPOINTS.BASE_URL}/api/test`);
+      setApiTestResult(`❌ Backend Error: ${error.message}`);
     }
   };
 
@@ -502,7 +502,7 @@ const LandingPage = () => {
                     size="small"
                     sx={{ mt: 2, display: 'block', fontSize: '0.9rem' }}
                   >
-                    🧪 Test API Connection
+                    🧪 Test Registration Direct
                   </Button>
                   
                   {apiTestResult && (
