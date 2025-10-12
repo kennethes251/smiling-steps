@@ -7,15 +7,9 @@ import {
   Typography, 
   TextField, 
   Button, 
-  CircularProgress, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem,
-  Grid,
-  FormHelperText
+  CircularProgress,
+  Grid
 } from '@mui/material';
-import { Email as EmailIcon } from '@mui/icons-material';
 import Logo from '../components/Logo';
 
 const Register = () => {
@@ -32,8 +26,6 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -72,8 +64,8 @@ const Register = () => {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 4) {
-      newErrors.password = 'Password must be at least 4 characters';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
     
     // Role is automatically set to 'client' - no validation needed
@@ -104,16 +96,13 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role
+        role: formData.role,
+        skipVerification: true // Enable streamlined registration
       });
       
-      // Check if email verification is required
-      if (result.requiresVerification) {
-        setShowVerificationMessage(true);
-        setVerificationEmail(formData.email);
-        setIsLoading(false);
-      }
+      // For streamlined registration, user should be automatically logged in
       // The useEffect will handle the redirect when isAuthenticated becomes true
+      console.log('Streamlined registration successful:', result);
     } catch (error) {
       console.error('Registration error:', error);
       // Get the specific error message from backend
@@ -166,8 +155,11 @@ const Register = () => {
             Join Smiling Steps
           </Typography>
           
-          <Typography variant="body1" color="text.secondary" paragraph textAlign="center">
+          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
             Begin your healing journey with compassionate, professional support rooted in respect, empowerment, and hope.
+          </Typography>
+          <Typography variant="body2" color="primary.main" textAlign="center" sx={{ fontWeight: 500 }}>
+            Get instant access - no email verification required!
           </Typography>
         </Box>
         
@@ -177,37 +169,7 @@ const Register = () => {
           </Typography>
         )}
 
-        {showVerificationMessage ? (
-          <Box sx={{ textAlign: 'center', p: 3 }}>
-            <EmailIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom color="primary.main">
-              Check Your Email!
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              We've sent a verification link to:
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 3, color: 'primary.main' }}>
-              {verificationEmail}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Please click the verification link in your email to activate your account. 
-              You won't be able to login until your email is verified.
-            </Typography>
-            <Button 
-              variant="outlined" 
-              onClick={() => setShowVerificationMessage(false)}
-              sx={{ mr: 2 }}
-            >
-              Register Another Account
-            </Button>
-            <Button 
-              variant="contained" 
-              onClick={() => navigate('/login')}
-            >
-              Go to Login
-            </Button>
-          </Box>
-        ) : (
+
         
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
           <Grid container spacing={2}>
@@ -256,7 +218,7 @@ const Register = () => {
                 value={formData.password}
                 onChange={handleChange}
                 error={!!errors.password}
-                helperText={errors.password || 'At least 4 characters'}
+                helperText={errors.password || 'At least 6 characters'}
                 disabled={isLoading}
               />
             </Grid>
@@ -294,7 +256,6 @@ const Register = () => {
             </Typography>
           </Box>
         </Box>
-        )}
       </Box>
     </Container>
   );

@@ -19,7 +19,7 @@ try {
 
 // Validation middleware
 const validateRegisterInput = (req, res, next) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, skipVerification } = req.body;
   const errors = [];
 
   // Name validation
@@ -38,14 +38,19 @@ const validateRegisterInput = (req, res, next) => {
   if (!password) {
     errors.push('Password is required');
   } else {
-    if (password.length < 4) {
-      errors.push('Password must be at least 4 characters long');
+    if (password.length < 6) { // Increased to 6 characters for better security
+      errors.push('Password must be at least 6 characters long');
     }
   }
 
   // Role validation - only allow client registration from frontend
   if (role && !['client'].includes(role.toLowerCase())) {
     errors.push('Only client registration is allowed through this endpoint');
+  }
+
+  // Skip verification validation (optional boolean)
+  if (skipVerification !== undefined && typeof skipVerification !== 'boolean' && skipVerification !== 'true' && skipVerification !== 'false') {
+    errors.push('skipVerification must be a boolean value');
   }
 
   if (errors.length > 0) {
@@ -61,20 +66,28 @@ const validateRegisterInput = (req, res, next) => {
   req.body.email = email.toLowerCase().trim();
   req.body.role = 'client'; // Always set to client for frontend registration
 
+  // Convert skipVerification to boolean if it's a string
+  if (skipVerification === 'true') {
+    req.body.skipVerification = true;
+  } else if (skipVerification === 'false') {
+    req.body.skipVerification = false;
+  }
+
   next();
 };
 
 // @route   POST api/users/register
-// @desc    Register a user
+// @desc    Register a user (supports both streamlined and email verification flows)
 // @access  Public
 router.post('/register', validateRegisterInput, async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    
-    console.log('📝 Registration attempt:', { 
-      name, 
-      email, 
+    const { name, email, password, role, skipVerification } = req.body;
+
+    console.log('📝 Registration attempt:', {
+      name,
+      email,
       role,
+      skipVerification: !!skipVerification,
       origin: req.headers.origin,
       userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
     });
@@ -89,27 +102,33 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       });
     }
 
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Determine if this is a streamlined registration
+    const isStreamlined = skipVerification === true || skipVerification === 'true';
 
-    // Create and save user
-    const userPayload = {
+    let userPayload = {
       name,
       email,
       password,
       role,
-      isVerified: false,
-      verificationToken,
-      verificationTokenExpires
+      isVerified: isStreamlined, // Auto-verify for streamlined registration
+      lastLogin: Date.now()
     };
+
+    // Only add verification tokens for non-streamlined registration
+    if (!isStreamlined) {
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      userPayload.verificationToken = verificationToken;
+      userPayload.verificationTokenExpires = verificationTokenExpires;
+
+      // Send verification email (for now just log the token)
+      console.log('📧 Email verification token for', email, ':', verificationToken);
+      console.log('🔗 Verification URL: https://smiling-steps.netlify.app/verify-email?token=' + verificationToken);
+    }
 
     const user = new User(userPayload);
     await user.save();
-
-    // Send verification email (for now just log the token)
-    console.log('📧 Email verification token for', email, ':', verificationToken);
-    console.log('🔗 Verification URL: https://smiling-steps.netlify.app/verify-email?token=' + verificationToken);
 
     // Create JWT payload
     const payload = {
@@ -131,16 +150,28 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      lastLogin: user.lastLogin
+      lastLogin: user.lastLogin,
+      isVerified: user.isVerified
     };
 
-    // Return success response
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful! Please check your email to verify your account.',
-      requiresVerification: true,
-      user: userData
-    });
+    // Return appropriate response based on registration type
+    if (isStreamlined) {
+      console.log('✅ Streamlined registration successful for:', email);
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful! You are now logged in.',
+        token,
+        user: userData,
+        requiresVerification: false
+      });
+    } else {
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful! Please check your email to verify your account.',
+        user: userData,
+        requiresVerification: true
+      });
+    }
 
   } catch (err) {
     console.error('Registration error:', err);
@@ -183,7 +214,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 router.put('/session-rate', auth, async (req, res) => {
   try {
     const { sessionRate } = req.body;
-    
+
     // Validate input
     if (sessionRate < 0 || isNaN(sessionRate)) {
       return res.status(400).json({
@@ -233,7 +264,7 @@ router.put('/session-rate', auth, async (req, res) => {
 router.get('/verify-email/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    
+
     console.log('📧 Email verification attempt with token:', token);
 
     // Find user with this verification token
@@ -278,8 +309,8 @@ router.post('/login', loginRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('🔐 Login attempt:', { 
-      email, 
+    console.log('🔐 Login attempt:', {
+      email,
       hasPassword: !!password,
       origin: req.headers.origin,
       userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
@@ -491,9 +522,9 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 
     if (!user) {
       console.log('❌ User not found:', req.user.id);
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
@@ -505,7 +536,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
       'address', 'city', 'state', 'zipCode', 'country',
       'occupation', 'education', 'emergencyContact', 'emergencyPhone',
       'preferredTherapyType', 'preferredLanguage', 'timeZone',
-      'profileVisibility', 'emailNotifications', 'smsNotifications', 
+      'profileVisibility', 'emailNotifications', 'smsNotifications',
       'reminderNotifications', 'bio'
     ];
 
@@ -517,7 +548,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
         if (value === '' && ['gender', 'preferredTherapyType', 'profileVisibility'].includes(field)) {
           value = undefined;
         }
-        
+
         // Only update if value is not undefined after processing
         if (value !== undefined) {
           user[field] = value;
@@ -540,7 +571,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
     // Handle profile picture upload if file is provided
     if (req.file) {
       console.log('📸 Profile picture uploaded:', req.file.filename);
-      
+
       // Delete old profile picture if it exists
       if (user.profilePicture) {
         const oldImagePath = path.join(__dirname, '../uploads/profiles', path.basename(user.profilePicture));
@@ -549,7 +580,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
           console.log('🗑️ Old profile picture deleted');
         }
       }
-      
+
       // Set new profile picture path
       user.profilePicture = `/uploads/profiles/${req.file.filename}`;
       updatedFields.push('profilePicture');
@@ -594,17 +625,17 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
       lastLogin: user.lastLogin
     };
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Profile updated successfully',
-      user: userData 
+      user: userData
     });
 
   } catch (err) {
     console.error('❌ Profile update error:', err);
     console.error('Error name:', err.name);
     console.error('Error message:', err.message);
-    
+
     // Handle validation errors
     if (err.name === 'ValidationError') {
       console.error('Validation errors:', err.errors);
@@ -647,9 +678,9 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
@@ -671,7 +702,7 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
       'address', 'city', 'state', 'zipCode', 'country',
       'occupation', 'education', 'emergencyContact', 'emergencyPhone',
       'preferredTherapyType', 'preferredLanguage', 'timeZone',
-      'profileVisibility', 'emailNotifications', 'smsNotifications', 
+      'profileVisibility', 'emailNotifications', 'smsNotifications',
       'reminderNotifications', 'bio'
     ];
 
@@ -732,15 +763,15 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
       lastLogin: user.lastLogin
     };
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Profile updated successfully',
-      user: userData 
+      user: userData
     });
 
   } catch (err) {
     console.error('Profile update error:', err);
-    
+
     // Handle multer errors
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -750,7 +781,7 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
         });
       }
     }
-    
+
     // Handle validation errors
     if (err.name === 'ValidationError') {
       const errors = Object.values(err.errors).map(e => e.message);
@@ -783,10 +814,10 @@ router.get('/debug/users', async (req, res) => {
 router.get('/debug/reset', async (req, res) => {
   try {
     const deleteResult = await User.deleteMany({});
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: `Deleted ${deleteResult.deletedCount} users`,
-      deletedCount: deleteResult.deletedCount 
+      deletedCount: deleteResult.deletedCount
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -796,11 +827,11 @@ router.get('/debug/reset', async (req, res) => {
 // Temporary route to check psychologists without auth (remove in production)
 router.get('/debug/psychologists', async (req, res) => {
   try {
-    const psychologists = await User.find({ 
+    const psychologists = await User.find({
       role: 'psychologist',
-      'psychologistDetails.approvalStatus': 'approved' 
+      'psychologistDetails.approvalStatus': 'approved'
     }).select('name email role psychologistDetails');
-    
+
     res.json({
       success: true,
       count: psychologists.length,
@@ -880,13 +911,13 @@ router.get('/debug/create-test-users', async (req, res) => {
         // Create new user
         const user = new User(userData);
         await user.save();
-        
+
         createdUsers.push({
           name: userData.name,
           email: userData.email,
           role: userData.role
         });
-        
+
       } catch (error) {
         errors.push(`Error creating ${userData.email}: ${error.message}`);
       }
@@ -923,11 +954,11 @@ router.get('/clients', auth, async (req, res) => {
 router.get('/debug/test-session', async (req, res) => {
   try {
     const Session = require('../models/Session');
-    
+
     // Get first client and psychologist for testing
     const client = await User.findOne({ role: 'client' });
     const psychologist = await User.findOne({ role: 'psychologist' });
-    
+
     if (!client) {
       return res.status(400).json({ error: 'No client found' });
     }
@@ -945,8 +976,8 @@ router.get('/debug/test-session', async (req, res) => {
     });
 
     const savedSession = await testSession.save();
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Test session created successfully',
       session: savedSession,
       client: { name: client.name, email: client.email },
@@ -963,11 +994,11 @@ router.get('/debug/test-session', async (req, res) => {
 router.get('/:id', auth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
+
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
@@ -979,14 +1010,14 @@ router.get('/:id', auth, async (req, res) => {
   } catch (err) {
     console.error('Error fetching user:', err);
     if (err.name === 'CastError') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid user ID' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID'
       });
     }
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error while fetching user' 
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching user'
     });
   }
 });
@@ -997,7 +1028,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/create-psychologist', async (req, res) => {
   try {
     const { name, email, password, specializations, experience, education, bio } = req.body;
-    
+
     console.log('🔐 Creating psychologist account:', { name, email });
 
     // Validation
@@ -1062,7 +1093,7 @@ router.post('/create-psychologist', async (req, res) => {
 
   } catch (err) {
     console.error('Psychologist creation error:', err);
-    
+
     if (err.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -1092,11 +1123,11 @@ router.post('/create-psychologist', async (req, res) => {
 router.put('/profile/psychologist', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     if (!user || user.role !== 'psychologist') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. Only psychologists can update this profile.' 
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only psychologists can update this profile.'
       });
     }
 
@@ -1144,9 +1175,9 @@ router.put('/profile/psychologist', auth, async (req, res) => {
         errors
       });
     }
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error while updating profile' 
+    res.status(500).json({
+      success: false,
+      message: 'Server error while updating profile'
     });
   }
 });
@@ -1158,7 +1189,7 @@ router.put('/profile/psychologist', auth, async (req, res) => {
 router.put('/session-rate', auth, async (req, res) => {
   try {
     const { sessionRate } = req.body;
-    
+
     // Validation
     if (sessionRate < 0) {
       return res.status(400).json({

@@ -149,8 +149,14 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: 'REGISTER_PENDING_VERIFICATION', payload: res.data });
         return res.data;
       } else {
-        // Normal registration (for psychologists/admins)
-        dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
+        // Streamlined registration or pre-approved accounts
+        // User is immediately authenticated with token
+        if (res.data.token) {
+          dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
+        } else {
+          // Fallback for cases where token might not be provided
+          dispatch({ type: 'REGISTER_PENDING_VERIFICATION', payload: res.data });
+        }
         return res.data;
       }
     } catch (err) {
