@@ -73,7 +73,7 @@ const AdminCreatePsychologist = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post(`${API_ENDPOINTS.USERS}/create-psychologist`, formData);
+      const response = await axios.post('https://smiling-steps.onrender.com/api/users/create-psychologist', formData);
       
       if (response.data.success) {
         setSuccess(`✅ Psychologist account created successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}\n\nThe psychologist can now login and access their dashboard.`);
@@ -138,7 +138,7 @@ const AdminCreatePsychologist = () => {
 
       for (const psychologist of samplePsychologists) {
         try {
-          const response = await axios.post(`${API_ENDPOINTS.USERS}/create-psychologist`, psychologist);
+          const response = await axios.post('https://smiling-steps.onrender.com/api/users/create-psychologist', psychologist);
           if (response.data.success) {
             successCount++;
           }

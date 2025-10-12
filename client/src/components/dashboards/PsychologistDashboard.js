@@ -42,8 +42,8 @@ const PsychologistDashboard = () => {
       const config = { headers: { 'x-auth-token': token } };
       
       const [sessionsRes, clientsRes] = await Promise.all([
-        axios.get(`${API_ENDPOINTS.SESSIONS}`, config),
-        axios.get(`${API_ENDPOINTS.USERS}/clients`, config)
+        axios.get('https://smiling-steps.onrender.com/api/sessions', config),
+        axios.get('https://smiling-steps.onrender.com/api/users/clients', config)
       ]);
 
       const sortedSessions = sessionsRes.data.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
@@ -63,7 +63,7 @@ const PsychologistDashboard = () => {
       setClientAssessments(allClientAssessments);
 
       // Fetch current session rate
-      const profileRes = await axios.get(`${API_ENDPOINTS.USERS}/profile`, config);
+      const profileRes = await axios.get('https://smiling-steps.onrender.com/api/users/profile', config);
       setSessionRate(profileRes.data.sessionRate || 0);
 
     } catch (err) {
@@ -83,7 +83,7 @@ const PsychologistDashboard = () => {
       const config = { headers: { 'x-auth-token': token } };
       
       // Include psychologist's session rate in approval
-      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/approve`, {
+      await axios.put(`https://smiling-steps.onrender.com/api/sessions/${sessionId}/approve`, {
         sessionRate: user?.sessionRate || 0
       }, config);
       

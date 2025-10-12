@@ -46,10 +46,10 @@ const ClientDashboard = () => {
           psychologistsRes,
           companyRes
         ] = await Promise.all([
-          axios.get(`${API_ENDPOINTS.SESSIONS}`, config),
-          axios.get(`${API_ENDPOINTS.BASE_URL}/api/feedback/client`, config).catch(() => ({ data: [] })),
-          axios.get(`${API_ENDPOINTS.USERS}/psychologists`, config).catch(() => ({ data: { data: [] } })),
-          axios.get(`${API_ENDPOINTS.COMPANY}/my-company`, config).catch(() => ({ data: null }))
+          axios.get('https://smiling-steps.onrender.com/api/sessions', config),
+          axios.get('https://smiling-steps.onrender.com/api/feedback/client', config).catch(() => ({ data: [] })),
+          axios.get('https://smiling-steps.onrender.com/api/users/psychologists', config).catch(() => ({ data: { data: [] } })),
+          axios.get('https://smiling-steps.onrender.com/api/company/my-company', config).catch(() => ({ data: null }))
         ]);
 
         // Process sessions
@@ -157,7 +157,7 @@ const ClientDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       
-      await axios.put(`${API_ENDPOINTS.SESSIONS}/${paymentSession._id}/payment-sent`, {}, config);
+      await axios.put(`https://smiling-steps.onrender.com/api/sessions/${paymentSession._id}/payment-sent`, {}, config);
       
       // Update session status locally
       setSessions(prev => prev.map(s => 
