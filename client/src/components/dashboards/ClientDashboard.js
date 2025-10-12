@@ -92,10 +92,10 @@ const ClientDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      await axios.delete(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}`, config);
+      await axios.delete(`https://smiling-steps.onrender.com/api/sessions/${selectedSession._id}`, config);
 
       // Refresh sessions list after cancellation
-      const res = await axios.get(API_ENDPOINTS.SESSIONS, config);
+      const res = await axios.get('https://smiling-steps.onrender.com/api/sessions', config);
       const sortedSessions = res.data.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
       setSessions(sortedSessions);
       setCancelDialogOpen(false);
@@ -131,7 +131,7 @@ const ClientDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { sessionId: selectedSession._id, rating, comment };
-      await axios.post(`${API_ENDPOINTS.BASE_URL}/api/feedback`, body, config);
+      await axios.post('https://smiling-steps.onrender.com/api/feedback', body, config);
       alert('Feedback submitted successfully!');
       setSubmittedFeedback([...submittedFeedback, selectedSession._id]);
       handleFeedbackClose();

@@ -51,7 +51,7 @@ const PsychologistDashboard = () => {
       
       const clientIds = clientsRes.data.map(client => client._id);
       const assessmentPromises = clientIds.map(clientId => 
-        axios.get(`${API_ENDPOINTS.BASE_URL}/api/assessments/results/client/${clientId}`, config)
+        axios.get(`https://smiling-steps.onrender.com/api/assessments/results/client/${clientId}`, config)
           .catch(err => ({ data: [] }))
       );
       
@@ -120,7 +120,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { meetingLink };
-      const res = await axios.put(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}/link`, body, config);
+      const res = await axios.put(`https://smiling-steps.onrender.com/api/sessions/${selectedSession._id}/link`, body, config);
       setSessions(prev => prev.map(s => s._id === selectedSession._id ? res.data : s));
       alert('Meeting link updated!');
       handleCloseLinkDialog();
@@ -151,7 +151,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       const body = { sessionNotes, sessionProof };
-      const res = await axios.post(`${API_ENDPOINTS.SESSIONS}/${selectedSession._id}/complete`, body, config);
+      const res = await axios.post(`https://smiling-steps.onrender.com/api/sessions/${selectedSession._id}/complete`, body, config);
       setSessions(prev => prev.map(s => s._id === selectedSession._id ? res.data : s));
       alert('Session marked as complete!');
       handleCloseCompleteDialog();
@@ -179,7 +179,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       
-      await axios.put(`${API_ENDPOINTS.SESSIONS}/${sessionId}/link`, {
+      await axios.put(`https://smiling-steps.onrender.com/api/sessions/${sessionId}/link`, {
         meetingLink: videoCallLink
       }, config);
       
@@ -203,7 +203,7 @@ const PsychologistDashboard = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
       
-      await axios.put(`${API_ENDPOINTS.USERS}/session-rate`, {
+      await axios.put('https://smiling-steps.onrender.com/api/users/session-rate', {
         sessionRate: parseFloat(newRate)
       }, config);
       

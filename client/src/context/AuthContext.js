@@ -130,16 +130,6 @@ export const AuthProvider = ({ children }) => {
   // Register User
   const register = async (userData) => {
     try {
-      console.log('Sending registration request with:', {
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        password: userData.password ? '[HIDDEN]' : 'MISSING'
-      });
-      
-      console.log('🔍 Full registration URL:', `${API_ENDPOINTS.USERS}/register`);
-      console.log('🔍 API_ENDPOINTS.USERS:', API_ENDPOINTS.USERS);
-      
       const config = {
         headers: {
           'Content-Type': 'application/json'
@@ -147,7 +137,7 @@ export const AuthProvider = ({ children }) => {
       };
       
       const res = await axios.post(
-        `${API_ENDPOINTS.USERS}/register`, 
+        'https://smiling-steps.onrender.com/api/users/register', 
         userData,
         config
       );
@@ -180,19 +170,14 @@ export const AuthProvider = ({ children }) => {
   // Login User
   const login = async (email, password) => {
     try {
-      console.log('Attempting login for email:', email);
-      
       const config = {
         headers: {
           'Content-Type': 'application/json'
         }
       };
       
-      console.log('Sending login request to /api/users/login');
-      console.log('🔍 Full login URL:', `${API_ENDPOINTS.USERS}/login`);
-      console.log('🔍 API_ENDPOINTS.USERS:', API_ENDPOINTS.USERS);
       const res = await axios.post(
-        `${API_ENDPOINTS.USERS}/login`, 
+        'https://smiling-steps.onrender.com/api/users/login', 
         { email, password }, 
         config
       );
@@ -235,7 +220,7 @@ export const AuthProvider = ({ children }) => {
       setAuthToken(token);
       
       try {
-        const userRes = await axios.get(`${API_ENDPOINTS.AUTH}`);
+        const userRes = await axios.get('https://smiling-steps.onrender.com/api/auth');
         const userData = userRes.data;
         
         // If we got user data, consider the login successful

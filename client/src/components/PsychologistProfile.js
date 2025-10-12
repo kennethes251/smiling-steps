@@ -99,7 +99,7 @@ const PsychologistProfile = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      await axios.put('http://localhost:5000/api/users/profile/psychologist', profile, config);
+      await axios.put('https://smiling-steps.onrender.com/api/users/profile/psychologist', profile, config);
 
       setSuccess('Profile updated successfully!');
       setEditMode(false);
@@ -143,9 +143,9 @@ const PsychologistProfile = () => {
 
         // Try upload endpoint first, fallback to showing message if not available
         try {
-          const response = await axios.put('http://localhost:5000/api/users/profile/upload', formData, config);
+          const response = await axios.put('https://smiling-steps.onrender.com/api/users/profile/upload', formData, config);
           if (response.data.success && response.data.user.profilePicture) {
-            handleInputChange('profilePictureUrl', `http://localhost:5000${response.data.user.profilePicture}`);
+            handleInputChange('profilePictureUrl', `https://smiling-steps.onrender.com${response.data.user.profilePicture}`);
             setSuccess('Profile picture updated successfully!');
           }
         } catch (uploadError) {
