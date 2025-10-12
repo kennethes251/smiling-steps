@@ -70,7 +70,7 @@ const TherapistsPage = () => {
   const fetchTherapists = async () => {
     try {
       console.log('🔍 Fetching therapists from API...');
-      const response = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
+      const response = await axios.get('https://smiling-steps.onrender.com/api/public/psychologists');
       console.log('✅ API Response:', response.data);
       console.log('📊 Number of therapists:', response.data?.length || 0);
       setTherapists(response.data || []);

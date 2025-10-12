@@ -102,7 +102,7 @@ export const AuthProvider = ({ children }) => {
         if (token) {
           setAuthToken(token);
           try {
-            const res = await axios.get(`${API_ENDPOINTS.AUTH}`);
+            const res = await axios.get('https://smiling-steps.onrender.com/api/auth');
             dispatch({ 
               type: 'USER_LOADED', 
               payload: res.data 

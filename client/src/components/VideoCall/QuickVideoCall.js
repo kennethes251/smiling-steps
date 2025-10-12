@@ -65,7 +65,7 @@ const QuickVideoCall = ({ open, onClose, session = null, psychologists = [] }) =
       // Generate a meeting link for the session
       const meetingLink = `${window.location.origin}/video-call/${session._id}`;
       
-      await axios.put(`${API_ENDPOINTS.SESSIONS}/${session._id}/link`, {
+      await axios.put(`https://smiling-steps.onrender.com/api/sessions/${session._id}/link`, {
         meetingLink
       }, {
         headers: { 'x-auth-token': token }

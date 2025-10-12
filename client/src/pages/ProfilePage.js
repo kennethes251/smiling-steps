@@ -215,7 +215,7 @@ const ProfilePage = () => {
           }
         });
 
-        const response = await axios.put(`${API_ENDPOINTS.USERS}/profile`, formDataWithFile, {
+        const response = await axios.put('https://smiling-steps.onrender.com/api/users/profile', formDataWithFile, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -259,7 +259,7 @@ const ProfilePage = () => {
       }
 
       // For JSON-only updates (no file upload)
-      const response = await axios.put(`${API_ENDPOINTS.USERS}/profile`, cleanedFormData, {
+      const response = await axios.put('https://smiling-steps.onrender.com/api/users/profile', cleanedFormData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

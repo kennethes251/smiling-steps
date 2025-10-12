@@ -38,7 +38,7 @@ const EmailVerification = () => {
     try {
       setStatus('verifying');
       
-      const response = await axios.get(`${API_ENDPOINTS.USERS}/verify-email/${token}`);
+      const response = await axios.get(`https://smiling-steps.onrender.com/api/users/verify-email/${token}`);
       
       if (response.data.success) {
         setStatus('success');

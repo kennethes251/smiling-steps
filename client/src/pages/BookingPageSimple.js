@@ -137,7 +137,7 @@ const BookingPageSimple = () => {
       console.log('📤 Sending booking data:', bookingData);
       console.log('🔑 Auth config:', config);
 
-      const response = await axios.post(`${API_ENDPOINTS.SESSIONS}`, bookingData, config);
+      const response = await axios.post('https://smiling-steps.onrender.com/api/sessions', bookingData, config);
       
       if (response.status === 200) {
         setConfirmDialogOpen(false);
@@ -179,7 +179,7 @@ const BookingPageSimple = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
+      const res = await axios.get('https://smiling-steps.onrender.com/api/public/psychologists');
       // The public endpoint returns data directly (not wrapped in success object)
       const psychologists = res.data || [];
       

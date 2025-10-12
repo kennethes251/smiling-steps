@@ -81,7 +81,7 @@ const VideoCallRoom = () => {
       
       // Fetch session details
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_ENDPOINTS.SESSIONS}/${sessionId}`, {
+      const response = await axios.get(`https://smiling-steps.onrender.com/api/sessions/${sessionId}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -224,7 +224,7 @@ const VideoCallRoom = () => {
       // Mark session as completed if psychologist
       if (user.role === 'psychologist' && session) {
         const token = localStorage.getItem('token');
-        await axios.post(`${API_ENDPOINTS.SESSIONS}/${sessionId}/complete`, {
+        await axios.post(`https://smiling-steps.onrender.com/api/sessions/${sessionId}/complete`, {
           sessionNotes: sessionNotes || 'Video call completed successfully'
         }, {
           headers: { 'x-auth-token': token }
@@ -268,7 +268,7 @@ const VideoCallRoom = () => {
   const saveSessionNotes = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_ENDPOINTS.SESSIONS}/${sessionId}/complete`, {
+      await axios.post(`https://smiling-steps.onrender.com/api/sessions/${sessionId}/complete`, {
         sessionNotes
       }, {
         headers: { 'x-auth-token': token }
