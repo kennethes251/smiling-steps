@@ -58,42 +58,38 @@ app.use((req, res, next) => {
 const startServer = async () => {
   const sequelize = await connectDB();
 
-  // Initialize Models and get them
-  const models = require('./models/index')(sequelize);
+  // Initialize only the User model for now
+  const { DataTypes } = require('sequelize');
+  const User = require('./models/User')(sequelize, DataTypes);
   
-  // Make models globally available
-  global.db = models;
+  // Make User model globally available
+  global.User = User;
   
   // Sync database (create tables if they don't exist)
   await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-  console.log('✅ Database tables synchronized');
+  console.log('✅ PostgreSQL connected and User table synchronized');
 
-  // Define Routes
+  // Define Routes - Only load routes that work with PostgreSQL User model
   console.log('Loading routes...');
   app.use('/api/auth', require('./routes/auth'));
   console.log('  ✅ auth routes loaded.');
-  app.use('/api/chat', require('./routes/chat'));
-  console.log('  ✅ chat routes loaded.');
-  app.use('/api/users', require('./routes/users').default);
+  app.use('/api/users', require('./routes/users'));
   console.log('  ✅ users routes loaded.');
-  app.use('/api/sessions', require('./routes/sessions'));
-  console.log('  ✅ sessions routes loaded.');
-  app.use('/api/assessments', require('./routes/assessments'));
-  console.log('  ✅ assessments routes loaded.');
-  const feedbackRoutes = require('./routes/feedback');
-  app.use('/api/feedback', feedbackRoutes);
-  console.log('  ✅ feedback routes loaded.');
-  app.use('/api/checkins', require('./routes/checkins'));
-  console.log('  ✅ checkins routes loaded.');
-  app.use('/api/admin', require('./routes/admin'));
-  console.log('  ✅ admin routes loaded.');
   app.use('/api/upload', require('./routes/upload'));
   console.log('  ✅ upload routes loaded.');
-  app.use('/api/company', require('./routes/company'));
-  console.log('  ✅ company routes loaded.');
-  app.use('/api/public', require('./routes/public'));
-  console.log('  ✅ public routes loaded.');
-  console.log('All routes loaded successfully.');
+  
+  // Temporarily disabled routes (need model conversion):
+  // app.use('/api/chat', require('./routes/chat'));
+  // app.use('/api/sessions', require('./routes/sessions'));
+  // app.use('/api/assessments', require('./routes/assessments'));
+  // app.use('/api/feedback', require('./routes/feedback'));
+  // app.use('/api/checkins', require('./routes/checkins'));
+  // app.use('/api/admin', require('./routes/admin'));
+  // app.use('/api/company', require('./routes/company'));
+  // app.use('/api/public', require('./routes/public'));
+  
+  console.log('✅ Core routes loaded (auth, users, upload)');
+  console.log('⚠️  Other routes temporarily disabled pending model conversion');
 
   // Basic Route
   app.get('/', (req, res) => {
