@@ -10,6 +10,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ApiTest from './components/ApiTest';
+import AuthTest from './components/AuthTest';
 import LandingPage from './pages/LandingPage';
 import Login from './components/auth/Login';
 import Register from './pages/Register';
@@ -51,6 +52,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/verify-email" element={<EmailVerification />} />
             <Route path="/api-test" element={<ApiTest />} />
+            <Route path="/auth-test" element={<AuthTest />} />
             
             {/* Protected Routes */}
             <Route path="/psychologist-dashboard" element={<PrivateRoute roles={['psychologist']}><PsychologistDashboard /></PrivateRoute>} />

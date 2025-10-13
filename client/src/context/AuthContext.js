@@ -1,6 +1,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import setAuthToken from '../utils/setAuthToken';
+import { API_ENDPOINTS } from '../config/api';
 
 // Initial State
 const initialState = {
@@ -136,7 +137,7 @@ export const AuthProvider = ({ children }) => {
       };
       
       const res = await axios.post(
-        'https://smiling-steps.onrender.com/api/users/register', 
+        `${API_ENDPOINTS.USERS}/register`, 
         userData,
         config
       );
@@ -192,7 +193,7 @@ export const AuthProvider = ({ children }) => {
       };
       
       const res = await axios.post(
-        'https://smiling-steps.onrender.com/api/users/login', 
+        `${API_ENDPOINTS.USERS}/login`, 
         { email, password }, 
         config
       );
@@ -235,7 +236,7 @@ export const AuthProvider = ({ children }) => {
       setAuthToken(token);
       
       try {
-        const userRes = await axios.get('https://smiling-steps.onrender.com/api/auth');
+        const userRes = await axios.get(API_ENDPOINTS.AUTH);
         const userData = userRes.data;
         
         // If we got user data, consider the login successful

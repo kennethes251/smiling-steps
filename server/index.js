@@ -1,17 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
+const connectDB = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration
+// CORS Configuration - Render only
 const corsOptions = {
   origin: [
     'http://localhost:3000',
-    'https://smiling-steps.netlify.app',
-    'https://smiling-steps.onrender.com',
     'https://smiling-steps-frontend.onrender.com'
   ],
   credentials: true,
@@ -21,13 +19,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Additional CORS headers for frontend deployments
+// Additional CORS headers for Render deployment
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
     'http://localhost:3000',
-    'https://smiling-steps.netlify.app',
-    'https://smiling-steps.onrender.com',
     'https://smiling-steps-frontend.onrender.com'
   ];
   
@@ -59,39 +55,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
-const connectDB = async () => {
-  if (!process.env.MONGODB_URI) {
-    console.error('FATAL ERROR: MONGODB_URI is not defined in .env file.');
-    process.exit(1);
-  }
-
-  try {
-    console.log('Attempting to connect to MongoDB...');
-    await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000, // Increased timeout
-    });
-    console.log('✅ MongoDB connected successfully.');
-  } catch (err) {
-    console.error('❌ MongoDB connection failed. Please check your connection string and network access.');
-    console.error('Error details:', JSON.stringify(err, null, 2));
-    // Use a timeout to ensure logs are written before exiting
-    setTimeout(() => process.exit(1), 1000);
-  }
-};
-
 const startServer = async () => {
-  await connectDB();
+  const sequelize = await connectDB();
 
-  // Load Models
-  require('./models/User');
-  require('./models/Session');
-  require('./models/Assessment');
-  require('./models/AssessmentResult');
-  require('./models/Feedback');
-  require('./models/CheckIn');
-  require('./models/Blog');
-  require('./models/Resource');
+  // Initialize Models and get them
+  const models = require('./models/index')(sequelize);
+  
+  // Make models globally available
+  global.db = models;
+  
+  // Sync database (create tables if they don't exist)
+  await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+  console.log('✅ Database tables synchronized');
 
   // Define Routes
   console.log('Loading routes...');
@@ -99,7 +74,7 @@ const startServer = async () => {
   console.log('  ✅ auth routes loaded.');
   app.use('/api/chat', require('./routes/chat'));
   console.log('  ✅ chat routes loaded.');
-  app.use('/api/users', require('./routes/users'));
+  app.use('/api/users', require('./routes/users').default);
   console.log('  ✅ users routes loaded.');
   app.use('/api/sessions', require('./routes/sessions'));
   console.log('  ✅ sessions routes loaded.');

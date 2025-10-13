@@ -1,13 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const validator = require('validator');
-const crypto = require('crypto');
+import { Router } from 'express';
+const router = Router();
+import bcrypt from 'bcryptjs';
+import { sign } from 'jsonwebtoken';
+import { isEmail } from 'validator';
+import { randomBytes, createHash } from 'crypto';
 // Use simple rate limiter to avoid 429 errors
-const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
-const { auth } = require('../middleware/auth');
-const User = require('../models/User');
+import { loginRateLimiter } from '../middleware/rateLimiter.simple';
+import { auth } from '../middleware/auth';
+import User, { findOne, findById, failedLogin, find, deleteMany, findByIdAndUpdate } from '../models/User';
 // Try email utility, fallback to simple one
 let sendEmail;
 try {
@@ -30,7 +30,7 @@ const validateRegisterInput = (req, res, next) => {
   }
 
   // Email validation
-  if (!email || !validator.isEmail(email)) {
+  if (!email || !isEmail(email)) {
     errors.push('Please provide a valid email address');
   }
 
@@ -93,7 +93,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     });
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -116,7 +116,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 
     // Only add verification tokens for non-streamlined registration
     if (!isStreamlined) {
-      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationToken = randomBytes(32).toString('hex');
       const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       userPayload.verificationToken = verificationToken;
@@ -138,7 +138,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       }
     };
 
-    const token = jwt.sign(
+    const token = sign(
       payload,
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
@@ -224,7 +224,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findById(req.user.id);
+    const user = await findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -268,7 +268,7 @@ router.get('/verify-email/:token', async (req, res) => {
     console.log('📧 Email verification attempt with token:', token);
 
     // Find user with this verification token
-    const user = await User.findOne({
+    const user = await findOne({
       verificationToken: token,
       verificationTokenExpires: { $gt: Date.now() }
     });
@@ -327,7 +327,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     }
 
     // Find user by email (case-insensitive)
-    const user = await User.findOne({ email: email.toLowerCase().trim() })
+    const user = await findOne({ email: email.toLowerCase().trim() })
       .select('+password +loginAttempts +lockUntil');
 
     // Check if user exists
@@ -353,7 +353,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     const isMatch = await user.correctPassword(password);
     if (!isMatch) {
       // Increment failed login attempts
-      await User.failedLogin(user._id);
+      await failedLogin(user._id);
 
       return res.status(400).json({
         success: false,
@@ -386,7 +386,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       }
     };
 
-    const token = jwt.sign(
+    const token = sign(
       payload,
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
@@ -445,9 +445,9 @@ router.get('/approve/:token', async (req, res) => {
       return res.status(400).send('<h1>Invalid Request</h1><p>The link is incomplete. Please check the URL and try again.</p>');
     }
 
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const hashedToken = createHash('sha256').update(token).digest('hex');
 
-    const user = await User.findOne({
+    const user = await findOne({
       _id: id,
       'psychologistDetails.approvalToken': hashedToken,
       'psychologistDetails.approvalTokenExpires': { $gt: Date.now() }
@@ -473,23 +473,23 @@ router.get('/approve/:token', async (req, res) => {
 });
 
 // File upload configuration
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import multer, { diskStorage, MulterError } from 'multer';
+import { join, extname, basename } from 'path';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads/profiles');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+const uploadsDir = join(__dirname, '../uploads/profiles');
+if (!existsSync(uploadsDir)) {
+  mkdirSync(uploadsDir, { recursive: true });
 }
 
-const storage = multer.diskStorage({
+const storage = diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadsDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'profile-' + uniqueSuffix + extname(file.originalname));
   }
 });
 
@@ -518,7 +518,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
     console.log('👤 User ID:', req.user.id);
     console.log('📝 Request body:', req.body);
 
-    const user = await User.findById(req.user.id);
+    const user = await findById(req.user.id);
 
     if (!user) {
       console.log('❌ User not found:', req.user.id);
@@ -574,9 +574,9 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 
       // Delete old profile picture if it exists
       if (user.profilePicture) {
-        const oldImagePath = path.join(__dirname, '../uploads/profiles', path.basename(user.profilePicture));
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+        const oldImagePath = join(__dirname, '../uploads/profiles', basename(user.profilePicture));
+        if (existsSync(oldImagePath)) {
+          unlinkSync(oldImagePath);
           console.log('🗑️ Old profile picture deleted');
         }
       }
@@ -675,7 +675,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 // @access  Private
 router.put('/profile/upload', auth, upload.single('profilePicture'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -688,9 +688,9 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
     if (req.file) {
       // Delete old profile picture if it exists
       if (user.profilePicture) {
-        const oldImagePath = path.join(__dirname, '../uploads/profiles', path.basename(user.profilePicture));
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
+        const oldImagePath = join(__dirname, '../uploads/profiles', basename(user.profilePicture));
+        if (existsSync(oldImagePath)) {
+          unlinkSync(oldImagePath);
         }
       }
       user.profilePicture = `/uploads/profiles/${req.file.filename}`;
@@ -773,7 +773,7 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
     console.error('Profile update error:', err);
 
     // Handle multer errors
-    if (err instanceof multer.MulterError) {
+    if (err instanceof MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           success: false,
@@ -803,7 +803,7 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
 // Temporary route to check users (remove in production)
 router.get('/debug/users', async (req, res) => {
   try {
-    const users = await User.find({}).select('name email role createdAt');
+    const users = await find({}).select('name email role createdAt');
     res.json({ users, count: users.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -813,7 +813,7 @@ router.get('/debug/users', async (req, res) => {
 // Temporary route to reset database (remove in production)
 router.get('/debug/reset', async (req, res) => {
   try {
-    const deleteResult = await User.deleteMany({});
+    const deleteResult = await deleteMany({});
     res.json({
       success: true,
       message: `Deleted ${deleteResult.deletedCount} users`,
@@ -827,7 +827,7 @@ router.get('/debug/reset', async (req, res) => {
 // Temporary route to check psychologists without auth (remove in production)
 router.get('/debug/psychologists', async (req, res) => {
   try {
-    const psychologists = await User.find({
+    const psychologists = await find({
       role: 'psychologist',
       'psychologistDetails.approvalStatus': 'approved'
     }).select('name email role psychologistDetails');
@@ -902,7 +902,7 @@ router.get('/debug/create-test-users', async (req, res) => {
     for (const userData of testUsers) {
       try {
         // Check if user already exists
-        const existingUser = await User.findOne({ email: userData.email });
+        const existingUser = await findOne({ email: userData.email });
         if (existingUser) {
           errors.push(`User ${userData.email} already exists`);
           continue;
@@ -943,7 +943,7 @@ router.get('/debug/create-test-users', async (req, res) => {
 // Temporary route to get clients (remove in production)
 router.get('/clients', auth, async (req, res) => {
   try {
-    const clients = await User.find({ role: 'client' }).select('name email role createdAt');
+    const clients = await find({ role: 'client' }).select('name email role createdAt');
     res.json(clients);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -956,8 +956,8 @@ router.get('/debug/test-session', async (req, res) => {
     const Session = require('../models/Session');
 
     // Get first client and psychologist for testing
-    const client = await User.findOne({ role: 'client' });
-    const psychologist = await User.findOne({ role: 'psychologist' });
+    const client = await findOne({ role: 'client' });
+    const psychologist = await findOne({ role: 'psychologist' });
 
     if (!client) {
       return res.status(400).json({ error: 'No client found' });
@@ -993,7 +993,7 @@ router.get('/debug/test-session', async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await findById(req.params.id).select('-password');
 
     if (!user) {
       return res.status(404).json({
@@ -1046,7 +1046,7 @@ router.post('/create-psychologist', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    const existingUser = await findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -1122,7 +1122,7 @@ router.post('/create-psychologist', async (req, res) => {
 // @access  Private (Psychologist only)
 router.put('/profile/psychologist', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await findById(req.user.id);
 
     if (!user || user.role !== 'psychologist') {
       return res.status(403).json({
@@ -1153,7 +1153,7 @@ router.put('/profile/psychologist', auth, async (req, res) => {
     if (education !== undefined) updateData['psychologistDetails.education'] = education;
     if (languages !== undefined) updateData['psychologistDetails.languages'] = languages;
 
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedUser = await findByIdAndUpdate(
       req.user.id,
       { $set: updateData },
       { new: true, runValidators: true }
@@ -1199,7 +1199,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findById(req.user.id);
+    const user = await findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1236,4 +1236,4 @@ router.put('/session-rate', auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

@@ -1,25 +1,25 @@
 // API Configuration
 // Detect environment and set appropriate API URL
-const isProduction = process.env.NODE_ENV === 'production' || 
-                    window.location.hostname.includes('netlify') || 
-                    window.location.hostname.includes('onrender.com');
-const isDevelopment = window.location.hostname === 'localhost';
+const isLocalhost = window.location.hostname === 'localhost' || 
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.hostname === '0.0.0.0';
+
+const isRenderFrontend = window.location.hostname.includes('smiling-steps-frontend.onrender.com');
 
 let API_BASE_URL;
 
-if (isProduction) {
-  API_BASE_URL = 'https://smiling-steps.onrender.com';
-} else if (isDevelopment) {
+if (isLocalhost) {
+  // Local development - use local backend
   API_BASE_URL = 'http://localhost:5000';
 } else {
-  // Fallback to Render for any other case
+  // Production on Render - use production backend
   API_BASE_URL = 'https://smiling-steps.onrender.com';
 }
 
 console.log('🌐 API Configuration:', {
   hostname: window.location.hostname,
-  isProduction,
-  isDevelopment,
+  isLocalhost,
+  isRenderFrontend,
   API_BASE_URL,
   NODE_ENV: process.env.NODE_ENV,
   REACT_APP_API_URL: process.env.REACT_APP_API_URL
