@@ -478,9 +478,9 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure uploads directory exists
-const uploadsDir = join(__dirname, '../uploads/profiles');
-if (!existsSync(uploadsDir)) {
-  mkdirSync(uploadsDir, { recursive: true });
+const uploadsDir = path.join(__dirname, '../uploads/profiles');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 const storage = diskStorage({
@@ -489,7 +489,7 @@ const storage = diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'profile-' + uniqueSuffix + extname(file.originalname));
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
@@ -574,9 +574,9 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 
       // Delete old profile picture if it exists
       if (user.profilePicture) {
-        const oldImagePath = join(__dirname, '../uploads/profiles', basename(user.profilePicture));
-        if (existsSync(oldImagePath)) {
-          unlinkSync(oldImagePath);
+        const oldImagePath = path.join(__dirname, '../uploads/profiles', path.basename(user.profilePicture));
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
           console.log('🗑️ Old profile picture deleted');
         }
       }
@@ -688,9 +688,9 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
     if (req.file) {
       // Delete old profile picture if it exists
       if (user.profilePicture) {
-        const oldImagePath = join(__dirname, '../uploads/profiles', basename(user.profilePicture));
-        if (existsSync(oldImagePath)) {
-          unlinkSync(oldImagePath);
+        const oldImagePath = path.join(__dirname, '../uploads/profiles', path.basename(user.profilePicture));
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
         }
       }
       user.profilePicture = `/uploads/profiles/${req.file.filename}`;
