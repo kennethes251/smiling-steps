@@ -1,9 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
-const Blog = require('../models/Blog');
-const Resource = require('../models/Resource');
-const Session = require('../models/Session');
+const User = global.User; // Use global Sequelize User model
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,8 +9,8 @@ const router = express.Router();
 const adminAuth = async (req, res, next) => {
   try {
     console.log('🔍 Admin auth check - User ID:', req.user?.id);
-    const user = await User.findById(req.user.id);
-    console.log('👤 Found user:', { id: user?._id, email: user?.email, role: user?.role });
+    const user = await User.findByPk(req.user.id);
+    console.log('👤 Found user:', { id: user?.id, email: user?.email, role: user?.role });
     
     if (!user) {
       console.log('❌ User not found');

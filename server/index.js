@@ -69,7 +69,7 @@ const startServer = async () => {
   await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
   console.log('✅ PostgreSQL connected and User table synchronized');
 
-  // Define Routes - Only load routes that work with PostgreSQL User model
+  // Define Routes
   console.log('Loading routes...');
   app.use('/api/auth', require('./routes/auth'));
   console.log('  ✅ auth routes loaded.');
@@ -77,6 +77,10 @@ const startServer = async () => {
   console.log('  ✅ users routes loaded.');
   app.use('/api/upload', require('./routes/upload'));
   console.log('  ✅ upload routes loaded.');
+  app.use('/api/admin', require('./routes/admin'));
+  console.log('  ✅ admin routes loaded.');
+  app.use('/api/public', require('./routes/public'));
+  console.log('  ✅ public routes loaded.');
   
   // Temporarily disabled routes (need model conversion):
   // app.use('/api/chat', require('./routes/chat'));
@@ -84,12 +88,10 @@ const startServer = async () => {
   // app.use('/api/assessments', require('./routes/assessments'));
   // app.use('/api/feedback', require('./routes/feedback'));
   // app.use('/api/checkins', require('./routes/checkins'));
-  // app.use('/api/admin', require('./routes/admin'));
   // app.use('/api/company', require('./routes/company'));
-  // app.use('/api/public', require('./routes/public'));
   
-  console.log('✅ Core routes loaded (auth, users, upload)');
-  console.log('⚠️  Other routes temporarily disabled pending model conversion');
+  console.log('✅ Core routes loaded (auth, users, upload, admin, public)');
+  console.log('⚠️  Session/assessment routes temporarily disabled');
 
   // Basic Route
   app.get('/', (req, res) => {
