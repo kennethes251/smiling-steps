@@ -58,16 +58,24 @@ app.use((req, res, next) => {
 const startServer = async () => {
   const sequelize = await connectDB();
 
-  // Initialize only the User model for now
+  // Initialize models
   const { DataTypes } = require('sequelize');
   const User = require('./models/User')(sequelize, DataTypes);
+  const Session = require('./models/Session-sequelize')(sequelize, DataTypes);
   
-  // Make User model globally available
+  // Define associations
+  User.hasMany(Session, { foreignKey: 'clientId', as: 'clientSessions' });
+  User.hasMany(Session, { foreignKey: 'psychologistId', as: 'psychologistSessions' });
+  Session.belongsTo(User, { foreignKey: 'clientId', as: 'client' });
+  Session.belongsTo(User, { foreignKey: 'psychologistId', as: 'psychologist' });
+  
+  // Make models globally available
   global.User = User;
+  global.Session = Session;
   
   // Sync database (create tables if they don't exist)
   await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-  console.log('✅ PostgreSQL connected and User table synchronized');
+  console.log('✅ PostgreSQL connected and tables synchronized');
 
   // Define Routes
   console.log('Loading routes...');
@@ -81,17 +89,18 @@ const startServer = async () => {
   console.log('  ✅ admin routes loaded.');
   app.use('/api/public', require('./routes/public'));
   console.log('  ✅ public routes loaded.');
+  app.use('/api/sessions', require('./routes/sessions'));
+  console.log('  ✅ sessions routes loaded.');
   
   // Temporarily disabled routes (need model conversion):
   // app.use('/api/chat', require('./routes/chat'));
-  // app.use('/api/sessions', require('./routes/sessions'));
   // app.use('/api/assessments', require('./routes/assessments'));
   // app.use('/api/feedback', require('./routes/feedback'));
   // app.use('/api/checkins', require('./routes/checkins'));
   // app.use('/api/company', require('./routes/company'));
   
-  console.log('✅ Core routes loaded (auth, users, upload, admin, public)');
-  console.log('⚠️  Session/assessment routes temporarily disabled');
+  console.log('✅ Core routes loaded (auth, users, upload, admin, public, sessions)');
+  console.log('⚠️  Assessment/chat routes temporarily disabled');
 
   // Basic Route
   app.get('/', (req, res) => {

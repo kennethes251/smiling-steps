@@ -33,48 +33,85 @@ const adminAuth = async (req, res, next) => {
 // Dashboard Statistics
 router.get('/stats', auth, adminAuth, async (req, res) => {
   try {
-    const [totalUsers, totalPsychologists, totalSessions, totalBlogs, totalResources, completedSessions] = await Promise.all([
-      User.countDocuments({ role: 'client' }),
-      User.countDocuments({ role: 'psychologist' }),
-      Session.countDocuments(),
-      Blog.countDocuments(),
-      Resource.countDocuments(),
-      Session.countDocuments({ status: 'Completed' })
-    ]);
-
+    const { Op } = require('sequelize');
+    const Session = global.Session;
+    
+    // Count users
+    const totalClients = await User.count({ where: { role: 'client' } });
+    const totalPsychologists = await User.count({ where: { role: 'psychologist' } });
+    const totalSessions = Session ? await Session.count() : 0;
+    
     // Recent activity (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const recentStats = await Promise.all([
-      User.countDocuments({ 
-        createdAt: { $gte: thirtyDaysAgo },
+    const recentClients = await User.count({ 
+      where: { 
+        createdAt: { [Op.gte]: thirtyDaysAgo },
         role: 'client'
-      }),
-      Session.countDocuments({ 
-        createdAt: { $gte: thirtyDaysAgo }
-      }),
-      Blog.countDocuments({ 
-        createdAt: { $gte: thirtyDaysAgo }
-      })
-    ]);
+      }
+    });
+
+    const completedSessions = Session ? await Session.count({ 
+      where: { status: 'Completed' }
+    }) : 0;
 
     res.json({
-      totalUsers,
+      totalClients,
       totalPsychologists,
       totalSessions,
-      totalBlogs,
-      totalResources,
+      totalBlogs: 0, // Will be available after Blog model conversion
+      totalResources: 0, // Will be available after Resource model conversion
       completedSessions,
       recent: {
-        newUsers: recentStats[0],
-        newSessions: recentStats[1],
-        newBlogs: recentStats[2]
+        newClients: recentClients,
+        newSessions: 0,
+        newBlogs: 0
       }
     });
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     res.status(500).json({ message: 'Error fetching statistics' });
+  }
+});
+
+// Get all psychologists
+router.get('/psychologists', auth, adminAuth, async (req, res) => {
+  try {
+    const psychologists = await User.findAll({
+      where: { role: 'psychologist' },
+      attributes: ['id', 'name', 'email', 'isVerified', 'psychologistDetails', 'profileInfo', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      count: psychologists.length,
+      psychologists
+    });
+  } catch (error) {
+    console.error('Error fetching psychologists:', error);
+    res.status(500).json({ message: 'Error fetching psychologists' });
+  }
+});
+
+// Get all clients
+router.get('/clients', auth, adminAuth, async (req, res) => {
+  try {
+    const clients = await User.findAll({
+      where: { role: 'client' },
+      attributes: ['id', 'name', 'email', 'isVerified', 'createdAt', 'lastLogin'],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      count: clients.length,
+      clients
+    });
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    res.status(500).json({ message: 'Error fetching clients' });
   }
 });
 
