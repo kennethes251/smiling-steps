@@ -91,6 +91,8 @@ const startServer = async () => {
   console.log('  ✅ public routes loaded.');
   app.use('/api/sessions', require('./routes/sessions'));
   console.log('  ✅ sessions routes loaded.');
+  app.use('/api', require('./routes/make-admin'));
+  console.log('  ✅ make-admin route loaded (TEMPORARY).');
   
   // Temporarily disabled routes (need model conversion):
   // app.use('/api/chat', require('./routes/chat'));
