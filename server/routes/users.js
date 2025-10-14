@@ -30,7 +30,7 @@ const validateRegisterInput = (req, res, next) => {
   }
 
   // Email validation
-  if (!email || !isEmail(email)) {
+  if (!email || !validator.isEmail(email)) {
     errors.push('Please provide a valid email address');
   }
 
