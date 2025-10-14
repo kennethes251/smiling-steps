@@ -483,7 +483,7 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const storage = diskStorage({
+const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadsDir);
   },
@@ -773,7 +773,7 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
     console.error('Profile update error:', err);
 
     // Handle multer errors
-    if (err instanceof MulterError) {
+    if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           success: false,
