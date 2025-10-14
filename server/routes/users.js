@@ -1,13 +1,13 @@
-import { Router } from 'express';
-const router = Router();
-import bcrypt from 'bcryptjs';
-import { sign } from 'jsonwebtoken';
-import { isEmail } from 'validator';
-import { randomBytes, createHash } from 'crypto';
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const validator = require('validator');
+const crypto = require('crypto');
 // Use simple rate limiter to avoid 429 errors
-import { loginRateLimiter } from '../middleware/rateLimiter.simple';
-import { auth } from '../middleware/auth';
-import User, { findOne, findById, failedLogin, find, deleteMany, findByIdAndUpdate } from '../models/User';
+const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
+const { auth } = require('../middleware/auth');
+const User = global.User; // Use global User model from Sequelize
 // Try email utility, fallback to simple one
 let sendEmail;
 try {
@@ -473,9 +473,9 @@ router.get('/approve/:token', async (req, res) => {
 });
 
 // File upload configuration
-import multer, { diskStorage, MulterError } from 'multer';
-import { join, extname, basename } from 'path';
-import { existsSync, mkdirSync, unlinkSync } from 'fs';
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // Ensure uploads directory exists
 const uploadsDir = join(__dirname, '../uploads/profiles');
@@ -1236,4 +1236,4 @@ router.put('/session-rate', auth, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
