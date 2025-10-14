@@ -89,8 +89,8 @@ const startServer = async () => {
   console.log('  ✅ admin routes loaded.');
   app.use('/api/public', require('./routes/public'));
   console.log('  ✅ public routes loaded.');
-  app.use('/api/sessions', require('./routes/sessions'));
-  console.log('  ✅ sessions routes loaded.');
+  // app.use('/api/sessions', require('./routes/sessions'));
+  // console.log('  ✅ sessions routes loaded.');
   app.use('/api', require('./routes/make-admin'));
   console.log('  ✅ make-admin route loaded (TEMPORARY).');
   
