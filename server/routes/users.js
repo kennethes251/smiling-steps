@@ -93,7 +93,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     });
 
     // Check if user already exists
-    const existingUser = await findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -111,12 +111,12 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       password,
       role,
       isVerified: isStreamlined, // Auto-verify for streamlined registration
-      lastLogin: Date.now()
+      lastLogin: new Date()
     };
 
     // Only add verification tokens for non-streamlined registration
     if (!isStreamlined) {
-      const verificationToken = randomBytes(32).toString('hex');
+      const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       userPayload.verificationToken = verificationToken;
@@ -124,11 +124,10 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 
       // Send verification email (for now just log the token)
       console.log('📧 Email verification token for', email, ':', verificationToken);
-      console.log('🔗 Verification URL: https://smiling-steps.netlify.app/verify-email?token=' + verificationToken);
+      console.log('🔗 Verification URL: https://smiling-steps-frontend.onrender.com/verify-email?token=' + verificationToken);
     }
 
-    const user = new User(userPayload);
-    await user.save();
+    const user = await User.create(userPayload);
 
     // Create JWT payload
     const payload = {
@@ -327,8 +326,9 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     }
 
     // Find user by email (case-insensitive)
-    const user = await findOne({ email: email.toLowerCase().trim() })
-      .select('+password +loginAttempts +lockUntil');
+    const user = await User.scope('withPassword').findOne({ 
+      where: { email: email.toLowerCase().trim() }
+    });
 
     // Check if user exists
     if (!user) {
@@ -353,7 +353,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     const isMatch = await user.correctPassword(password);
     if (!isMatch) {
       // Increment failed login attempts
-      await failedLogin(user._id);
+      await User.failedLogin(user.id);
 
       return res.status(400).json({
         success: false,
@@ -374,8 +374,8 @@ router.post('/login', loginRateLimiter, async (req, res) => {
 
     // Reset login attempts on successful login
     user.loginAttempts = 0;
-    user.lockUntil = undefined;
-    user.lastLogin = Date.now();
+    user.lockUntil = null;
+    user.lastLogin = new Date();
     await user.save();
 
     // Create JWT payload
