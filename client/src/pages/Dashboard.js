@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ClientDashboard from '../components/dashboards/ClientDashboard';
 import PsychologistDashboard from '../components/dashboards/PsychologistDashboard';
+import DeveloperDashboard from './DeveloperDashboard';
 import { Box, Grid, Typography } from '@mui/material';
 
 const Dashboard = () => {
@@ -16,10 +17,22 @@ const Dashboard = () => {
     return <div>Loading...</div>;
   }
 
+  // Render dashboard based on user role
+  const renderDashboard = () => {
+    switch(user.role) {
+      case 'admin':
+        return <DeveloperDashboard />;
+      case 'psychologist':
+        return <PsychologistDashboard />;
+      case 'client':
+      default:
+        return <ClientDashboard />;
+    }
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
-      {/* Remove the wrapper Grid and Typography - let the dashboard components handle their own layout */}
-      {user.role === 'client' ? <ClientDashboard /> : <PsychologistDashboard />}
+      {renderDashboard()}
     </Box>
   );
 };
