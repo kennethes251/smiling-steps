@@ -87,6 +87,8 @@ const startServer = async () => {
   console.log('  ✅ upload routes loaded.');
   app.use('/api/admin', require('./routes/admin'));
   console.log('  ✅ admin routes loaded.');
+  app.use('/api/admin/blogs', require('./routes/blogs'));
+  console.log('  ✅ blog routes loaded.');
   app.use('/api/public', require('./routes/public'));
   console.log('  ✅ public routes loaded.');
   // app.use('/api/sessions', require('./routes/sessions'));

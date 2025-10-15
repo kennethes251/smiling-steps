@@ -217,9 +217,9 @@ const AdminDashboard = () => {
                     variant="outlined"
                     fullWidth
                     startIcon={<ArticleIcon />}
-                    disabled
+                    onClick={() => navigate('/admin/blogs')}
                   >
-                    Create Blog Post
+                    Manage Blogs
                   </Button>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -461,13 +461,13 @@ const AdminDashboard = () => {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                disabled
+                onClick={() => navigate('/admin/blogs')}
               >
-                Create Blog Post
+                Manage Blogs
               </Button>
             </Box>
             <Alert severity="info">
-              Blog management will be available after Blog model conversion to PostgreSQL
+              Click "Manage Blogs" to create and edit blog posts. You can use the templates provided in BLOG_TEMPLATES.md for inspiration!
             </Alert>
           </CardContent>
         </Card>

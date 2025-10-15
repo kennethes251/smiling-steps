@@ -34,6 +34,7 @@ import VideoCallPage from './pages/VideoCallPage';
 import TestVideoCall from './pages/TestVideoCall';
 import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
 import AdminDashboardNew from './components/dashboards/AdminDashboard-new';
+import BlogManagementPage from './pages/BlogManagementPage';
 import TherapistsPage from './pages/TherapistsPage';
 import EmailVerification from './pages/EmailVerification';
 
@@ -120,6 +121,7 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<PrivateRoute roles={['admin']}><AdminDashboardNew /></PrivateRoute>} />
             <Route path="/admin/create-psychologist" element={<PrivateRoute roles={['admin']}><AdminCreatePsychologist /></PrivateRoute>} />
+            <Route path="/admin/blogs" element={<PrivateRoute roles={['admin']}><BlogManagementPage /></PrivateRoute>} />
             {/* Developer dashboard removed - all features now in main admin dashboard */}
             
             {/* Placeholder routes for missing pages */}
