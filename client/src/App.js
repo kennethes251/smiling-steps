@@ -34,6 +34,7 @@ import VideoCallPage from './pages/VideoCallPage';
 import TestVideoCall from './pages/TestVideoCall';
 import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
 import DeveloperDashboard from './pages/DeveloperDashboard';
+import AdminDashboardNew from './components/dashboards/AdminDashboard-new';
 import TherapistsPage from './pages/TherapistsPage';
 import EmailVerification from './pages/EmailVerification';
 
@@ -118,7 +119,8 @@ function App() {
             <Route path="/test-video-call" element={<PrivateRoute><TestVideoCall /></PrivateRoute>} />
             
             {/* Admin Routes */}
-            <Route path="/admin/create-psychologist" element={<AdminCreatePsychologist />} />
+            <Route path="/admin/dashboard" element={<PrivateRoute roles={['admin']}><AdminDashboardNew /></PrivateRoute>} />
+            <Route path="/admin/create-psychologist" element={<PrivateRoute roles={['admin']}><AdminCreatePsychologist /></PrivateRoute>} />
             <Route path="/developer-dashboard" element={<PrivateRoute roles={['admin']}><DeveloperDashboard /></PrivateRoute>} />
             
             {/* Placeholder routes for missing pages */}

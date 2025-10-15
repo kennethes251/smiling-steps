@@ -73,22 +73,23 @@ const AdminCreatePsychologist = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post('https://smiling-steps.onrender.com/api/users/create-psychologist', formData);
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
       
-      if (response.data.success) {
-        setSuccess(`✅ Psychologist account created successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}\n\nThe psychologist can now login and access their dashboard.`);
-        
-        // Reset form
-        setFormData({
-          name: '',
-          email: '',
-          password: '',
-          specializations: [],
-          experience: '',
-          education: '',
-          bio: ''
-        });
-      }
+      const response = await axios.post(`${API_ENDPOINTS.ADMIN}/psychologists`, formData, config);
+      
+      setSuccess(`✅ Psychologist account created successfully!\n\nLogin Credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}\n\nThe psychologist can now login and access their dashboard.`);
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        specializations: [],
+        experience: '',
+        education: '',
+        bio: ''
+      });
     } catch (err) {
       console.error('Error creating psychologist:', err);
       setError(err.response?.data?.message || 'Failed to create psychologist account');
@@ -133,15 +134,16 @@ const AdminCreatePsychologist = () => {
     ];
 
     try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+      
       let successCount = 0;
       let errorMessages = [];
 
       for (const psychologist of samplePsychologists) {
         try {
-          const response = await axios.post('https://smiling-steps.onrender.com/api/users/create-psychologist', psychologist);
-          if (response.data.success) {
-            successCount++;
-          }
+          await axios.post(`${API_ENDPOINTS.ADMIN}/psychologists`, psychologist, config);
+          successCount++;
         } catch (err) {
           errorMessages.push(`${psychologist.name}: ${err.response?.data?.message || 'Failed'}`);
         }

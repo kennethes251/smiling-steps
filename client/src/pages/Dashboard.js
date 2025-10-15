@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ClientDashboard from '../components/dashboards/ClientDashboard';
 import PsychologistDashboard from '../components/dashboards/PsychologistDashboard';
-import DeveloperDashboardSimple from './DeveloperDashboardSimple';
+import AdminDashboardNew from '../components/dashboards/AdminDashboard-new';
 import { Box, Grid, Typography } from '@mui/material';
 
 const Dashboard = () => {
@@ -21,7 +21,7 @@ const Dashboard = () => {
   const renderDashboard = () => {
     switch(user.role) {
       case 'admin':
-        return <DeveloperDashboardSimple />;
+        return <AdminDashboardNew />;
       case 'psychologist':
         return <PsychologistDashboard />;
       case 'client':

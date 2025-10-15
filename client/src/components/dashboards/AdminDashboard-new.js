@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/api';
 import {
   Container,
   Typography,
@@ -44,9 +45,9 @@ const AdminDashboard = () => {
 
       // Fetch all data in parallel
       const [statsRes, psychRes, clientsRes] = await Promise.all([
-        axios.get('https://smiling-steps.onrender.com/api/admin/stats', config),
-        axios.get('https://smiling-steps.onrender.com/api/admin/psychologists', config),
-        axios.get('https://smiling-steps.onrender.com/api/admin/clients', config)
+        axios.get(`${API_ENDPOINTS.ADMIN}/stats`, config),
+        axios.get(`${API_ENDPOINTS.ADMIN}/psychologists`, config),
+        axios.get(`${API_ENDPOINTS.ADMIN}/clients`, config)
       ]);
 
       setStats(statsRes.data);
