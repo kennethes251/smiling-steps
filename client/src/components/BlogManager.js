@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import {
   Box,
   Button,
@@ -13,12 +15,14 @@ import {
   Grid,
   Typography,
   Paper,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Article as ArticleIcon,
   Save as SaveIcon,
-  Publish as PublishIcon
+  Publish as PublishIcon,
+  CloudUpload as UploadIcon
 } from '@mui/icons-material';
 
 const BlogManager = ({ onSave, initialData = null }) => {
@@ -36,6 +40,7 @@ const BlogManager = ({ onSave, initialData = null }) => {
 
   const [tagInput, setTagInput] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [uploading, setUploading] = useState(false);
 
   const categories = [
     'Mental Health',
@@ -67,6 +72,49 @@ const BlogManager = ({ onSave, initialData = null }) => {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file' });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image size must be less than 5MB' });
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('blogImage', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_ENDPOINTS.BASE_URL}/api/upload/blog-image`,
+        formData,
+        {
+          headers: {
+            'x-auth-token': token,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      const imageUrl = `${API_ENDPOINTS.BASE_URL}${response.data.imageUrl}`;
+      handleChange('featuredImage', imageUrl);
+      setMessage({ type: 'success', text: 'Image uploaded successfully!' });
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to upload image' });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (publish = false) => {
@@ -134,15 +182,48 @@ const BlogManager = ({ onSave, initialData = null }) => {
           </FormControl>
         </Grid>
 
-        {/* Featured Image URL */}
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Featured Image URL"
-            value={blogData.featuredImage}
-            onChange={(e) => handleChange('featuredImage', e.target.value)}
-            placeholder="https://example.com/image.jpg"
-          />
+        {/* Featured Image Upload */}
+        <Grid item xs={12}>
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>Featured Image</Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={uploading ? <CircularProgress size={20} /> : <UploadIcon />}
+                disabled={uploading}
+              >
+                {uploading ? 'Uploading...' : 'Upload Image'}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </Button>
+              <Typography variant="caption" color="text.secondary">
+                Or enter URL manually below (Max 5MB, JPG/PNG)
+              </Typography>
+            </Box>
+            <TextField
+              fullWidth
+              size="small"
+              label="Featured Image URL"
+              value={blogData.featuredImage}
+              onChange={(e) => handleChange('featuredImage', e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
+            {blogData.featuredImage && (
+              <Box sx={{ mt: 2 }}>
+                <img
+                  src={blogData.featuredImage}
+                  alt="Featured preview"
+                  style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 8 }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </Box>
+            )}
+          </Box>
         </Grid>
 
         {/* Excerpt */}
