@@ -45,7 +45,7 @@ const AdminDashboard = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Settings state
   const [settings, setSettings] = useState({
     allowRegistrations: true,
@@ -539,7 +539,7 @@ const AdminDashboard = () => {
               <SettingsIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
               Platform Settings
             </Typography>
-            
+
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
                 General Settings
