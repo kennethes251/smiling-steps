@@ -124,12 +124,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     scopes: {
       withPassword: {
-        attributes: {
-          include: ['password']
-        }
+        attributes: {} // Override default scope to include all fields including password
       },
       all: {
-        where: {}
+        attributes: {} // Include all fields
       }
     },
     hooks: {
