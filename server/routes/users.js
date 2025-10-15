@@ -223,7 +223,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -267,9 +267,12 @@ router.get('/verify-email/:token', async (req, res) => {
     console.log('📧 Email verification attempt with token:', token);
 
     // Find user with this verification token
-    const user = await findOne({
-      verificationToken: token,
-      verificationTokenExpires: { $gt: Date.now() }
+    const { Op } = require('sequelize');
+    const user = await User.findOne({
+      where: {
+        verificationToken: token,
+        verificationTokenExpires: { [Op.gt]: Date.now() }
+      }
     });
 
     if (!user) {
@@ -280,10 +283,11 @@ router.get('/verify-email/:token', async (req, res) => {
     }
 
     // Verify the user
-    user.isVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    await user.save();
+    await user.update({
+      isVerified: true,
+      verificationToken: null,
+      verificationTokenExpires: null
+    });
 
     console.log('✅ Email verified for user:', user.email);
 
@@ -446,11 +450,17 @@ router.get('/approve/:token', async (req, res) => {
     }
 
     const hashedToken = createHash('sha256').update(token).digest('hex');
+    const { Op } = require('sequelize');
 
-    const user = await findOne({
-      _id: id,
-      'psychologistDetails.approvalToken': hashedToken,
-      'psychologistDetails.approvalTokenExpires': { $gt: Date.now() }
+    // For JSONB fields in Sequelize, we need to query differently
+    const user = await User.findOne({
+      where: {
+        id: id,
+        psychologistDetails: {
+          approvalToken: hashedToken,
+          approvalTokenExpires: { [Op.gt]: Date.now() }
+        }
+      }
     });
 
     if (!user) {
@@ -458,11 +468,14 @@ router.get('/approve/:token', async (req, res) => {
     }
 
     const newStatus = action === 'approve' ? 'approved' : 'rejected';
-    user.psychologistDetails.approvalStatus = newStatus;
-    user.psychologistDetails.approvalToken = undefined;
-    user.psychologistDetails.approvalTokenExpires = undefined;
-
-    await user.save();
+    const updatedDetails = {
+      ...user.psychologistDetails,
+      approvalStatus: newStatus,
+      approvalToken: null,
+      approvalTokenExpires: null
+    };
+    
+    await user.update({ psychologistDetails: updatedDetails });
 
     res.send(`<h1>Application ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}</h1><p>The psychologist's application for ${user.email} has been successfully ${newStatus}.</p>`);
 
@@ -518,7 +531,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
     console.log('👤 User ID:', req.user.id);
     console.log('📝 Request body:', req.body);
 
-    const user = await findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
 
     if (!user) {
       console.log('❌ User not found:', req.user.id);
@@ -675,7 +688,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 // @access  Private
 router.put('/profile/upload', auth, upload.single('profilePicture'), async (req, res) => {
   try {
-    const user = await findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -902,14 +915,14 @@ router.get('/debug/create-test-users', async (req, res) => {
     for (const userData of testUsers) {
       try {
         // Check if user already exists
-        const existingUser = await findOne({ email: userData.email });
+        const existingUser = await User.findOne({ where: { email: userData.email } });
         if (existingUser) {
           errors.push(`User ${userData.email} already exists`);
           continue;
         }
 
         // Create new user
-        const user = new User(userData);
+        const user = await User.create(userData);
         await user.save();
 
         createdUsers.push({
@@ -956,8 +969,8 @@ router.get('/debug/test-session', async (req, res) => {
     const Session = require('../models/Session');
 
     // Get first client and psychologist for testing
-    const client = await findOne({ role: 'client' });
-    const psychologist = await findOne({ role: 'psychologist' });
+    const client = await User.findOne({ where: { role: 'client' } });
+    const psychologist = await User.findOne({ where: { role: 'psychologist' } });
 
     if (!client) {
       return res.status(400).json({ error: 'No client found' });
@@ -993,7 +1006,9 @@ router.get('/debug/test-session', async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const user = await findById(req.params.id).select('-password');
+    const user = await User.findByPk(req.params.id, { 
+      attributes: { exclude: ['password'] } 
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -1046,7 +1061,7 @@ router.post('/create-psychologist', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await findOne({ email: email.toLowerCase().trim() });
+    const existingUser = await User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -1070,7 +1085,7 @@ router.post('/create-psychologist', async (req, res) => {
       }
     };
 
-    const user = new User(psychologistData);
+    const user = await User.create(psychologistData);
     await user.save();
 
     console.log('✅ Psychologist account created successfully:', user._id);
@@ -1122,7 +1137,7 @@ router.post('/create-psychologist', async (req, res) => {
 // @access  Private (Psychologist only)
 router.put('/profile/psychologist', auth, async (req, res) => {
   try {
-    const user = await findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
 
     if (!user || user.role !== 'psychologist') {
       return res.status(403).json({
@@ -1142,22 +1157,23 @@ router.put('/profile/psychologist', auth, async (req, res) => {
       languages
     } = req.body;
 
-    // Update psychologist details
-    const updateData = {};
-    if (profilePictureUrl !== undefined) updateData['psychologistDetails.profilePictureUrl'] = profilePictureUrl;
-    if (age !== undefined) updateData['psychologistDetails.age'] = age;
-    if (bio !== undefined) updateData['psychologistDetails.bio'] = bio;
-    if (specializations !== undefined) updateData['psychologistDetails.specializations'] = specializations;
-    if (therapyTypes !== undefined) updateData['psychologistDetails.therapyTypes'] = therapyTypes;
-    if (experience !== undefined) updateData['psychologistDetails.experience'] = experience;
-    if (education !== undefined) updateData['psychologistDetails.education'] = education;
-    if (languages !== undefined) updateData['psychologistDetails.languages'] = languages;
+    // Update JSONB field
+    const updatedDetails = { ...user.psychologistDetails };
+    if (profilePictureUrl !== undefined) updatedDetails.profilePictureUrl = profilePictureUrl;
+    if (age !== undefined) updatedDetails.age = age;
+    if (bio !== undefined) updatedDetails.bio = bio;
+    if (specializations !== undefined) updatedDetails.specializations = specializations;
+    if (therapyTypes !== undefined) updatedDetails.therapyTypes = therapyTypes;
+    if (experience !== undefined) updatedDetails.experience = experience;
+    if (education !== undefined) updatedDetails.education = education;
+    if (languages !== undefined) updatedDetails.languages = languages;
 
-    const updatedUser = await findByIdAndUpdate(
-      req.user.id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('-password');
+    await user.update({ psychologistDetails: updatedDetails });
+    
+    // Fetch updated user without password
+    const updatedUser = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
 
     res.json({
       success: true,
@@ -1199,7 +1215,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await findById(req.user.id);
+    const user = await User.findByPk(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
