@@ -24,11 +24,21 @@ const adminAuth = async (req, res, next) => {
 // Get all blogs (admin)
 router.get('/', auth, adminAuth, async (req, res) => {
   try {
-    // Placeholder - will work once Blog model is added
+    const Blog = global.Blog;
+    const User = global.User;
+    
+    const blogs = await Blog.findAll({
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name', 'email']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
     res.json({
       success: true,
-      blogs: [],
-      message: 'Blog model not yet initialized. Add Blog-sequelize.js to server/index.js'
+      blogs: blogs
     });
   } catch (error) {
     console.error('Error fetching blogs:', error);
@@ -39,29 +49,42 @@ router.get('/', auth, adminAuth, async (req, res) => {
 // Create blog (admin)
 router.post('/', auth, adminAuth, async (req, res) => {
   try {
+    const Blog = global.Blog;
+    
     const blogData = {
       ...req.body,
       authorId: req.user.id
     };
 
-    // Placeholder response
+    const blog = await Blog.create(blogData);
+
     res.status(201).json({
       success: true,
-      message: 'Blog model not yet initialized. To enable: Add Blog-sequelize.js to server/index.js',
-      blog: blogData
+      message: 'Blog created successfully!',
+      blog: blog
     });
   } catch (error) {
     console.error('Error creating blog:', error);
-    res.status(500).json({ message: 'Error creating blog' });
+    res.status(500).json({ message: error.message || 'Error creating blog' });
   }
 });
 
 // Update blog (admin)
 router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
+    const Blog = global.Blog;
+    const blog = await Blog.findByPk(req.params.id);
+    
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    await blog.update(req.body);
+
     res.json({
       success: true,
-      message: 'Blog update will work once Blog model is initialized'
+      message: 'Blog updated successfully',
+      blog: blog
     });
   } catch (error) {
     console.error('Error updating blog:', error);
@@ -72,9 +95,18 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
 // Delete blog (admin)
 router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
+    const Blog = global.Blog;
+    const blog = await Blog.findByPk(req.params.id);
+    
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    await blog.destroy();
+
     res.json({
       success: true,
-      message: 'Blog deleted (placeholder)'
+      message: 'Blog deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting blog:', error);
@@ -85,9 +117,28 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
 // Get single blog by slug (public)
 router.get('/:slug', async (req, res) => {
   try {
+    const Blog = global.Blog;
+    const User = global.User;
+    
+    const blog = await Blog.findOne({
+      where: { slug: req.params.slug, published: true },
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name']
+      }]
+    });
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    // Increment views
+    await blog.increment('views');
+
     res.json({
       success: true,
-      message: 'Blog retrieval will work once Blog model is initialized'
+      blog: blog
     });
   } catch (error) {
     console.error('Error fetching blog:', error);

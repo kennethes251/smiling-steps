@@ -62,6 +62,7 @@ const startServer = async () => {
   const { DataTypes } = require('sequelize');
   const User = require('./models/User')(sequelize, DataTypes);
   const Session = require('./models/Session-sequelize')(sequelize, DataTypes);
+  const Blog = require('./models/Blog-sequelize')(sequelize, DataTypes);
   
   // Define associations
   User.hasMany(Session, { foreignKey: 'clientId', as: 'clientSessions' });
@@ -69,9 +70,14 @@ const startServer = async () => {
   Session.belongsTo(User, { foreignKey: 'clientId', as: 'client' });
   Session.belongsTo(User, { foreignKey: 'psychologistId', as: 'psychologist' });
   
+  // Blog associations
+  User.hasMany(Blog, { foreignKey: 'authorId', as: 'blogs' });
+  Blog.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
+  
   // Make models globally available
   global.User = User;
   global.Session = Session;
+  global.Blog = Blog;
   
   // Sync database (create tables if they don't exist)
   await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
