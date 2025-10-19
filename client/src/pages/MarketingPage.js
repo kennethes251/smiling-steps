@@ -1241,6 +1241,11 @@ const MarketingPage = () => {
                   <Button
                     variant="outlined"
                     size="small"
+                    onClick={() => {
+                      if (resource.title === 'Blog & Articles') {
+                        navigate('/blog');
+                      }
+                    }}
                     sx={{
                       borderColor: resource.color,
                       color: resource.color,
@@ -1250,7 +1255,7 @@ const MarketingPage = () => {
                       }
                     }}
                   >
-                    Explore Resources
+                    {resource.title === 'Blog & Articles' ? 'Read Blogs & Articles' : 'Explore Resources'}
                   </Button>
                 </Card>
               </motion.div>
@@ -2077,7 +2082,6 @@ const MarketingPage = () => {
       <AboutSection />
       <ServicesSection />
       <ResourcesSection />
-      <RecentBlogsSection />
       <TestimonialsSection />
       <ContactSection />
       <AppPreviewDialog />
