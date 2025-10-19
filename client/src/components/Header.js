@@ -72,22 +72,6 @@ const Header = () => {
               >
                 Profile
               </Button>
-              {user?.role === 'admin' && (
-                <Button 
-                  color="inherit" 
-                  component={RouterLink} 
-                  to="/developer-dashboard"
-                  sx={{ 
-                    color: theme.palette.primary.main,
-                    fontWeight: 'bold',
-                    '&:hover': {
-                      backgroundColor: 'rgba(102, 51, 153, 0.08)'
-                    }
-                  }}
-                >
-                  🛠️ Dev Dashboard
-                </Button>
-              )}
               <Button 
                 variant="outlined"
                 onClick={onLogout}
