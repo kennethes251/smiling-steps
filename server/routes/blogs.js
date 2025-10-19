@@ -114,36 +114,4 @@ router.delete('/:id', auth, adminAuth, async (req, res) => {
   }
 });
 
-// Get single blog by slug (public)
-router.get('/:slug', async (req, res) => {
-  try {
-    const Blog = global.Blog;
-    const User = global.User;
-    
-    const blog = await Blog.findOne({
-      where: { slug: req.params.slug, published: true },
-      include: [{
-        model: User,
-        as: 'author',
-        attributes: ['id', 'name']
-      }]
-    });
-
-    if (!blog) {
-      return res.status(404).json({ message: 'Blog not found' });
-    }
-
-    // Increment views
-    await blog.increment('views');
-
-    res.json({
-      success: true,
-      blog: blog
-    });
-  } catch (error) {
-    console.error('Error fetching blog:', error);
-    res.status(500).json({ message: 'Error fetching blog' });
-  }
-});
-
 module.exports = router;

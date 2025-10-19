@@ -35,6 +35,8 @@ import TestVideoCall from './pages/TestVideoCall';
 import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
 import AdminDashboardNew from './components/dashboards/AdminDashboard-new';
 import BlogManagementPage from './pages/BlogManagementPage';
+import BlogListPage from './pages/BlogListPage';
+import BlogPostPage from './pages/BlogPostPage';
 import TherapistsPage from './pages/TherapistsPage';
 import EmailVerification from './pages/EmailVerification';
 
@@ -133,7 +135,8 @@ function App() {
             {/* Public placeholder routes */}
             <Route path="/about" element={<MarketingPage />} />
             <Route path="/therapists" element={<TherapistsPage />} />
-            <Route path="/blog" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Blog - Coming Soon</h2></div>} />
+            <Route path="/blog" element={<BlogListPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
             <Route path="/careers" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Careers - Coming Soon</h2></div>} />
             <Route path="/faq" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>FAQ - Coming Soon</h2></div>} />
             <Route path="/privacy" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Privacy Policy - Coming Soon</h2></div>} />

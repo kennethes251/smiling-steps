@@ -2,6 +2,98 @@ const express = require('express');
 const router = express.Router();
 const User = global.User; // Use global Sequelize User model
 
+// @route   GET api/public/blogs
+// @desc    Get all published blogs
+// @access  Public
+router.get('/blogs', async (req, res) => {
+  try {
+    const Blog = global.Blog;
+    const User = global.User;
+    
+    const blogs = await Blog.findAll({
+      where: { published: true },
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name']
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      blogs: blogs
+    });
+  } catch (error) {
+    console.error('Error fetching public blogs:', error);
+    res.status(500).json({ message: 'Error fetching blogs' });
+  }
+});
+
+// @route   GET api/public/blogs/recent
+// @desc    Get recent published blogs (for marketing page)
+// @access  Public
+router.get('/blogs/recent', async (req, res) => {
+  try {
+    const Blog = global.Blog;
+    const User = global.User;
+    const limit = parseInt(req.query.limit) || 3;
+    
+    const blogs = await Blog.findAll({
+      where: { published: true },
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name']
+      }],
+      order: [['createdAt', 'DESC']],
+      limit: limit
+    });
+
+    res.json({
+      success: true,
+      blogs: blogs
+    });
+  } catch (error) {
+    console.error('Error fetching recent blogs:', error);
+    res.status(500).json({ message: 'Error fetching blogs' });
+  }
+});
+
+// @route   GET api/public/blogs/:slug
+// @desc    Get single blog by slug
+// @access  Public
+router.get('/blogs/:slug', async (req, res) => {
+  try {
+    const Blog = global.Blog;
+    const User = global.User;
+    
+    const blog = await Blog.findOne({
+      where: { slug: req.params.slug, published: true },
+      include: [{
+        model: User,
+        as: 'author',
+        attributes: ['id', 'name']
+      }]
+    });
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    // Increment views
+    await blog.increment('views');
+
+    res.json({
+      success: true,
+      blog: blog
+    });
+  } catch (error) {
+    console.error('Error fetching blog:', error);
+    res.status(500).json({ message: 'Error fetching blog' });
+  }
+});
+
 // @route   GET api/public/psychologists
 // @desc    Get all psychologists for public listing
 // @access  Public

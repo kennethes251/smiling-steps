@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import API_BASE_URL from '../config/api';
 import {
   Box,
   Container,
@@ -1259,6 +1260,169 @@ const MarketingPage = () => {
     </Box>
   );
 
+  // Recent Blogs Section
+  const RecentBlogsSection = () => {
+    const [recentBlogs, setRecentBlogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      fetchRecentBlogs();
+    }, []);
+
+    const fetchRecentBlogs = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/public/blogs/recent?limit=3`);
+        const data = await response.json();
+        if (data.success) {
+          setRecentBlogs(data.blogs);
+        }
+      } catch (error) {
+        console.error('Error fetching recent blogs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (loading || recentBlogs.length === 0) return null;
+
+    return (
+      <Box sx={{ py: { xs: 8, md: 12 } }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <Typography
+              variant="h2"
+              sx={{
+                textAlign: 'center',
+                mb: 2,
+                fontWeight: 'bold',
+                color: '#663399'
+              }}
+            >
+              Latest from Our Blog
+            </Typography>
+
+            <Typography
+              variant="h5"
+              sx={{
+                textAlign: 'center',
+                mb: 8,
+                color: 'text.secondary',
+                maxWidth: '700px',
+                mx: 'auto'
+              }}
+            >
+              Insights, stories, and resources for your healing journey
+            </Typography>
+          </motion.div>
+
+          <Grid container spacing={4}>
+            {recentBlogs.map((blog, index) => (
+              <Grid item xs={12} md={4} key={blog.id}>
+                <motion.div
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-8px)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+                      },
+                      borderRadius: '15px'
+                    }}
+                    onClick={() => navigate(`/blog/${blog.slug}`)}
+                  >
+                    {blog.featuredImage && (
+                      <Box
+                        component="img"
+                        src={blog.featuredImage}
+                        alt={blog.title}
+                        sx={{
+                          width: '100%',
+                          height: 200,
+                          objectFit: 'cover'
+                        }}
+                      />
+                    )}
+                    <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                      <Chip
+                        label={blog.category}
+                        size="small"
+                        sx={{
+                          mb: 2,
+                          backgroundColor: '#663399',
+                          color: 'white',
+                          fontWeight: 600
+                        }}
+                      />
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+                        {blog.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'text.secondary',
+                          mb: 2,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {blog.excerpt}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 'auto' }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(blog.createdAt).toLocaleDateString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {blog.readTime} min read
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+
+          <Box sx={{ textAlign: 'center', mt: 6 }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => navigate('/blog')}
+              sx={{
+                borderColor: '#663399',
+                color: '#663399',
+                px: 4,
+                py: 1.5,
+                borderRadius: '50px',
+                '&:hover': {
+                  borderColor: '#512DA8',
+                  backgroundColor: 'rgba(102, 51, 153, 0.04)'
+                }
+              }}
+            >
+              View All Blog Posts
+            </Button>
+          </Box>
+        </Container>
+      </Box>
+    );
+  };
+
   // Testimonials Section
   const TestimonialsSection = () => (
     <Box sx={{ py: { xs: 8, md: 12 } }}>
@@ -1912,6 +2076,7 @@ const MarketingPage = () => {
       <AboutSection />
       <ServicesSection />
       <ResourcesSection />
+      <RecentBlogsSection />
       <TestimonialsSection />
       <ContactSection />
       <AppPreviewDialog />

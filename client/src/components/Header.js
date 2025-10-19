@@ -45,6 +45,14 @@ const Header = () => {
           >
             Home
           </Button>
+          <Button 
+            color="inherit" 
+            component={RouterLink} 
+            to="/blog"
+            sx={{ color: theme.palette.text.primary }}
+          >
+            Blog
+          </Button>
           
           {isAuthenticated ? (
             <>
