@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { ArrowBack, AccessTime, Visibility } from '@mui/icons-material';
 import SocialShare from '../components/SocialShare';
+import Logo from '../components/Logo';
 import API_BASE_URL from '../config/api';
 
 const BlogPostPage = () => {
@@ -40,26 +41,199 @@ const BlogPostPage = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress />
-      </Box>
+      <>
+        {/* Navigation Menu */}
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(0,0,0,0.1)'
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 'bold', 
+                  color: '#663399', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate('/')}
+              >
+                <Logo size={32} />
+                Smiling Steps
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button color="inherit" onClick={() => navigate('/')}>
+                  Home
+                </Button>
+                <Button color="inherit" onClick={() => navigate('/learn-more')}>
+                  About
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate('/register')}
+                  sx={{
+                    borderRadius: '25px',
+                    px: 3,
+                    background: 'linear-gradient(45deg, #1976D2, #42A5F5)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #1565C0, #1976D2)'
+                    }
+                  }}
+                >
+                  Book Session
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', pt: 10 }}>
+          <CircularProgress />
+        </Box>
+      </>
     );
   }
 
   if (!blog) {
     return (
-      <Container sx={{ py: 8, textAlign: 'center' }}>
-        <Typography variant="h4" gutterBottom>Blog post not found</Typography>
-        <Button onClick={() => navigate('/blog')} startIcon={<ArrowBack />}>
-          Back to Blog
-        </Button>
-      </Container>
+      <>
+        {/* Navigation Menu */}
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(0,0,0,0.1)'
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 'bold', 
+                  color: '#663399', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate('/')}
+              >
+                <Logo size={32} />
+                Smiling Steps
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button color="inherit" onClick={() => navigate('/')}>
+                  Home
+                </Button>
+                <Button color="inherit" onClick={() => navigate('/learn-more')}>
+                  About
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate('/register')}
+                  sx={{
+                    borderRadius: '25px',
+                    px: 3,
+                    background: 'linear-gradient(45deg, #1976D2, #42A5F5)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #1565C0, #1976D2)'
+                    }
+                  }}
+                >
+                  Book Session
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Box>
+        <Container sx={{ py: 12, textAlign: 'center' }}>
+          <Typography variant="h4" gutterBottom>Blog post not found</Typography>
+          <Button onClick={() => navigate('/blog')} startIcon={<ArrowBack />}>
+            Back to Blog
+          </Button>
+        </Container>
+      </>
     );
   }
 
   return (
-    <Box sx={{ py: 8, backgroundColor: '#fafafa', minHeight: '100vh' }}>
-      <Container maxWidth="md">
+    <Box sx={{ backgroundColor: '#fafafa', minHeight: '100vh' }}>
+      {/* Navigation Menu */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(0,0,0,0.1)'
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 'bold', 
+                color: '#663399', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                cursor: 'pointer'
+              }}
+              onClick={() => navigate('/')}
+            >
+              <Logo size={32} />
+              Smiling Steps
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button color="inherit" onClick={() => navigate('/')}>
+                Home
+              </Button>
+              <Button color="inherit" onClick={() => navigate('/learn-more')}>
+                About
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/register')}
+                sx={{
+                  borderRadius: '25px',
+                  px: 3,
+                  background: 'linear-gradient(45deg, #1976D2, #42A5F5)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1565C0, #1976D2)'
+                  }
+                }}
+              >
+                Book Session
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      <Container maxWidth="md" sx={{ pt: 12, pb: 8 }}>
         <Button
           onClick={() => navigate('/blog')}
           startIcon={<ArrowBack />}

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Container, Typography, Grid, Box, CircularProgress, Alert, Chip } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Container, Typography, Grid, Box, CircularProgress, Alert, Chip, Button } from '@mui/material';
 import { Article as ArticleIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import BlogCard from '../components/BlogCard';
+import Logo from '../components/Logo';
 
 const BlogListPage = () => {
+  const navigate = useNavigate();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -43,24 +46,140 @@ const BlogListPage = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <CircularProgress />
-      </Box>
+      <>
+        {/* Navigation Menu */}
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderBottom: '1px solid rgba(0,0,0,0.1)'
+          }}
+        >
+          <Container maxWidth="lg">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 'bold', 
+                  color: '#663399', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  cursor: 'pointer'
+                }}
+                onClick={() => navigate('/')}
+              >
+                <Logo size={32} />
+                Smiling Steps
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button color="inherit" onClick={() => navigate('/')}>
+                  Home
+                </Button>
+                <Button color="inherit" onClick={() => navigate('/learn-more')}>
+                  About
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate('/register')}
+                  sx={{
+                    borderRadius: '25px',
+                    px: 3,
+                    background: 'linear-gradient(45deg, #1976D2, #42A5F5)',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #1565C0, #1976D2)'
+                    }
+                  }}
+                >
+                  Book Session
+                </Button>
+              </Box>
+            </Box>
+          </Container>
+        </Box>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" sx={{ pt: 10 }}>
+          <CircularProgress />
+        </Box>
+      </>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
-      {/* Header */}
-      <Box sx={{ textAlign: 'center', mb: 6 }}>
-        <ArticleIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Our Blog
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Insights, tips, and stories about mental health and wellness
-        </Typography>
+    <Box>
+      {/* Navigation Menu */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(0,0,0,0.1)'
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2 }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 'bold', 
+                color: '#663399', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                cursor: 'pointer'
+              }}
+              onClick={() => navigate('/')}
+            >
+              <Logo size={32} />
+              Smiling Steps
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button color="inherit" onClick={() => navigate('/')}>
+                Home
+              </Button>
+              <Button color="inherit" onClick={() => navigate('/learn-more')}>
+                About
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate('/register')}
+                sx={{
+                  borderRadius: '25px',
+                  px: 3,
+                  background: 'linear-gradient(45deg, #1976D2, #42A5F5)',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #1565C0, #1976D2)'
+                  }
+                }}
+              >
+                Book Session
+              </Button>
+            </Box>
+          </Box>
+        </Container>
       </Box>
+
+      <Container maxWidth="lg" sx={{ mt: 12, mb: 8 }}>
+        {/* Header */}
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <ArticleIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
+            Blog & Articles
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Insights, tips, and stories about mental health and wellness
+          </Typography>
+        </Box>
 
       {/* Category Filter */}
       <Box sx={{ mb: 4, display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -89,7 +208,8 @@ const BlogListPage = () => {
           ))}
         </Grid>
       )}
-    </Container>
+      </Container>
+    </Box>
   );
 };
 
