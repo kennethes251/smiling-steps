@@ -31,7 +31,8 @@ import {
   LinearProgress,
   Stepper,
   Step,
-  StepLabel
+  StepLabel,
+  Chip
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
