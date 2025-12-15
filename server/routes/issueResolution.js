@@ -5,9 +5,9 @@
 
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const automaticIssueResolver = require('../utils/automaticIssueResolver');
-const Session = require('../models/Session');
+// Session model will be available globally after initialization
 
 /**
  * GET /api/issue-resolution/status
