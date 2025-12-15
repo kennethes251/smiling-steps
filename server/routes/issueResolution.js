@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
 const automaticIssueResolver = require('../utils/automaticIssueResolver');
-// Session model will be available globally after initialization
+const Session = require('../models/Session'); // Import Session model
 
 /**
  * GET /api/issue-resolution/status
