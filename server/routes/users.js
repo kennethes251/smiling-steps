@@ -359,7 +359,7 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Check if account is locked (Mongoose)
+    // Check if account is locked (Sequelize)
     if (user.lockUntil && user.lockUntil > Date.now()) {
       const retryAfter = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
       return res.status(429).json({
@@ -369,18 +369,19 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Verify password (Mongoose)
+    // Verify password (Sequelize)
     console.log('🔑 Verifying password for user:', user.email, 'Role:', user.role);
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
       console.log('❌ Password mismatch for:', user.email);
-      // Increment failed login attempts (Mongoose)
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
-      if (user.loginAttempts >= 5) {
-        user.lockUntil = Date.now() + 15 * 60 * 1000; // Lock for 15 minutes
+      // Increment failed login attempts (Sequelize)
+      const loginAttempts = (user.loginAttempts || 0) + 1;
+      const updateData = { loginAttempts };
+      if (loginAttempts >= 5) {
+        updateData.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // Lock for 15 minutes
       }
-      await user.save();
+      await user.update(updateData);
 
       return res.status(400).json({
         success: false,
@@ -431,11 +432,12 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       }
     }
 
-    // Reset login attempts on successful login
-    user.loginAttempts = 0;
-    user.lockUntil = null;
-    user.lastLogin = new Date();
-    await user.save();
+    // Reset login attempts on successful login (Sequelize)
+    await user.update({
+      loginAttempts: 0,
+      lockUntil: null,
+      lastLogin: new Date()
+    });
 
     // Create JWT payload (Sequelize uses id)
     const payload = {
@@ -586,7 +588,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
     console.log('👤 User ID:', req.user.id);
     console.log('📝 Request body:', req.body);
 
-    const user = await User.findById(req.user.id);
+    const user = await global.User.findByPk(req.user.id);
 
     if (!user) {
       console.log('❌ User not found:', req.user.id);
@@ -743,7 +745,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 // @access  Private
 router.put('/profile/upload', auth, upload.single('profilePicture'), async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await global.User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -895,10 +897,13 @@ router.get('/debug/reset', async (req, res) => {
 // Temporary route to check psychologists without auth (remove in production)
 router.get('/debug/psychologists', async (req, res) => {
   try {
-    const psychologists = await User.find({
-      role: 'psychologist',
-      'psychologistDetails.approvalStatus': 'approved'
-    }).select('name email role psychologistDetails');
+    const psychologists = await global.User.findAll({
+      where: { 
+        role: 'psychologist',
+        'psychologistDetails.approvalStatus': 'approved'
+      },
+      attributes: ['name', 'email', 'role', 'psychologistDetails']
+    });
 
     res.json({
       success: true,
@@ -970,15 +975,14 @@ router.get('/debug/create-test-users', async (req, res) => {
     for (const userData of testUsers) {
       try {
         // Check if user already exists
-        const existingUser = await User.findOne({ where: { email: userData.email } });
+        const existingUser = await global.User.findOne({ where: { email: userData.email } });
         if (existingUser) {
           errors.push(`User ${userData.email} already exists`);
           continue;
         }
 
         // Create new user
-        const user = await User.create(userData);
-        await user.save();
+        const user = await global.User.create(userData);
 
         createdUsers.push({
           name: userData.name,
@@ -1012,7 +1016,7 @@ router.get('/debug/create-test-users', async (req, res) => {
 router.get('/clients', auth, async (req, res) => {
   try {
     // Use Sequelize syntax instead of Mongoose
-    const clients = await User.findAll({
+    const clients = await global.User.findAll({
       where: { role: 'client' },
       attributes: ['id', 'name', 'email', 'role', 'createdAt'],
       order: [['createdAt', 'DESC']]
@@ -1030,8 +1034,8 @@ router.get('/debug/test-session', async (req, res) => {
     const Session = require('../models/Session');
 
     // Get first client and psychologist for testing
-    const client = await User.findOne({ where: { role: 'client' } });
-    const psychologist = await User.findOne({ where: { role: 'psychologist' } });
+    const client = await global.User.findOne({ where: { role: 'client' } });
+    const psychologist = await global.User.findOne({ where: { role: 'psychologist' } });
 
     if (!client) {
       return res.status(400).json({ error: 'No client found' });
@@ -1069,25 +1073,25 @@ router.get('/psychologists', async (req, res) => {
   try {
     console.log('🔍 Fetching psychologists for booking...');
     
-    // Mongoose syntax for MongoDB
-    const psychologists = await User.find({ 
-      role: 'psychologist'
-    })
-    .select('name email profileInfo psychologistDetails createdAt')
-    .sort({ createdAt: -1 });
+    // Sequelize syntax for PostgreSQL
+    const psychologists = await global.User.findAll({ 
+      where: { role: 'psychologist' },
+      attributes: ['id', 'name', 'email', 'profileInfo', 'psychologistDetails', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    });
 
     console.log(`📊 Found ${psychologists.length} psychologist(s)`);
 
     // Enhance psychologists with default data if missing
     const enhancedPsychologists = psychologists.map((psych, index) => {
-      const psychObj = psych.toObject();
+      const psychObj = psych.dataValues || psych;
       
       const profileInfo = psychObj.profileInfo || {};
       const psychDetails = psychObj.psychologistDetails || {};
       
       return {
-        id: psychObj._id.toString(),
-        _id: psychObj._id, // For backward compatibility
+        id: psychObj.id.toString(),
+        _id: psychObj.id, // For backward compatibility
         name: psychObj.name,
         email: psychObj.email,
         profilePicture: profileInfo.profilePicture,
@@ -1137,8 +1141,8 @@ router.get('/psychologists', async (req, res) => {
 // @access  Private
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id, { 
-      select: '-password' 
+    const user = await global.User.findByPk(req.user.id, { 
+      attributes: { exclude: ['password'] }
     });
 
     if (!user) {
@@ -1167,8 +1171,8 @@ router.get('/profile', auth, async (req, res) => {
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id, { 
-      select: '-password' 
+    const user = await global.User.findByPk(req.params.id, { 
+      attributes: { exclude: ['password'] }
     });
 
     if (!user) {
@@ -1222,7 +1226,7 @@ router.post('/create-psychologist', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ where: { email: email.toLowerCase().trim() } });
+    const existingUser = await global.User.findOne({ where: { email: email.toLowerCase().trim() } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -1246,10 +1250,9 @@ router.post('/create-psychologist', async (req, res) => {
       }
     };
 
-    const user = await User.create(psychologistData);
-    await user.save();
+    const user = await global.User.create(psychologistData);
 
-    console.log('✅ Psychologist account created successfully:', user._id);
+    console.log('✅ Psychologist account created successfully:', user.id);
 
     // Return success response (exclude password)
     const userData = {
@@ -1298,7 +1301,7 @@ router.post('/create-psychologist', async (req, res) => {
 // @access  Private (Psychologist only)
 router.put('/profile/psychologist', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await global.User.findByPk(req.user.id);
 
     if (!user || user.role !== 'psychologist') {
       return res.status(403).json({
@@ -1332,8 +1335,8 @@ router.put('/profile/psychologist', auth, async (req, res) => {
     await user.update({ psychologistDetails: updatedDetails });
     
     // Fetch updated user without password
-    const updatedUser = await User.findById(req.user.id, {
-      select: '-password'
+    const updatedUser = await global.User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
     });
 
     res.json({
@@ -1376,7 +1379,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findById(req.user.id);
+    const user = await global.User.findByPk(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -1393,8 +1396,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Update session rate
-    user.sessionRate = sessionRate;
-    await user.save();
+    await user.update({ sessionRate });
 
     console.log('✅ Session rate updated for', user.email, ':', sessionRate);
 

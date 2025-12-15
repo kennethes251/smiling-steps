@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+// Use global Sequelize User model (initialized in server/index.js)
 const Session = require('../models/Session');
 const { auth } = require('../middleware/auth');
 

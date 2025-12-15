@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mpesaAPI = require('../config/mpesa');
 const { auth } = require('../middleware/auth');
-const Session = require('../models/Session');
-const User = require('../models/User');
+// Use global Sequelize models (initialized in server/index.js)
 const { 
   formatErrorResponse, 
   logPaymentError,
@@ -50,16 +49,19 @@ router.post('/initiate', auth, async (req, res) => {
     }
 
     // Get session details
-    const session = await Session.findById(sessionId)
-      .populate('client', 'name email')
-      .populate('psychologist', 'name');
+    const session = await global.Session.findByPk(sessionId, {
+      include: [
+        { model: global.User, as: 'client', attributes: ['name', 'email'] },
+        { model: global.User, as: 'psychologist', attributes: ['name'] }
+      ]
+    });
 
     if (!session) {
       return res.status(404).json({ msg: 'Session not found' });
     }
 
     // Verify session ownership - user must be the client
-    if (session.client._id.toString() !== req.user.id) {
+    if (session.client.id.toString() !== req.user.id) {
       return res.status(403).json({ msg: 'Not authorized to pay for this session' });
     }
 
@@ -284,9 +286,12 @@ router.post('/callback', async (req, res) => {
     }
 
     // Find session by CheckoutRequestID
-    const session = await Session.findOne({ 
-      mpesaCheckoutRequestID: CheckoutRequestID 
-    }).populate('client', 'name email')
+    const session = await global.Session.findOne({ 
+      where: { mpesaCheckoutRequestID: CheckoutRequestID },
+      include: [
+        { model: global.User, as: 'client', attributes: ['name', 'email'] }
+      ]
+    })
       .populate('psychologist', 'name email');
 
     if (!session) {
