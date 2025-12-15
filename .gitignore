@@ -95,3 +95,6 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.dbnode_modules
+
+# Uploaded files
+server/uploads/

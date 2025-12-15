@@ -36,7 +36,9 @@ export const API_ENDPOINTS = {
   PSYCHOLOGISTS: `${API_BASE_URL}/api/public/psychologists`,
   COMPANY: `${API_BASE_URL}/api/company`,
   UPLOAD: `${API_BASE_URL}/api/upload`,
-  ADMIN: `${API_BASE_URL}/api/admin`
+  ADMIN: `${API_BASE_URL}/api/admin`,
+  RESOURCES: `${API_BASE_URL}/api/resources`,
+  MPESA: `${API_BASE_URL}/api/mpesa`
 };
 
 export default API_BASE_URL;

@@ -4,16 +4,23 @@
   "description": "Smiling Steps - Mental Health Platform Backend",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node index-mongodb.js",
+    "start:postgres": "node index.js",
+    "dev": "nodemon index-mongodb.js",
     "build": "npm install",
-    "railway:start": "node index.js"
+    "railway:start": "node index-mongodb.js",
+    "mpesa:validate": "node scripts/validate-mpesa-credentials.js",
+    "mpesa:test": "node scripts/test-mpesa-connection.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
   "dependencies": {
+    "africastalking": "^0.7.8",
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -21,15 +28,31 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "mongoose": "^8.19.3",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.11",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
-    "validator": "^13.15.15"
+    "socket.io": "^4.6.1",
+    "stripe": "^19.3.1",
+    "uuid": "^9.0.0",
+    "validator": "^13.15.15",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "fast-check": "^4.4.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.4.1",
+    "nodemon": "^3.0.1",
+    "puppeteer": "^21.6.1",
+    "socket.io-client": "^4.8.1",
+    "sqlite3": "^5.1.7",
+    "supertest": "^7.1.4"
   },
   "keywords": [
     "mental-health",

@@ -1,47 +1,122 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const connectDB = require('./config/database');
+const { securityHeaders, enforceTLS, videoCallCorsOptions } = require('./middleware/security');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration - Render only
+// Security Headers - Apply first for all requests
+app.use(securityHeaders);
+app.use(enforceTLS);
+
+// Helmet for additional security headers (configured for video calls)
+app.use(helmet({
+  contentSecurityPolicy: false, // We handle CSP in our custom middleware
+  crossOriginEmbedderPolicy: false, // Disabled for WebRTC compatibility
+  crossOriginResourcePolicy: { policy: "same-site" },
+  dnsPrefetchControl: true,
+  frameguard: { action: 'sameorigin' }, // Allow same origin for video calls
+  hidePoweredBy: true,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  ieNoOpen: true,
+  noSniff: true,
+  originAgentCluster: true,
+  permittedCrossDomainPolicies: false,
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  xssFilter: true
+}));
+
+// Enhanced CORS Configuration for Video Calls
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://smiling-steps-frontend.onrender.com'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://smiling-steps-frontend.onrender.com',
+      // Add development origins for video call testing
+      'http://localhost:3001',
+      'https://localhost:3000',
+      'https://localhost:3001'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('🚫 CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'x-auth-token',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-File-Name'
+  ],
+  exposedHeaders: [
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining', 
+    'X-RateLimit-Reset',
+    'Retry-After'
+  ],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // 24 hours preflight cache
 };
 app.use(cors(corsOptions));
 
-// Additional CORS headers for Render deployment
+// Enhanced security headers for video calls
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'https://smiling-steps-frontend.onrender.com'
-  ];
-  
-  console.log('🌐 CORS Check - Origin:', origin, 'Allowed:', allowedOrigins.includes(origin));
-  
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  // Video call specific headers
+  if (req.path.startsWith('/api/video-calls')) {
+    // Allow WebRTC media access
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(self), microphone=(self), display-capture=(self), geolocation=()'
+    );
+    
+    // Enhanced CSP for video calls
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data: https: blob:; " +
+      "media-src 'self' blob: mediastream:; " +
+      "connect-src 'self' wss: ws: https://stun.l.google.com:19302 https://stun1.l.google.com:19302; " +
+      "font-src 'self' data:; " +
+      "worker-src 'self' blob:; " +
+      "child-src 'self' blob:; " +
+      "frame-src 'self'"
+    );
   }
   
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-auth-token');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+  // Rate limiting headers for video call endpoints
+  if (req.path.startsWith('/api/video-calls') && req.method !== 'OPTIONS') {
+    const rateLimitInfo = {
+      limit: 100,
+      window: '15 minutes',
+      remaining: 99 // This would be calculated by actual rate limiter
+    };
+    
+    res.setHeader('X-RateLimit-Limit', rateLimitInfo.limit);
+    res.setHeader('X-RateLimit-Window', rateLimitInfo.window);
   }
+  
+  next();
 });
 
 app.use(express.json());
@@ -57,6 +132,10 @@ app.use((req, res, next) => {
 
 const startServer = async () => {
   const sequelize = await connectDB();
+
+  // Schedule daily payment reconciliation
+  const { scheduleReconciliation } = require('./scripts/schedule-reconciliation');
+  scheduleReconciliation();
 
   // Initialize models
   const { DataTypes } = require('sequelize');
@@ -80,8 +159,14 @@ const startServer = async () => {
   global.Blog = Blog;
   
   // Sync database (create tables if they don't exist)
-  await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-  console.log('✅ PostgreSQL connected and tables synchronized');
+  // Use 'alter' only when explicitly needed, otherwise just check connection
+  if (process.env.FORCE_SYNC === 'true') {
+    await sequelize.sync({ alter: true });
+    console.log('✅ PostgreSQL connected and tables synchronized (FORCE_SYNC)');
+  } else {
+    await sequelize.authenticate();
+    console.log('✅ PostgreSQL connected (fast mode - no sync)');
+  }
 
   // Define Routes
   console.log('Loading routes...');
@@ -97,8 +182,29 @@ const startServer = async () => {
   console.log('  ✅ blog routes loaded.');
   app.use('/api/public', require('./routes/public'));
   console.log('  ✅ public routes loaded.');
-  // app.use('/api/sessions', require('./routes/sessions'));
-  // console.log('  ✅ sessions routes loaded.');
+  app.use('/api/sessions', require('./routes/sessions'));
+  console.log('  ✅ sessions routes loaded.');
+  app.use('/api/mpesa', require('./routes/mpesa'));
+  console.log('  ✅ mpesa routes loaded.');
+  app.use('/api/reconciliation', require('./routes/reconciliation'));
+  console.log('  ✅ reconciliation routes loaded.');
+  app.use('/api/real-time-reconciliation', require('./routes/realTimeReconciliation').router);
+  console.log('  ✅ real-time reconciliation routes loaded.');
+  app.use('/api/audit-logs', require('./routes/auditLogs'));
+  console.log('  ✅ audit logs routes loaded.');
+  app.use('/api/issue-resolution', require('./routes/issueResolution'));
+  console.log('  ✅ issue resolution routes loaded.');
+  app.use('/api/accounting', require('./routes/accounting'));
+  console.log('  ✅ accounting routes loaded.');
+  app.use('/api/fraud', require('./routes/fraudDetection'));
+  console.log('  ✅ fraud detection routes loaded.');
+  // Video calls routes with enhanced CORS
+  app.use('/api/video-calls', cors(videoCallCorsOptions), require('./routes/videoCalls'));
+  console.log('  ✅ video calls routes loaded with enhanced CORS.');
+  app.use('/api/video-call-metrics', require('./routes/videoCallMetrics'));
+  console.log('  ✅ video call metrics routes loaded.');
+  app.use('/docs', require('./routes/docs'));
+  console.log('  ✅ documentation routes loaded.');
   app.use('/api', require('./routes/make-admin'));
   console.log('  ✅ make-admin route loaded (TEMPORARY).');
   
@@ -109,8 +215,17 @@ const startServer = async () => {
   // app.use('/api/checkins', require('./routes/checkins'));
   // app.use('/api/company', require('./routes/company'));
   
-  console.log('✅ Core routes loaded (auth, users, upload, admin, public, sessions)');
+  console.log('✅ Core routes loaded (auth, users, upload, admin, public, sessions, mpesa)');
   console.log('⚠️  Assessment/chat routes temporarily disabled');
+
+  // Start fraud model training scheduler
+  try {
+    const fraudModelScheduler = require('./scripts/schedule-fraud-model-training');
+    fraudModelScheduler.start();
+    console.log('✅ Fraud model training scheduler started');
+  } catch (error) {
+    console.error('⚠️ Failed to start fraud model scheduler:', error.message);
+  }
 
   // Basic Route
   app.get('/', (req, res) => {
@@ -128,8 +243,52 @@ const startServer = async () => {
     res.json({ message: 'Server is running', timestamp: new Date() });
   });
 
-  app.listen(PORT, () => {
+  // Create HTTP server for WebSocket support
+  const http = require('http');
+  const server = http.createServer(app);
+
+  // Setup WebSocket server for real-time reconciliation
+  const { setupWebSocketServer } = require('./routes/realTimeReconciliation');
+  const wss = setupWebSocketServer(server);
+
+  // Initialize video call service with Socket.io
+  const { initializeVideoCallServer } = require('./services/videoCallService');
+  const videoCallIO = initializeVideoCallServer(server);
+  console.log('✅ Video call Socket.io server initialized');
+
+  // Start real-time reconciliation service
+  const realTimeReconciliationService = require('./services/realTimeReconciliation');
+  
+  // Start periodic reconciliation checks (every 15 minutes)
+  const periodicInterval = realTimeReconciliationService.startPeriodicChecks(15);
+
+  server.listen(PORT, () => {
     console.log(`✅ Server is running on port ${PORT}`);
+    console.log(`📡 WebSocket server ready for real-time reconciliation`);
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    
+    // Stop real-time reconciliation service
+    realTimeReconciliationService.stop();
+    
+    // Clear periodic interval
+    if (periodicInterval) {
+      clearInterval(periodicInterval);
+    }
+    
+    // Close WebSocket server
+    wss.close(() => {
+      console.log('📡 WebSocket server closed');
+    });
+    
+    // Close HTTP server
+    server.close(() => {
+      console.log('🛑 HTTP server closed');
+      process.exit(0);
+    });
   });
 };
 

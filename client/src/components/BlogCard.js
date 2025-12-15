@@ -6,7 +6,20 @@ const BlogCard = ({ blog }) => {
   const navigate = useNavigate();
 
   return (
-    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', '&:hover': { boxShadow: 6 } }}>
+    <Card 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        '&:hover': { 
+          boxShadow: 6,
+          transform: 'translateY(-4px)'
+        } 
+      }}
+      onClick={() => navigate(`/blog/${blog.slug}`)}
+    >
       {blog.featuredImage && (
         <CardMedia
           component="img"
@@ -55,7 +68,7 @@ const BlogCard = ({ blog }) => {
       <CardActions>
         <Button
           size="small"
-          onClick={() => navigate(`/blogs/${blog.slug}`)}
+          onClick={() => navigate(`/blog/${blog.slug}`)}
           sx={{ ml: 'auto' }}
         >
           Read More →

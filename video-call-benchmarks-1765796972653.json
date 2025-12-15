@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-12-15T11:09:12.232Z",
+  "metrics": {
+    "connectionSetup": {
+      "average": "1983ms",
+      "min": "1531ms",
+      "max": "2389ms",
+      "target": "<3000ms",
+      "status": "PASS"
+    },
+    "memoryUsage": {
+      "baseline": "4MB",
+      "peak": "12MB",
+      "difference": "8MB",
+      "status": "MEASURED"
+    },
+    "concurrentCapacity": {
+      "tested": 25,
+      "target": 100,
+      "status": "PARTIAL",
+      "notes": "Limited by STUN server and system resources"
+    },
+    "latency": {
+      "average": "107ms",
+      "target": "<200ms",
+      "status": "PASS"
+    }
+  }
+}

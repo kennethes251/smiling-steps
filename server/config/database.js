@@ -15,10 +15,11 @@ const connectDB = async () => {
       dialect: 'postgres',
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
       dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
+        // Enable SSL for Render PostgreSQL (required for external connections)
+        ssl: {
           require: true,
           rejectUnauthorized: false
-        } : false
+        }
       }
     });
 

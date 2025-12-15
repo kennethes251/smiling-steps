@@ -20,7 +20,12 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
-    role: 'client'
+    role: 'client',
+    // Psychologist-specific fields
+    specializations: [],
+    experience: '',
+    education: '',
+    bio: ''
   });
   
   const [errors, setErrors] = useState({});
@@ -159,7 +164,7 @@ const Register = () => {
             Begin your healing journey with compassionate, professional support rooted in respect, empowerment, and hope.
           </Typography>
           <Typography variant="body2" color="primary.main" textAlign="center" sx={{ fontWeight: 500 }}>
-            Get instant access - no email verification required!
+            Create your account to get started
           </Typography>
         </Box>
         

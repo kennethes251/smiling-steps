@@ -23,7 +23,7 @@ const BlogSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Mental Health', 'Addiction Recovery', 'Therapy Tips', 'Self-Care', 'Relationships', 'Wellness', 'Success Stories', 'Research & Studies']
+    enum: ['Mental Health', 'Addiction Recovery', 'Therapy Tips', 'Self-Care', 'Relationships', 'Wellness', 'Success Stories', 'Research & Studies', 'Recovery Guide', 'Community Education', 'Support Tool']
   },
   tags: [{
     type: String,
@@ -39,7 +39,7 @@ const BlogSchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // Made optional to fix creation issue
   },
   featuredImage: {
     type: String // URL to image

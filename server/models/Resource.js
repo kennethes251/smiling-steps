@@ -33,11 +33,20 @@ const ResourceSchema = new mongoose.Schema({
   filePath: {
     type: String // Local file path for uploaded resources
   },
+  fileName: {
+    type: String // Original filename
+  },
   fileSize: {
     type: Number // File size in bytes
   },
   mimeType: {
     type: String
+  },
+  uploadedAt: {
+    type: Date // When file was uploaded
+  },
+  lastModified: {
+    type: Date // When file was last replaced
   },
   downloadable: {
     type: Boolean,

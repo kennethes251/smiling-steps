@@ -23,10 +23,13 @@ import {
   Psychology as PsychologyIcon,
   Article as ArticleIcon,
   Feedback as FeedbackIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Payment as PaymentIcon
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [psychologists, setPsychologists] = useState([]);
   const [clients, setClients] = useState([]);
@@ -260,9 +263,59 @@ const AdminDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Blogs & Feedback Placeholder */}
+      {/* Quick Actions & Management */}
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4
+              }
+            }}
+            onClick={() => navigate('/admin/payments')}
+          >
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <PaymentIcon sx={{ fontSize: 40, color: '#1976d2', mr: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Payment Management
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="textSecondary">
+                View and manage all M-Pesa transactions, reconcile payments, and export reports
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 4
+              }
+            }}
+            onClick={() => navigate('/admin/accounting')}
+          >
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <TrendingUpIcon sx={{ fontSize: 40, color: '#4caf50', mr: 2 }} />
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  Accounting Integration
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="textSecondary">
+                Export payment data to QuickBooks, Xero, Sage, and other accounting software
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -275,7 +328,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>

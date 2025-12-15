@@ -11,6 +11,7 @@ import {
   Button
 } from '@mui/material';
 import { ArrowBack, AccessTime, Visibility } from '@mui/icons-material';
+import ReactMarkdown from 'react-markdown';
 import SocialShare from '../components/SocialShare';
 import Logo from '../components/Logo';
 import API_BASE_URL from '../config/api';
@@ -235,11 +236,24 @@ const BlogPostPage = () => {
 
       <Container maxWidth="md" sx={{ pt: 12, pb: 8 }}>
         <Button
-          onClick={() => navigate('/blog')}
+          onClick={() => {
+            if (blog.category === 'Recovery Guide') {
+              navigate('/blog?category=Recovery%20Guide');
+            } else if (blog.category === 'Community Education') {
+              navigate('/blog?category=Community%20Education');
+            } else if (blog.category === 'Support Tool') {
+              navigate('/blog?category=Support%20Tool');
+            } else {
+              navigate('/blog');
+            }
+          }}
           startIcon={<ArrowBack />}
           sx={{ mb: 3 }}
         >
-          Back to Blog
+          {blog.category === 'Recovery Guide' ? 'Back to Recovery Guides' :
+           blog.category === 'Community Education' ? 'Back to Education Materials' :
+           blog.category === 'Support Tool' ? 'Back to Support Tools' :
+           'Back to Blog & Articles'}
         </Button>
 
         {blog.featuredImage && (
@@ -301,20 +315,68 @@ const BlogPostPage = () => {
 
         <Divider sx={{ mb: 4 }} />
 
-        <Typography
-          variant="body1"
-          sx={{
-            lineHeight: 1.8,
-            fontSize: '1.1rem',
-            mb: 4,
-            '& p': { mb: 2 },
-            '& h2': { mt: 4, mb: 2, fontWeight: 'bold' },
-            '& h3': { mt: 3, mb: 2, fontWeight: 'bold' },
-            '& ul, & ol': { pl: 3, mb: 2 },
-            '& li': { mb: 1 }
-          }}
-          dangerouslySetInnerHTML={{ __html: blog.content }}
-        />
+        <Box sx={{ mb: 4 }}>
+          <ReactMarkdown
+            components={{
+              h1: ({node, ...props}) => (
+                <Typography variant="h3" gutterBottom sx={{ mt: 4, mb: 2, fontWeight: 'bold' }} {...props} />
+              ),
+              h2: ({node, ...props}) => (
+                <Typography variant="h4" gutterBottom sx={{ mt: 3, mb: 2, fontWeight: 'bold' }} {...props} />
+              ),
+              h3: ({node, ...props}) => (
+                <Typography variant="h5" gutterBottom sx={{ mt: 2, mb: 1, fontWeight: 'bold' }} {...props} />
+              ),
+              p: ({node, ...props}) => (
+                <Typography variant="body1" paragraph sx={{ mb: 2, lineHeight: 1.8, fontSize: '1.1rem' }} {...props} />
+              ),
+              ul: ({node, ...props}) => (
+                <Box component="ul" sx={{ mb: 2, pl: 3 }} {...props} />
+              ),
+              ol: ({node, ...props}) => (
+                <Box component="ol" sx={{ mb: 2, pl: 3 }} {...props} />
+              ),
+              li: ({node, ...props}) => (
+                <Typography component="li" variant="body1" sx={{ mb: 1, fontSize: '1.1rem' }} {...props} />
+              ),
+              strong: ({node, ...props}) => (
+                <Box component="strong" sx={{ fontWeight: 'bold' }} {...props} />
+              ),
+              em: ({node, ...props}) => (
+                <Box component="em" sx={{ fontStyle: 'italic' }} {...props} />
+              ),
+              blockquote: ({node, ...props}) => (
+                <Box
+                  component="blockquote"
+                  sx={{
+                    borderLeft: '4px solid',
+                    borderColor: 'primary.main',
+                    pl: 2,
+                    py: 1,
+                    my: 2,
+                    fontStyle: 'italic',
+                    bgcolor: 'grey.50'
+                  }}
+                  {...props} />
+              ),
+              a: ({node, ...props}) => (
+                <Box
+                  component="a"
+                  sx={{
+                    color: 'primary.main',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline'
+                    }
+                  }}
+                  {...props}
+                />
+              ),
+            }}
+          >
+            {blog.content}
+          </ReactMarkdown>
+        </Box>
 
         {blog.tags && blog.tags.length > 0 && (
           <Box sx={{ mb: 4 }}>

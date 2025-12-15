@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
+const Blog = require('../models/Blog');
+const User = require('../models/User');
 
-// Note: Blog model will be initialized when we add it to server/index.js
-// For now, we'll create placeholder routes
-
-// Admin middleware
+// Admin middleware (Mongoose)
 const adminAuth = async (req, res, next) => {
   try {
-    const User = global.User;
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -21,20 +19,12 @@ const adminAuth = async (req, res, next) => {
   }
 };
 
-// Get all blogs (admin)
+// Get all blogs (admin) - Mongoose
 router.get('/', auth, adminAuth, async (req, res) => {
   try {
-    const Blog = global.Blog;
-    const User = global.User;
-    
-    const blogs = await Blog.findAll({
-      include: [{
-        model: User,
-        as: 'author',
-        attributes: ['id', 'name', 'email']
-      }],
-      order: [['createdAt', 'DESC']]
-    });
+    const blogs = await Blog.find()
+      .populate('author', 'name email')
+      .sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -49,12 +39,16 @@ router.get('/', auth, adminAuth, async (req, res) => {
 // Create blog (admin)
 router.post('/', auth, adminAuth, async (req, res) => {
   try {
-    const Blog = global.Blog;
+    console.log('📝 Creating blog - req.user:', req.user);
+    console.log('📝 Creating blog - req.user.id:', req.user?.id);
+    console.log('📝 Creating blog - req.body:', req.body);
     
     const blogData = {
       ...req.body,
-      authorId: req.user.id
+      author: req.user.id
     };
+
+    console.log('📝 Blog data to create:', blogData);
 
     const blog = await Blog.create(blogData);
 
@@ -72,14 +66,18 @@ router.post('/', auth, adminAuth, async (req, res) => {
 // Update blog (admin)
 router.put('/:id', auth, adminAuth, async (req, res) => {
   try {
-    const Blog = global.Blog;
-    const blog = await Blog.findByPk(req.params.id);
+    const blog = await Blog.findById(req.params.id);
     
     if (!blog) {
       return res.status(404).json({ message: 'Blog not found' });
     }
 
-    await blog.update(req.body);
+    // Update fields
+    Object.keys(req.body).forEach(key => {
+      blog[key] = req.body[key];
+    });
+    
+    await blog.save();
 
     res.json({
       success: true,
@@ -95,14 +93,13 @@ router.put('/:id', auth, adminAuth, async (req, res) => {
 // Delete blog (admin)
 router.delete('/:id', auth, adminAuth, async (req, res) => {
   try {
-    const Blog = global.Blog;
-    const blog = await Blog.findByPk(req.params.id);
+    const blog = await Blog.findById(req.params.id);
     
     if (!blog) {
       return res.status(404).json({ message: 'Blog not found' });
     }
 
-    await blog.destroy();
+    await Blog.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,

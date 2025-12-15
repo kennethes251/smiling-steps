@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Typography, Grid, Box, CircularProgress, Alert, Chip, Button } from '@mui/material';
 import { Article as ArticleIcon } from '@mui/icons-material';
 import axios from 'axios';
@@ -9,6 +9,7 @@ import Logo from '../components/Logo';
 
 const BlogListPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -22,12 +23,20 @@ const BlogListPage = () => {
     'Relationships',
     'Wellness',
     'Success Stories',
-    'Research & Studies'
+    'Research & Studies',
+    'Recovery Guide',
+    'Community Education',
+    'Support Tool'
   ];
 
   useEffect(() => {
+    // Check if there's a category in the URL
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
+    }
     fetchBlogs();
-  }, []);
+  }, [searchParams]);
 
   const fetchBlogs = async () => {
     try {
@@ -174,10 +183,16 @@ const BlogListPage = () => {
         <Box sx={{ textAlign: 'center', mb: 6 }}>
           <ArticleIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Blog & Articles
+            {selectedCategory === 'Recovery Guide' ? 'Recovery Guides' :
+             selectedCategory === 'Community Education' ? 'Community Education' :
+             selectedCategory === 'Support Tool' ? 'Support Tools' :
+             'Blog & Articles'}
           </Typography>
           <Typography variant="h6" color="text.secondary">
-            Insights, tips, and stories about mental health and wellness
+            {selectedCategory === 'Recovery Guide' ? 'Downloadable guides and resources to support your recovery journey' :
+             selectedCategory === 'Community Education' ? 'Educational materials and workshops for communities and families' :
+             selectedCategory === 'Support Tool' ? 'Digital tools and resources to support your mental health' :
+             'Insights, tips, and stories about mental health and wellness'}
           </Typography>
         </Box>
 

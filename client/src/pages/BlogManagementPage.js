@@ -30,6 +30,14 @@ const BlogManagementPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  const categoryGroups = {
+    'Blogs': ['Mental Health', 'Addiction Recovery', 'Therapy Tips', 'Self-Care', 'Relationships', 'Wellness', 'Success Stories', 'Research & Studies'],
+    'Recovery Guides': ['Recovery Guide'],
+    'Community Education': ['Community Education'],
+    'Support Tools': ['Support Tool']
+  };
 
   useEffect(() => {
     fetchBlogs();
@@ -56,7 +64,7 @@ const BlogManagementPage = () => {
       const config = { headers: { 'x-auth-token': token } };
 
       if (editingBlog) {
-        await axios.put(`${API_ENDPOINTS.ADMIN}/blogs/${editingBlog.id}`, blogData, config);
+        await axios.put(`${API_ENDPOINTS.ADMIN}/blogs/${editingBlog._id || editingBlog.id}`, blogData, config);
         setMessage({ type: 'success', text: 'Blog updated successfully!' });
       } else {
         await axios.post(`${API_ENDPOINTS.ADMIN}/blogs`, blogData, config);
@@ -108,15 +116,20 @@ const BlogManagementPage = () => {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-          Blog Management
-        </Typography>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+            Content & Resources Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Manage blogs, recovery guides, education materials, and support tools
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setShowForm(true)}
         >
-          Create New Blog
+          Create New Content
         </Button>
       </Box>
 
@@ -126,27 +139,93 @@ const BlogManagementPage = () => {
         </Alert>
       )}
 
-      {blogs.length === 0 ? (
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 8 }}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              No blogs yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Create your first blog post to get started
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setShowForm(true)}
-            >
-              Create First Blog
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={3}>
-          {blogs.map((blog) => (
+      {/* Category Filter Tabs */}
+      <Box sx={{ mb: 4, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Chip
+          label={`All Content (${blogs.length})`}
+          onClick={() => setCategoryFilter('all')}
+          color={categoryFilter === 'all' ? 'primary' : 'default'}
+          variant={categoryFilter === 'all' ? 'filled' : 'outlined'}
+        />
+        <Chip
+          label={`📝 Blogs (${blogs.filter(b => categoryGroups['Blogs'].includes(b.category)).length})`}
+          onClick={() => setCategoryFilter('Blogs')}
+          color={categoryFilter === 'Blogs' ? 'primary' : 'default'}
+          variant={categoryFilter === 'Blogs' ? 'filled' : 'outlined'}
+        />
+        <Chip
+          label={`📖 Recovery Guides (${blogs.filter(b => categoryGroups['Recovery Guides'].includes(b.category)).length})`}
+          onClick={() => setCategoryFilter('Recovery Guides')}
+          color={categoryFilter === 'Recovery Guides' ? 'primary' : 'default'}
+          variant={categoryFilter === 'Recovery Guides' ? 'filled' : 'outlined'}
+        />
+        <Chip
+          label={`🎓 Community Education (${blogs.filter(b => categoryGroups['Community Education'].includes(b.category)).length})`}
+          onClick={() => setCategoryFilter('Community Education')}
+          color={categoryFilter === 'Community Education' ? 'primary' : 'default'}
+          variant={categoryFilter === 'Community Education' ? 'filled' : 'outlined'}
+        />
+        <Chip
+          label={`🛠️ Support Tools (${blogs.filter(b => categoryGroups['Support Tools'].includes(b.category)).length})`}
+          onClick={() => setCategoryFilter('Support Tools')}
+          color={categoryFilter === 'Support Tools' ? 'primary' : 'default'}
+          variant={categoryFilter === 'Support Tools' ? 'filled' : 'outlined'}
+        />
+      </Box>
+
+      {(() => {
+        const filteredBlogs = blogs.filter(blog => {
+          if (categoryFilter === 'all') return true;
+          const categories = categoryGroups[categoryFilter] || [];
+          return categories.includes(blog.category);
+        });
+
+        if (blogs.length === 0) {
+          return (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No content yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Create your first piece of content to get started
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setShowForm(true)}
+                >
+                  Create First Content
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        if (filteredBlogs.length === 0) {
+          return (
+            <Card>
+              <CardContent sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No {categoryFilter} content yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Create content in this category to see it here
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() => setCategoryFilter('all')}
+                >
+                  View All Content
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
+          <Grid container spacing={3}>
+            {filteredBlogs.map((blog) => (
             <Grid item xs={12} md={6} lg={4} key={blog.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {blog.featuredImage && (
@@ -177,7 +256,11 @@ const BlogManagementPage = () => {
                   </Typography>
                 </CardContent>
                 <CardActions>
-                  <Button size="small" startIcon={<ViewIcon />}>
+                  <Button 
+                    size="small" 
+                    startIcon={<ViewIcon />}
+                    onClick={() => navigate(`/blog/${blog.slug}`)}
+                  >
                     View
                   </Button>
                   <Button
@@ -203,7 +286,8 @@ const BlogManagementPage = () => {
             </Grid>
           ))}
         </Grid>
-      )}
+        );
+      })()}
     </Container>
   );
 };

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call Browser Compatibility Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .warn { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        #videoContainer {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        video {
+            width: 300px;
+            height: 200px;
+            background: #000;
+            border-radius: 4px;
+        }
+        .browser-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 Video Call Browser Compatibility Test</h1>
+    
+    <div class="browser-info">
+        <h3>Browser Information</h3>
+        <div id="browserInfo"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>WebRTC Feature Detection</h3>
+        <div id="featureTests"></div>
+    </div>    <
+div class="test-container">
+        <h3>Media Access Tests</h3>
+        <button onclick="testCamera()">Test Camera</button>
+        <button onclick="testMicrophone()">Test Microphone</button>
+        <button onclick="testScreenShare()">Test Screen Share</button>
+        <div id="mediaTests"></div>
+        
+        <div id="videoContainer">
+            <video id="localVideo" autoplay muted playsinline></video>
+            <video id="screenVideo" autoplay muted playsinline></video>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>WebRTC Connection Test</h3>
+        <button onclick="testWebRTCConnection()">Test WebRTC Connection</button>
+        <div id="connectionTests"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Performance Tests</h3>
+        <button onclick="testPerformance()">Run Performance Tests</button>
+        <div id="performanceTests"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Test Results Summary</h3>
+        <div id="testSummary"></div>
+        <button onclick="exportResults()">Export Results</button>
+    </div>
+
+    <script>
+        let testResults = {};
+        let localStream = null;
+        let screenStream = null;
+
+        // Initialize browser detection and feature tests
+        window.onload = function() {
+            detectBrowser();
+            runFeatureTests();
+        };
+
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            let browser = 'Unknown';
+            let version = 'Unknown';
+            let engine = 'Unknown';
+
+            if (ua.includes('Chrome') && !ua.includes('Edg')) {
+                browser = 'Chrome';
+                const match = ua.match(/Chrome\/(\d+)/);
+                version = match ? match[1] : 'Unknown';
+                engine = 'Blink';
+            } else if (ua.includes('Edg')) {
+                browser = 'Edge';
+                const match = ua.match(/Edg\/(\d+)/);
+                version = match ? match[1] : 'Unknown';
+                engine = 'Blink';
+            } else if (ua.includes('Firefox')) {
+                browser = 'Firefox';
+                const match = ua.match(/Firefox\/(\d+)/);
+                version = match ? match[1] : 'Unknown';
+                engine = 'Gecko';
+            } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+                browser = 'Safari';
+                const match = ua.match(/Version\/(\d+)/);
+                version = match ? match[1] : 'Unknown';
+                engine = 'WebKit';
+            }
+
+            const info = `
+                <strong>Browser:</strong> ${browser} ${version}<br>
+                <strong>Engine:</strong> ${engine}<br>
+                <strong>Platform:</strong> ${navigator.platform}<br>
+                <strong>User Agent:</strong> ${ua}<br>
+                <strong>HTTPS:</strong> ${location.protocol === 'https:' ? '✅ Yes' : '❌ No'}<br>
+                <strong>Cookies Enabled:</strong> ${navigator.cookieEnabled ? '✅ Yes' : '❌ No'}
+            `;
+            
+            document.getElementById('browserInfo').innerHTML = info;
+            testResults.browser = { browser, version, engine, https: location.protocol === 'https:' };
+        }
+
+        function runFeatureTests() {
+            const tests = [
+                { name: 'RTCPeerConnection', test: () => typeof RTCPeerConnection !== 'undefined' },
+                { name: 'getUserMedia', test: () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) },
+                { name: 'getDisplayMedia', test: () => !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) },
+                { name: 'WebSocket', test: () => typeof WebSocket !== 'undefined' },
+                { name: 'MediaDevices', test: () => !!navigator.mediaDevices },
+                { name: 'MediaRecorder', test: () => typeof MediaRecorder !== 'undefined' },
+                { name: 'WebAudio', test: () => !!(window.AudioContext || window.webkitAudioContext) },
+                { name: 'Fullscreen API', test: () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled) }
+            ];
+
+            let html = '';
+            testResults.features = {};
+
+            tests.forEach(test => {
+                const result = test.test();
+                testResults.features[test.name] = result;
+                html += `<div class="test-result ${result ? 'pass' : 'fail'}">
+                    ${result ? '✅' : '❌'} ${test.name}: ${result ? 'Supported' : 'Not Supported'}
+                </div>`;
+            });
+
+            document.getElementById('featureTests').innerHTML = html;
+        }
+
+        async function testCamera() {
+            const startTime = performance.now();
+            try {
+                const constraints = {
+                    video: {
+                        width: { ideal: 1280, max: 1920 },
+                        height: { ideal: 720, max: 1080 },
+                        frameRate: { ideal: 30, max: 30 }
+                    }
+                };
+
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const videoElement = document.getElementById('localVideo');
+                videoElement.srcObject = localStream;
+
+                const track = localStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                const result = `
+                    <div class="test-result pass">✅ Camera Access: Success (${duration}ms)</div>
+                    <div class="test-result info">📹 Resolution: ${settings.width}x${settings.height}</div>
+                    <div class="test-result info">🎬 Frame Rate: ${settings.frameRate}fps</div>
+                    <div class="test-result info">📱 Device: ${track.label}</div>
+                `;
+
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.camera = { success: true, duration, settings, capabilities };
+
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                const result = `<div class="test-result fail">❌ Camera Access Failed: ${error.name} - ${error.message} (${duration}ms)</div>`;
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.camera = { success: false, error: error.name, duration };
+            }
+        }
+
+        async function testMicrophone() {
+            const startTime = performance.now();
+            try {
+                const constraints = {
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                };
+
+                const audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+                const track = audioStream.getAudioTracks()[0];
+                const settings = track.getSettings();
+
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                const result = `
+                    <div class="test-result pass">✅ Microphone Access: Success (${duration}ms)</div>
+                    <div class="test-result info">🎤 Device: ${track.label}</div>
+                    <div class="test-result info">🔊 Echo Cancellation: ${settings.echoCancellation ? 'Yes' : 'No'}</div>
+                `;
+
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.microphone = { success: true, duration, settings };
+
+                // Stop the audio stream
+                audioStream.getTracks().forEach(track => track.stop());
+
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                const result = `<div class="test-result fail">❌ Microphone Access Failed: ${error.name} - ${error.message} (${duration}ms)</div>`;
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.microphone = { success: false, error: error.name, duration };
+            }
+        }
+
+        async function testScreenShare() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                const result = `<div class="test-result warn">⚠️ Screen Share: Not supported on this browser/device</div>`;
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.screenShare = { success: false, error: 'Not supported' };
+                return;
+            }
+
+            const startTime = performance.now();
+            try {
+                screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { cursor: 'always' },
+                    audio: false
+                });
+
+                const videoElement = document.getElementById('screenVideo');
+                videoElement.srcObject = screenStream;
+
+                const track = screenStream.getVideoTracks()[0];
+                const settings = track.getSettings();
+
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                const result = `
+                    <div class="test-result pass">✅ Screen Share: Success (${duration}ms)</div>
+                    <div class="test-result info">🖥️ Resolution: ${settings.width}x${settings.height}</div>
+                `;
+
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.screenShare = { success: true, duration, settings };
+
+                // Stop screen share after 5 seconds
+                setTimeout(() => {
+                    screenStream.getTracks().forEach(track => track.stop());
+                    videoElement.srcObject = null;
+                }, 5000);
+
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                const result = `<div class="test-result fail">❌ Screen Share Failed: ${error.name} - ${error.message} (${duration}ms)</div>`;
+                document.getElementById('mediaTests').innerHTML += result;
+                testResults.screenShare = { success: false, error: error.name, duration };
+            }
+        }
+
+        async function testWebRTCConnection() {
+            const startTime = performance.now();
+            try {
+                // Test STUN server connectivity
+                const config = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+
+                const pc = new RTCPeerConnection(config);
+                
+                // Add a dummy data channel to trigger ICE gathering
+                pc.createDataChannel('test');
+
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                // Wait for ICE gathering
+                const iceGatheringPromise = new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('ICE gathering timeout')), 10000);
+                    
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            console.log('ICE candidate:', event.candidate.candidate);
+                        } else {
+                            clearTimeout(timeout);
+                            resolve();
+                        }
+                    };
+                });
+
+                await iceGatheringPromise;
+                
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+
+                const result = `
+                    <div class="test-result pass">✅ WebRTC Connection: Success (${duration}ms)</div>
+                    <div class="test-result info">🌐 ICE Gathering: Complete</div>
+                    <div class="test-result info">📡 STUN Servers: Accessible</div>
+                `;
+
+                document.getElementById('connectionTests').innerHTML = result;
+                testResults.webrtc = { success: true, duration };
+
+                pc.close();
+
+            } catch (error) {
+                const endTime = performance.now();
+                const duration = Math.round(endTime - startTime);
+                
+                const result = `<div class="test-result fail">❌ WebRTC Connection Failed: ${error.message} (${duration}ms)</div>`;
+                document.getElementById('connectionTests').innerHTML = result;
+                testResults.webrtc = { success: false, error: error.message, duration };
+            }
+        }
+
+        async function testPerformance() {
+            const results = [];
+            
+            // Test 1: Memory usage
+            if (performance.memory) {
+                const memory = performance.memory;
+                results.push(`
+                    <div class="test-result info">💾 Memory Used: ${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB</div>
+                    <div class="test-result info">💾 Memory Limit: ${Math.round(memory.jsHeapSizeLimit / 1024 / 1024)}MB</div>
+                `);
+                testResults.memory = {
+                    used: memory.usedJSHeapSize,
+                    limit: memory.jsHeapSizeLimit
+                };
+            }
+
+            // Test 2: Connection timing
+            if (navigator.connection) {
+                const connection = navigator.connection;
+                results.push(`
+                    <div class="test-result info">📶 Connection Type: ${connection.effectiveType}</div>
+                    <div class="test-result info">⚡ Downlink: ${connection.downlink}Mbps</div>
+                    <div class="test-result info">📡 RTT: ${connection.rtt}ms</div>
+                `);
+                testResults.connection = {
+                    type: connection.effectiveType,
+                    downlink: connection.downlink,
+                    rtt: connection.rtt
+                };
+            }
+
+            // Test 3: Hardware concurrency
+            results.push(`
+                <div class="test-result info">⚙️ CPU Cores: ${navigator.hardwareConcurrency || 'Unknown'}</div>
+                <div class="test-result info">📱 Device Memory: ${navigator.deviceMemory || 'Unknown'}GB</div>
+            `);
+
+            testResults.hardware = {
+                cores: navigator.hardwareConcurrency,
+                memory: navigator.deviceMemory
+            };
+
+            document.getElementById('performanceTests').innerHTML = results.join('');
+        }
+
+        function exportResults() {
+            const timestamp = new Date().toISOString();
+            const report = {
+                timestamp,
+                testResults,
+                userAgent: navigator.userAgent,
+                url: location.href
+            };
+
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `browser-compatibility-test-${timestamp.split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = [];
+            let passCount = 0;
+            let totalCount = 0;
+
+            // Feature tests
+            if (testResults.features) {
+                Object.entries(testResults.features).forEach(([feature, passed]) => {
+                    totalCount++;
+                    if (passed) passCount++;
+                });
+            }
+
+            // Media tests
+            ['camera', 'microphone', 'screenShare', 'webrtc'].forEach(test => {
+                if (testResults[test]) {
+                    totalCount++;
+                    if (testResults[test].success) passCount++;
+                }
+            });
+
+            const percentage = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
+            const status = percentage >= 90 ? 'pass' : percentage >= 70 ? 'warn' : 'fail';
+
+            summary.push(`
+                <div class="test-result ${status}">
+                    📊 Overall Compatibility: ${percentage}% (${passCount}/${totalCount} tests passed)
+                </div>
+            `);
+
+            if (testResults.browser) {
+                const browser = testResults.browser;
+                const supported = getSupportStatus(browser.browser, browser.version);
+                summary.push(`
+                    <div class="test-result ${supported.class}">
+                        ${supported.icon} Browser Support: ${supported.message}
+                    </div>
+                `);
+            }
+
+            document.getElementById('testSummary').innerHTML = summary.join('');
+        }
+
+        function getSupportStatus(browser, version) {
+            const requirements = {
+                'Chrome': 120,
+                'Edge': 120,
+                'Firefox': 121,
+                'Safari': 17
+            };
+
+            const minVersion = requirements[browser];
+            if (!minVersion) {
+                return { class: 'warn', icon: '⚠️', message: 'Browser not in compatibility matrix' };
+            }
+
+            const currentVersion = parseInt(version);
+            if (currentVersion >= minVersion) {
+                return { class: 'pass', icon: '✅', message: 'Fully supported' };
+            } else {
+                return { class: 'fail', icon: '❌', message: `Requires ${browser} ${minVersion}+ (current: ${version})` };
+            }
+        }
+
+        // Cleanup on page unload
+        window.onbeforeunload = function() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (screenStream) {
+                screenStream.getTracks().forEach(track => track.stop());
+            }
+        };
+    </script>
+</body>
+</html>

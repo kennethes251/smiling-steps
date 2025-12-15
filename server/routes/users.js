@@ -4,10 +4,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 // Use simple rate limiter to avoid 429 errors
 const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
 const { auth } = require('../middleware/auth');
-const User = global.User; // Use global User model from Sequelize
+const User = require('../models/User'); // Use Mongoose User model
 // Try email utility, fallback to simple one
 let sendEmail;
 try {
@@ -92,8 +93,8 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
     });
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
+    // Check if user already exists (Mongoose syntax)
+    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -114,8 +115,22 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       lastLogin: new Date()
     };
 
-    // Only add verification tokens for non-streamlined registration
-    if (!isStreamlined) {
+    // Handle psychologist registration with approval workflow
+    if (role === 'psychologist') {
+      const { psychologistDetails } = req.body;
+      userPayload.psychologistDetails = {
+        specializations: psychologistDetails?.specializations || [],
+        experience: psychologistDetails?.experience || '',
+        education: psychologistDetails?.education || '',
+        bio: psychologistDetails?.bio || '',
+        approvalStatus: 'pending', // Requires admin approval
+        isActive: false // Not active until approved
+      };
+      userPayload.isVerified = true; // Skip email verification for psychologists
+    }
+
+    // Only add verification tokens for non-streamlined client registration
+    if (!isStreamlined && role === 'client') {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -129,10 +144,10 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 
     const user = await User.create(userPayload);
 
-    // Create JWT payload
+    // Create JWT payload (MongoDB uses _id)
     const payload = {
       user: {
-        id: user.id,
+        id: user._id.toString(),
         role: user.role
       }
     };
@@ -143,9 +158,9 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Prepare response data (exclude sensitive fields)
+    // Prepare response data (exclude sensitive fields) - MongoDB uses _id
     const userData = {
-      id: user.id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
@@ -223,7 +238,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -329,10 +344,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Find user by email (case-insensitive)
-    const user = await User.scope('withPassword').findOne({ 
-      where: { email: email.toLowerCase().trim() }
-    });
+    // Find user by email (case-insensitive) - Mongoose syntax
+    const user = await User.findOne({ 
+      email: email.toLowerCase().trim() 
+    }).select('+password'); // Include password field
 
     // Check if user exists
     if (!user) {
@@ -343,8 +358,8 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Check if account is locked
-    if (user.isAccountLocked()) {
+    // Check if account is locked (Mongoose)
+    if (user.lockUntil && user.lockUntil > Date.now()) {
       const retryAfter = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
       return res.status(429).json({
         success: false,
@@ -353,18 +368,27 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Verify password
-    const isMatch = await user.correctPassword(password);
+    // Verify password (Mongoose)
+    console.log('🔑 Verifying password for user:', user.email, 'Role:', user.role);
+    const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) {
-      // Increment failed login attempts
-      await User.failedLogin(user.id);
+      console.log('❌ Password mismatch for:', user.email);
+      // Increment failed login attempts (Mongoose)
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = Date.now() + 15 * 60 * 1000; // Lock for 15 minutes
+      }
+      await user.save();
 
       return res.status(400).json({
         success: false,
         message: 'Authentication failed',
-        errors: ['Invalid email or password']
+        errors: ['Invalid email or password. Please check your credentials and try again.']
       });
     }
+    
+    console.log('✅ Password verified successfully for:', user.email);
 
     // Check if email is verified (only for clients)
     if (user.role === 'client' && !user.isVerified) {
@@ -376,16 +400,46 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
+    // Check if psychologist account is approved and active
+    if (user.role === 'psychologist') {
+      const approvalStatus = user.psychologistDetails?.approvalStatus || 'pending';
+      const isActive = user.psychologistDetails?.isActive;
+
+      if (approvalStatus === 'pending') {
+        return res.status(403).json({
+          success: false,
+          message: 'Account pending approval',
+          errors: ['Your psychologist application is under review. You will receive an email once approved.']
+        });
+      }
+
+      if (approvalStatus === 'rejected') {
+        return res.status(403).json({
+          success: false,
+          message: 'Application rejected',
+          errors: ['Your psychologist application was not approved. Please contact support for more information.']
+        });
+      }
+
+      if (isActive === false) {
+        return res.status(403).json({
+          success: false,
+          message: 'Account disabled',
+          errors: ['Your account has been disabled by an administrator. Please contact support for assistance.']
+        });
+      }
+    }
+
     // Reset login attempts on successful login
     user.loginAttempts = 0;
     user.lockUntil = null;
     user.lastLogin = new Date();
     await user.save();
 
-    // Create JWT payload
+    // Create JWT payload (MongoDB uses _id)
     const payload = {
       user: {
-        id: user.id,
+        id: user._id.toString(),
         role: user.role
       }
     };
@@ -531,7 +585,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
     console.log('👤 User ID:', req.user.id);
     console.log('📝 Request body:', req.body);
 
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       console.log('❌ User not found:', req.user.id);
@@ -688,7 +742,7 @@ router.put('/profile', auth, upload.single('profilePicture'), async (req, res) =
 // @access  Private
 router.put('/profile/upload', auth, upload.single('profilePicture'), async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -840,7 +894,7 @@ router.get('/debug/reset', async (req, res) => {
 // Temporary route to check psychologists without auth (remove in production)
 router.get('/debug/psychologists', async (req, res) => {
   try {
-    const psychologists = await find({
+    const psychologists = await User.find({
       role: 'psychologist',
       'psychologistDetails.approvalStatus': 'approved'
     }).select('name email role psychologistDetails');
@@ -956,9 +1010,15 @@ router.get('/debug/create-test-users', async (req, res) => {
 // Temporary route to get clients (remove in production)
 router.get('/clients', auth, async (req, res) => {
   try {
-    const clients = await find({ role: 'client' }).select('name email role createdAt');
+    // Use Sequelize syntax instead of Mongoose
+    const clients = await User.findAll({
+      where: { role: 'client' },
+      attributes: ['id', 'name', 'email', 'role', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    });
     res.json(clients);
   } catch (err) {
+    console.error('Error fetching clients:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1001,13 +1061,113 @@ router.get('/debug/test-session', async (req, res) => {
   }
 });
 
+// @route   GET api/users/psychologists
+// @desc    Get all approved psychologists for booking
+// @access  Public
+router.get('/psychologists', async (req, res) => {
+  try {
+    console.log('🔍 Fetching psychologists for booking...');
+    
+    // Mongoose syntax for MongoDB
+    const psychologists = await User.find({ 
+      role: 'psychologist'
+    })
+    .select('name email profileInfo psychologistDetails createdAt')
+    .sort({ createdAt: -1 });
+
+    console.log(`📊 Found ${psychologists.length} psychologist(s)`);
+
+    // Enhance psychologists with default data if missing
+    const enhancedPsychologists = psychologists.map((psych, index) => {
+      const psychObj = psych.toObject();
+      
+      const profileInfo = psychObj.profileInfo || {};
+      const psychDetails = psychObj.psychologistDetails || {};
+      
+      return {
+        id: psychObj._id.toString(),
+        _id: psychObj._id, // For backward compatibility
+        name: psychObj.name,
+        email: psychObj.email,
+        profilePicture: profileInfo.profilePicture,
+        bio: profileInfo.bio || `Dr. ${psychObj.name} is a dedicated mental health professional.`,
+        specializations: psychDetails.specializations && psychDetails.specializations.length > 0 
+          ? psychDetails.specializations 
+          : ['General Therapy', 'Anxiety', 'Depression'],
+        experience: psychDetails.experience || '5 years',
+        psychologistDetails: {
+          specializations: psychDetails.specializations || ['General Therapy', 'Anxiety', 'Depression'],
+          experience: psychDetails.experience || '5 years',
+          rates: psychDetails.rates || {
+            Individual: { amount: 2000, duration: 60 },
+            Couples: { amount: 3500, duration: 75 },
+            Family: { amount: 4500, duration: 90 },
+            Group: { amount: 1500, duration: 90 }
+          }
+        },
+        // Also add rates at top level for easy access
+        rates: psychDetails.rates || {
+          Individual: { amount: 2000, duration: 60 },
+          Couples: { amount: 3500, duration: 75 },
+          Family: { amount: 4500, duration: 90 },
+          Group: { amount: 1500, duration: 90 }
+        }
+      };
+    });
+
+    console.log('✅ Sending psychologists data');
+    res.json({
+      success: true,
+      data: enhancedPsychologists
+    });
+
+  } catch (err) {
+    console.error('❌ Error fetching psychologists:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch psychologists',
+      error: err.message
+    });
+  }
+});
+
+// @route   GET api/users/profile
+// @desc    Get current user's profile
+// @access  Private
+router.get('/profile', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id, { 
+      select: '-password' 
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user
+    });
+
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error fetching profile'
+    });
+  }
+});
+
 // @route   GET api/users/:id
 // @desc    Get user by ID
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const user = await User.findByPk(req.params.id, { 
-      attributes: { exclude: ['password'] } 
+    const user = await User.findById(req.params.id, { 
+      select: '-password' 
     });
 
     if (!user) {
@@ -1137,7 +1297,7 @@ router.post('/create-psychologist', async (req, res) => {
 // @access  Private (Psychologist only)
 router.put('/profile/psychologist', auth, async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user || user.role !== 'psychologist') {
       return res.status(403).json({
@@ -1171,8 +1331,8 @@ router.put('/profile/psychologist', auth, async (req, res) => {
     await user.update({ psychologistDetails: updatedDetails });
     
     // Fetch updated user without password
-    const updatedUser = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
+    const updatedUser = await User.findById(req.user.id, {
+      select: '-password'
     });
 
     res.json({
@@ -1215,7 +1375,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findByPk(req.user.id);
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,

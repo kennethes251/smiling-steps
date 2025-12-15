@@ -452,7 +452,7 @@ const LandingPage = () => {
                     Compassionate Counseling Rooted in Respect, Empowerment, and Hope
                   </Box>
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
                   <Button
                     component={RouterLink}
                     to="/register"
@@ -473,7 +473,31 @@ const LandingPage = () => {
                       transition: 'all 0.3s',
                     }}
                   >
-                    Get Started
+                    Get Started as Client
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/register/psychologist"
+                    variant="contained"
+                    color="secondary"
+                    size="large"
+                    startIcon={<PsychologyIcon />}
+                    sx={{
+                      px: 4,
+                      py: 1.5,
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      borderRadius: 2,
+                      boxShadow: '0 4px 14px rgba(156, 39, 176, 0.3)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(156, 39, 176, 0.4)',
+                      },
+                      transition: 'all 0.3s',
+                    }}
+                  >
+                    Join as Psychologist
                   </Button>
                   <Button
                     onClick={() => navigate('/learn-more')}

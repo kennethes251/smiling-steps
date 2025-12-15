@@ -91,6 +91,38 @@ const Header = () => {
               <Button 
                 color="inherit" 
                 component={RouterLink} 
+                to="/about"
+                sx={{ color: theme.palette.text.primary }}
+              >
+                About
+              </Button>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/therapists"
+                sx={{ color: theme.palette.text.primary }}
+              >
+                Therapists
+              </Button>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/blog"
+                sx={{ color: theme.palette.text.primary }}
+              >
+                Blog
+              </Button>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/resources"
+                sx={{ color: theme.palette.text.primary }}
+              >
+                Resources
+              </Button>
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
                 to="/login"
                 sx={{ color: theme.palette.text.primary }}
               >

@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { API_ENDPOINTS } from '../config/api';
+import API_BASE_URL, { API_ENDPOINTS } from '../config/api';
 import {
   Container,
   Typography,
@@ -215,7 +215,7 @@ const ProfilePage = () => {
           }
         });
 
-        const response = await axios.put('https://smiling-steps.onrender.com/api/users/profile', formDataWithFile, {
+        const response = await axios.put(`${API_BASE_URL}/api/users/profile`, formDataWithFile, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -259,7 +259,7 @@ const ProfilePage = () => {
       }
 
       // For JSON-only updates (no file upload)
-      const response = await axios.put('https://smiling-steps.onrender.com/api/users/profile', cleanedFormData, {
+      const response = await axios.put(`${API_BASE_URL}/api/users/profile`, cleanedFormData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

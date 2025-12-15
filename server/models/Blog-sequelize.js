@@ -40,7 +40,10 @@ module.exports = (sequelize, DataTypes) => {
         'Relationships',
         'Wellness',
         'Success Stories',
-        'Research & Studies'
+        'Research & Studies',
+        'Recovery Guide',
+        'Community Education',
+        'Support Tool'
       ),
       allowNull: false
     },
@@ -59,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id'
       }
     },

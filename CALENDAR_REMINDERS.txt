@@ -1,0 +1,137 @@
+📅 CALENDAR REMINDERS - ADD THESE TO YOUR CALENDAR
+
+==============================================
+SUPABASE MIGRATION REMINDERS
+==============================================
+
+📌 REMINDER 1
+Date: November 1, 2024
+Time: 9:00 AM
+Title: 🗓️ Supabase Migration Prep Week
+Description: 
+- Check migration guide: SUPABASE_MIGRATION_GUIDE.md
+- Review backup file
+- Sign up for Supabase account (optional)
+- Read Supabase docs
+Alert: 1 day before
+
+---
+
+📌 REMINDER 2
+Date: November 8, 2024
+Time: 9:00 AM
+Title: ⚠️ Tomorrow: Migrate to Supabase!
+Description:
+- Migration scheduled for TOMORROW (Nov 9)
+- Review: SUPABASE_MIGRATION_GUIDE.md
+- Ensure backup file is accessible
+- Block 1 hour tomorrow morning
+- Render deletes database in 4 days!
+Alert: Morning of
+
+---
+
+📌 REMINDER 3 (MOST IMPORTANT!)
+Date: November 9, 2024
+Time: 9:00 AM
+Title: 🚨 TODAY: MIGRATE TO SUPABASE
+Description:
+- CRITICAL: Migrate database today!
+- Follow: SUPABASE_MIGRATION_GUIDE.md
+- Time needed: 30 minutes
+- Deadline: Nov 12 (3 days away)
+- Backup location: database-backups/
+Alert: 
+- Morning of
+- 12:00 PM (if not done)
+- 6:00 PM (if not done)
+
+---
+
+📌 REMINDER 4
+Date: November 9, 2024
+Time: 6:00 PM
+Title: ✅ Did you migrate to Supabase?
+Description:
+- Check if migration completed
+- Test production site
+- Verify all data migrated
+- If not done: DO IT NOW!
+Alert: Evening of
+
+---
+
+📌 REMINDER 5
+Date: November 10, 2024
+Time: 10:00 AM
+Title: 🧪 Test Supabase Migration
+Description:
+- Test all features on production
+- Verify data integrity
+- Check booking system works
+- Test login/registration
+- Fix any issues found
+Alert: Morning of
+
+---
+
+📌 REMINDER 6
+Date: November 11, 2024
+Time: 9:00 AM
+Title: ⏰ Final Check - Render Deletes Tomorrow!
+Description:
+- Last day before Render deletion
+- Verify Supabase is working
+- Ensure all data migrated
+- Tomorrow: Render deletes database
+- Keep backup files safe
+Alert: Morning of
+
+---
+
+📌 REMINDER 7
+Date: November 12, 2024
+Time: 9:00 AM
+Title: 🗑️ Render Deletes Database Today
+Description:
+- Render will delete your database today
+- Ensure you're on Supabase
+- Keep backup files forever
+- Delete Render PostgreSQL service
+- Celebrate successful migration! 🎉
+Alert: Morning of
+
+==============================================
+
+HOW TO ADD TO CALENDAR:
+
+Google Calendar:
+1. Open Google Calendar
+2. Click "Create" or "+"
+3. Add each reminder above
+4. Set alerts as specified
+
+Outlook:
+1. Open Outlook Calendar
+2. Click "New Event"
+3. Add each reminder
+4. Set reminders
+
+Phone Calendar:
+1. Open Calendar app
+2. Add new event for each date
+3. Set notifications
+
+==============================================
+
+QUICK COPY-PASTE FOR GOOGLE CALENDAR:
+
+Nov 1, 9 AM: Supabase Migration Prep Week
+Nov 8, 9 AM: Tomorrow: Migrate to Supabase!
+Nov 9, 9 AM: TODAY: MIGRATE TO SUPABASE 🚨
+Nov 9, 6 PM: Did you migrate to Supabase?
+Nov 10, 10 AM: Test Supabase Migration
+Nov 11, 9 AM: Final Check - Render Deletes Tomorrow!
+Nov 12, 9 AM: Render Deletes Database Today
+
+==============================================

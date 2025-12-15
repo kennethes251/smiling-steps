@@ -1242,7 +1242,22 @@ const MarketingPage = () => {
                     variant="outlined"
                     size="small"
                     onClick={() => {
-                      if (resource.title === 'Blog & Articles') {
+                      // Handle Support Tools separately - redirect to resources page
+                      if (resource.title === 'Support Tools') {
+                        navigate('/resources');
+                        return;
+                      }
+                      
+                      const categoryMap = {
+                        'Recovery Guides': 'Recovery Guide',
+                        'Community Education': 'Community Education',
+                        'Blog & Articles': null
+                      };
+                      
+                      const category = categoryMap[resource.title];
+                      if (category) {
+                        navigate(`/blog?category=${encodeURIComponent(category)}`);
+                      } else if (resource.title === 'Blog & Articles') {
                         navigate('/blog');
                       }
                     }}
@@ -1255,7 +1270,11 @@ const MarketingPage = () => {
                       }
                     }}
                   >
-                    {resource.title === 'Blog & Articles' ? 'Read Blogs & Articles' : 'Explore Resources'}
+                    {resource.title === 'Blog & Articles' ? 'Read Blogs & Articles' : 
+                     resource.title === 'Recovery Guides' ? 'View Recovery Guides' :
+                     resource.title === 'Community Education' ? 'View Education Materials' :
+                     resource.title === 'Support Tools' ? 'View Support Tools' :
+                     'Explore Resources'}
                   </Button>
                 </Card>
               </motion.div>

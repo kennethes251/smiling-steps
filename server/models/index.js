@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   // Define all models
   const User = require('./User')(sequelize, DataTypes);
-  const Session = require('./Session')(sequelize, DataTypes);
+  const Session = require('./Session-sequelize')(sequelize, DataTypes);
   const Assessment = require('./Assessment')(sequelize, DataTypes);
   const AssessmentResult = require('./AssessmentResult')(sequelize, DataTypes);
   const CheckIn = require('./CheckIn')(sequelize, DataTypes);

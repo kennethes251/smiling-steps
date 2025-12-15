@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 import {
   Paper,
   Typography,
@@ -99,7 +100,7 @@ const PsychologistProfile = () => {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
 
-      await axios.put('https://smiling-steps.onrender.com/api/users/profile/psychologist', profile, config);
+      await axios.put(`${API_BASE_URL}/api/users/profile`, profile, config);
 
       setSuccess('Profile updated successfully!');
       setEditMode(false);

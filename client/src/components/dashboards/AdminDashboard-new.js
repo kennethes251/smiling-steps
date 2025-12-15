@@ -23,7 +23,8 @@ import {
   Tab,
   Button,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Snackbar
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -34,8 +35,17 @@ import {
   LibraryBooks as ResourcesIcon,
   Analytics as AnalyticsIcon,
   Settings as SettingsIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
+} from '@mui/material';
+import ResourceManager from '../ResourceManager';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -52,6 +62,9 @@ const AdminDashboard = () => {
     emailNotifications: true,
     maintenanceMode: false
   });
+  const [actionLoading, setActionLoading] = useState({});
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null, userName: '', userType: '' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     fetchDashboardData();
@@ -78,6 +91,118 @@ const AdminDashboard = () => {
       setError(err.response?.data?.message || 'Failed to load dashboard data');
       setLoading(false);
     }
+  };
+
+  const handleApprovePsychologist = async (psychologistId) => {
+    try {
+      setActionLoading({ ...actionLoading, [psychologistId]: true });
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+
+      await axios.put(
+        `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/approve`,
+        {},
+        config
+      );
+
+      // Refresh data
+      await fetchDashboardData();
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    } catch (err) {
+      console.error('Error approving psychologist:', err);
+      setError(err.response?.data?.message || 'Failed to approve psychologist');
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    }
+  };
+
+  const handleRejectPsychologist = async (psychologistId) => {
+    try {
+      setActionLoading({ ...actionLoading, [psychologistId]: true });
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+
+      await axios.put(
+        `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/reject`,
+        {},
+        config
+      );
+
+      // Refresh data
+      await fetchDashboardData();
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    } catch (err) {
+      console.error('Error rejecting psychologist:', err);
+      setError(err.response?.data?.message || 'Failed to reject psychologist');
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    }
+  };
+
+  const handleTogglePsychologistStatus = async (psychologistId) => {
+    try {
+      setActionLoading({ ...actionLoading, [psychologistId]: true });
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+
+      await axios.put(
+        `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/toggle-status`,
+        {},
+        config
+      );
+
+      // Refresh data
+      await fetchDashboardData();
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    } catch (err) {
+      console.error('Error toggling psychologist status:', err);
+      setError(err.response?.data?.message || 'Failed to update psychologist status');
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    const { userId, userName, userType } = deleteDialog;
+    try {
+      setActionLoading({ ...actionLoading, [userId]: true });
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+
+      const response = await axios.delete(
+        `${API_ENDPOINTS.ADMIN}/users/${userId}`,
+        config
+      );
+
+      // Show success snackbar
+      setSnackbar({
+        open: true,
+        message: `✅ ${userName}'s account has been permanently deleted`,
+        severity: 'success'
+      });
+      
+      // Refresh data
+      await fetchDashboardData();
+      setDeleteDialog({ open: false, userId: null, userName: '', userType: '' });
+      setActionLoading({ ...actionLoading, [userId]: false });
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Failed to delete user',
+        severity: 'error'
+      });
+      setActionLoading({ ...actionLoading, [userId]: false });
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const openDeleteDialog = (userId, userName, userType) => {
+    setDeleteDialog({ open: true, userId, userName, userType });
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialog({ open: false, userId: null, userName: '', userType: '' });
   };
 
   if (loading) {
@@ -145,7 +270,7 @@ const AdminDashboard = () => {
           <Tab icon={<DashboardIcon />} label="Overview" iconPosition="start" />
           <Tab icon={<PsychologyIcon />} label="Psychologists" iconPosition="start" />
           <Tab icon={<PeopleIcon />} label="Clients" iconPosition="start" />
-          <Tab icon={<ArticleIcon />} label="Blog Management" iconPosition="start" />
+          <Tab icon={<ArticleIcon />} label="Content & Resources" iconPosition="start" />
           <Tab icon={<ResourcesIcon />} label="Resources" iconPosition="start" />
           <Tab icon={<AnalyticsIcon />} label="Analytics" iconPosition="start" />
           <Tab icon={<SettingsIcon />} label="Settings" iconPosition="start" />
@@ -219,7 +344,7 @@ const AdminDashboard = () => {
                     startIcon={<ArticleIcon />}
                     onClick={() => navigate('/admin/blogs')}
                   >
-                    Manage Blogs
+                    Manage Content & Resources
                   </Button>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
@@ -359,35 +484,133 @@ const AdminDashboard = () => {
                     <TableCell><strong>Status</strong></TableCell>
                     <TableCell><strong>Specializations</strong></TableCell>
                     <TableCell><strong>Joined</strong></TableCell>
+                    <TableCell align="center"><strong>Actions</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {psychologists.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={6} align="center">
                         <Typography color="textSecondary">No psychologists registered yet</Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    psychologists.map((psych) => (
-                      <TableRow key={psych.id} hover>
-                        <TableCell>{psych.name}</TableCell>
-                        <TableCell>{psych.email}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={psych.isVerified ? 'Verified' : 'Pending'}
-                            color={psych.isVerified ? 'success' : 'warning'}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {psych.psychologistDetails?.specializations?.slice(0, 2).join(', ') || 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(psych.createdAt).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    psychologists.map((psych) => {
+                      const approvalStatus = psych.psychologistDetails?.approvalStatus || 'approved';
+                      const isActive = psych.psychologistDetails?.isActive !== false;
+                      
+                      return (
+                        <TableRow key={psych.id || psych._id} hover>
+                          <TableCell>{psych.name}</TableCell>
+                          <TableCell>{psych.email}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={
+                                approvalStatus === 'pending' ? 'Pending Approval' :
+                                approvalStatus === 'rejected' ? 'Rejected' :
+                                isActive ? 'Active' : 'Disabled'
+                              }
+                              color={
+                                approvalStatus === 'pending' ? 'warning' :
+                                approvalStatus === 'rejected' ? 'error' :
+                                isActive ? 'success' : 'default'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {psych.psychologistDetails?.specializations?.slice(0, 2).join(', ') || 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(psych.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Box display="flex" gap={1} justifyContent="center" flexWrap="wrap">
+                              {approvalStatus === 'pending' && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleApprovePsychologist(psych.id || psych._id)}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    onClick={() => handleRejectPsychologist(psych.id || psych._id)}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              {approvalStatus === 'approved' && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    variant={isActive ? 'outlined' : 'contained'}
+                                    color={isActive ? 'error' : 'success'}
+                                    onClick={() => handleTogglePsychologistStatus(psych.id || psych._id)}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    {isActive ? 'Disable' : 'Enable'}
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => openDeleteDialog(psych.id || psych._id, psych.name, 'psychologist')}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Delete
+                                  </Button>
+                                </>
+                              )}
+                              {approvalStatus === 'rejected' && (
+                                <>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    onClick={() => handleApprovePsychologist(psych.id || psych._id)}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<DeleteIcon />}
+                                    onClick={() => openDeleteDialog(psych.id || psych._id, psych.name, 'psychologist')}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Delete
+                                  </Button>
+                                </>
+                              )}
+                              {approvalStatus === 'pending' && (
+                                <Button
+                                  size="small"
+                                  variant="text"
+                                  color="error"
+                                  startIcon={<DeleteIcon />}
+                                  onClick={() => openDeleteDialog(psych.id || psych._id, psych.name, 'psychologist')}
+                                  disabled={actionLoading[psych.id || psych._id]}
+                                >
+                                  Delete
+                                </Button>
+                              )}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -412,12 +635,13 @@ const AdminDashboard = () => {
                     <TableCell><strong>Status</strong></TableCell>
                     <TableCell><strong>Last Login</strong></TableCell>
                     <TableCell><strong>Joined</strong></TableCell>
+                    <TableCell align="center"><strong>Actions</strong></TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {clients.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={6} align="center">
                         <Typography color="textSecondary">No clients registered yet</Typography>
                       </TableCell>
                     </TableRow>
@@ -439,6 +663,18 @@ const AdminDashboard = () => {
                         <TableCell>
                           {new Date(client.createdAt).toLocaleDateString()}
                         </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => openDeleteDialog(client.id || client._id, client.name, 'client')}
+                            disabled={actionLoading[client.id || client._id]}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -456,14 +692,17 @@ const AdminDashboard = () => {
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                 <ArticleIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                Blog Management
+                Content & Resources Management
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Manage all content including blogs, recovery guides, education materials, and support tools
               </Typography>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => navigate('/admin/blogs')}
               >
-                Manage Blogs
+                Manage All Content
               </Button>
             </Box>
             <Alert severity="info">
@@ -475,26 +714,7 @@ const AdminDashboard = () => {
 
       {/* Resources Tab */}
       {activeTab === 4 && (
-        <Card>
-          <CardContent>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                <ResourcesIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                Resource Management
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                disabled
-              >
-                Add Resource
-              </Button>
-            </Box>
-            <Alert severity="info">
-              Resource management will be available after Resource model conversion to PostgreSQL
-            </Alert>
-          </CardContent>
-        </Card>
+        <ResourceManager />
       )}
 
       {/* Analytics Tab */}
@@ -581,6 +801,65 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={closeDeleteDialog}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title" sx={{ color: 'error.main', fontWeight: 'bold' }}>
+          ⚠️ Confirm Account Deletion
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to permanently delete the account for <strong>{deleteDialog.userName}</strong>?
+            <br /><br />
+            <strong>This action cannot be undone.</strong> All associated data including:
+            <br />
+            • Profile information
+            <br />
+            • Session history
+            <br />
+            • Messages and communications
+            <br />
+            <br />
+            will be permanently removed from the system.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={closeDeleteDialog} variant="outlined">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteUser} 
+            variant="contained" 
+            color="error"
+            startIcon={<DeleteIcon />}
+            autoFocus
+          >
+            Delete Account
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success/Error Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

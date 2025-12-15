@@ -1,17 +1,16 @@
-const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
-const User = require('./models/User');
+import { connect, connection } from 'mongoose';
+import User, { findOne } from './models/User';
 require('dotenv').config();
 
 const createAdmin = async () => {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI);
+    await connect(process.env.MONGODB_URI);
     console.log('✅ Database connected successfully.');
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ 
-      email: 'admin@smilingsteps.com' 
+    const existingAdmin = await findOne({
+      email: 'admin@smilingsteps.com'
     });
 
     if (existingAdmin) {
@@ -43,7 +42,7 @@ const createAdmin = async () => {
   } catch (error) {
     console.error('❌ Error creating admin user:', error);
   } finally {
-    await mongoose.connection.close();
+    await connection.close();
     process.exit(0);
   }
 };
