@@ -873,7 +873,9 @@ router.put('/profile/upload', auth, upload.single('profilePicture'), async (req,
 // Temporary route to check users (remove in production)
 router.get('/debug/users', async (req, res) => {
   try {
-    const users = await find({}).select('name email role createdAt');
+    const users = await global.User.findAll({
+      attributes: ['name', 'email', 'role', 'createdAt']
+    });
     res.json({ users, count: users.length });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -883,11 +885,11 @@ router.get('/debug/users', async (req, res) => {
 // Temporary route to reset database (remove in production)
 router.get('/debug/reset', async (req, res) => {
   try {
-    const deleteResult = await deleteMany({});
+    const deleteResult = await global.User.destroy({ where: {} });
     res.json({
       success: true,
-      message: `Deleted ${deleteResult.deletedCount} users`,
-      deletedCount: deleteResult.deletedCount
+      message: `Deleted ${deleteResult} users`,
+      deletedCount: deleteResult
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
