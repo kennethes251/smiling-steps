@@ -7,7 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const fraudDetectionService = require('../services/fraudDetectionService');
-const { Session, User } = require('../models');
+// Use global models (set in server/index.js)
 const AuditLog = require('../models/AuditLog'); // Import Mongoose model directly
 const { Op } = require('sequelize');
 const { auth } = require('../middleware/auth');
@@ -43,7 +43,7 @@ router.post('/analyze', auth, async (req, res) => {
     }
 
     // Get session details
-    const session = await Session.findByPk(sessionId);
+    const session = await global.Session.findByPk(sessionId);
     if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
@@ -84,7 +84,7 @@ router.post('/analyze', auth, async (req, res) => {
 
     if (analysis.decision === 'REVIEW') {
       // Requirement 16.2: Flag for manual review
-      await Session.update(
+      await global.Session.update(
         {
           fraudReviewRequired: true,
           fraudRiskScore: analysis.riskScore,
@@ -152,7 +152,7 @@ router.get('/metrics', auth, requireAdmin, async (req, res) => {
     }
 
     // Get transaction statistics
-    const totalTransactions = await Session.count({
+    const totalTransactions = await global.Session.count({
       where: {
         paymentInitiatedAt: {
           [Op.gte]: startTime
@@ -160,7 +160,7 @@ router.get('/metrics', auth, requireAdmin, async (req, res) => {
       }
     });
 
-    const blockedTransactions = await Session.count({
+    const blockedTransactions = await global.Session.count({
       where: {
         paymentInitiatedAt: {
           [Op.gte]: startTime
@@ -169,7 +169,7 @@ router.get('/metrics', auth, requireAdmin, async (req, res) => {
       }
     });
 
-    const underReview = await Session.count({
+    const underReview = await global.Session.count({
       where: {
         paymentInitiatedAt: {
           [Op.gte]: startTime
@@ -180,7 +180,7 @@ router.get('/metrics', auth, requireAdmin, async (req, res) => {
     });
 
     // Get risk score distribution
-    const riskDistribution = await Session.findAll({
+    const riskDistribution = await global.Session.findAll({
       where: {
         paymentInitiatedAt: {
           [Op.gte]: startTime
@@ -208,7 +208,7 @@ router.get('/metrics', auth, requireAdmin, async (req, res) => {
     });
 
     // Get blocked users
-    const blockedUsers = await User.findAll({
+    const blockedUsers = await global.User.findAll({
       where: {
         status: 'blocked',
         blockedReason: {
@@ -321,7 +321,7 @@ router.get('/transactions', auth, requireAdmin, async (req, res) => {
       }
     }
 
-    const transactions = await Session.findAll({
+    const transactions = await global.Session.findAll({
       where: whereConditions,
       include: [
         {
@@ -405,7 +405,7 @@ router.post('/transactions/:id/action', auth, requireAdmin, async (req, res) => 
     const { id } = req.params;
     const { action } = req.body;
 
-    const session = await Session.findByPk(id, {
+    const session = await global.Session.findByPk(id, {
       include: [{ model: User, as: 'clientUser' }]
     });
 
@@ -415,7 +415,7 @@ router.post('/transactions/:id/action', auth, requireAdmin, async (req, res) => 
 
     switch (action) {
       case 'approve':
-        await Session.update(
+        await global.Session.update(
           {
             fraudReviewRequired: false,
             paymentStatus: 'Approved',
@@ -438,7 +438,7 @@ router.post('/transactions/:id/action', auth, requireAdmin, async (req, res) => 
         break;
 
       case 'block':
-        await Session.update(
+        await global.Session.update(
           {
             paymentStatus: 'Blocked',
             reviewedBy: req.user.id,
@@ -468,7 +468,7 @@ router.post('/transactions/:id/action', auth, requireAdmin, async (req, res) => 
 
       case 'unblock':
         // This would be for unblocking users, not transactions
-        await User.update(
+        await global.User.update(
           {
             status: 'active',
             blockedAt: null,
@@ -516,7 +516,7 @@ router.post('/export', auth, requireAdmin, async (req, res) => {
         startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    const transactions = await Session.findAll({
+    const transactions = await global.Session.findAll({
       where: {
         paymentInitiatedAt: {
           [Op.gte]: startTime

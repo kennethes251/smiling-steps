@@ -109,7 +109,7 @@ router.get('/session/:sessionId', auth, async (req, res) => {
     const { sessionId } = req.params;
     
     // Get session to verify access
-    const Session = global.Session || require('../models').Session;
+    const Session = global.Session;
     const session = await Session.findByPk(sessionId);
     
     if (!session) {
@@ -166,7 +166,7 @@ router.post('/quality', auth, async (req, res) => {
     }
     
     // Verify user is participant in the session
-    const Session = global.Session || require('../models').Session;
+    const Session = global.Session;
     const session = await Session.findByPk(sessionId);
     
     if (!session) {
