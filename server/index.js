@@ -47,6 +47,8 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'https://smiling-steps-frontend.onrender.com',
+      'https://smilingsteps.com',
+      'https://www.smilingsteps.com',
       // Add development origins for video call testing
       'http://localhost:3001',
       'https://localhost:3000',
