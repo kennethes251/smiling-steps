@@ -7,7 +7,8 @@
 const express = require('express');
 const router = express.Router();
 const fraudDetectionService = require('../services/fraudDetectionService');
-const { Session, User, AuditLog } = require('../models');
+const { Session, User } = require('../models');
+const AuditLog = require('../models/AuditLog'); // Import Mongoose model directly
 const { Op } = require('sequelize');
 const { auth } = require('../middleware/auth');
 
