@@ -896,6 +896,77 @@ router.get('/debug/reset', async (req, res) => {
   }
 });
 
+// Temporary route to initialize database (remove in production)
+router.get('/debug/init-db', async (req, res) => {
+  try {
+    const { Sequelize, DataTypes } = require('sequelize');
+    
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL not found');
+    }
+    
+    const sequelize = new Sequelize(databaseUrl, {
+      dialect: 'postgres',
+      logging: false,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      }
+    });
+
+    // Initialize models
+    const User = require('../models/User-sequelize')(sequelize, DataTypes);
+    const Session = require('../models/Session-sequelize')(sequelize, DataTypes);
+    const Blog = require('../models/Blog-sequelize')(sequelize, DataTypes);
+    
+    // Define associations
+    User.hasMany(Session, { foreignKey: 'clientId', as: 'clientSessions' });
+    User.hasMany(Session, { foreignKey: 'psychologistId', as: 'psychologistSessions' });
+    Session.belongsTo(User, { foreignKey: 'clientId', as: 'client' });
+    Session.belongsTo(User, { foreignKey: 'psychologistId', as: 'psychologist' });
+    
+    // Blog associations
+    User.hasMany(Blog, { foreignKey: 'authorId', as: 'blogs' });
+    Blog.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
+
+    await sequelize.sync({ force: false, alter: true });
+    
+    // Create test user if not exists
+    const [testUser, created] = await User.findOrCreate({
+      where: { email: 'nancy@gmail.com' },
+      defaults: {
+        name: 'Nancy Client',
+        password: 'password123',
+        role: 'client',
+        isVerified: true
+      }
+    });
+    
+    await sequelize.close();
+    
+    res.json({
+      success: true,
+      message: 'Database initialized successfully',
+      testUserCreated: created,
+      testUser: {
+        email: testUser.email,
+        name: testUser.name,
+        role: testUser.role
+      }
+    });
+    
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      error: err.message,
+      details: err.stack
+    });
+  }
+});
+
 // Temporary route to check psychologists without auth (remove in production)
 router.get('/debug/psychologists', async (req, res) => {
   try {
