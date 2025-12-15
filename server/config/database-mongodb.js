@@ -2,7 +2,11 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://KennethEsilo:9213@cluster0.m7v7wpi.mongodb.net/smiling-steps?retryWrites=true&w=majority&appName=Cluster0";
+    const MONGODB_URI = process.env.MONGODB_URI;
+    
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is required');
+    }
     
     await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
@@ -13,6 +17,7 @@ const connectDB = async () => {
     return mongoose.connection;
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
+    console.error('Make sure MONGODB_URI environment variable is set');
     process.exit(1);
   }
 };

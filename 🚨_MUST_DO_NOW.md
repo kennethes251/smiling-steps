@@ -7,7 +7,6 @@
 
 ## ❌ The Problem
 Your browser has **cached the OLD JavaScript code** with the hardcoded production URLs.
-
 ## 🔧 THE FIX (Do This Now!)
 
 ### Step 1: Hard Refresh Your Browser

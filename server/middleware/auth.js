@@ -30,18 +30,63 @@ const auth = (req, res, next) => {
     next();
   } catch (err) {
     console.log('❌ Auth middleware - Token invalid:', err.message);
-    res.status(401).json({ msg: 'Token is not valid' });
+    
+    // Provide specific error messages
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ msg: 'Token has expired' });
+    } else if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ msg: 'Invalid token' });
+    } else {
+      return res.status(401).json({ msg: 'Token is not valid' });
+    }
   }
 };
 
 // Middleware to check for admin role
 const admin = (req, res, next) => {
   // Assumes auth middleware has been run
-  if (req.user && req.user.role === 'admin') {
+  if (!req.user) {
+    return res.status(401).json({ msg: 'Authentication required' });
+  }
+  
+  if (req.user.role === 'admin') {
     next();
   } else {
+    console.log('❌ Admin access denied for user:', req.user.id, 'Role:', req.user.role);
     res.status(403).json({ msg: 'Access denied. Admin privileges required.' });
   }
 };
 
-module.exports = { auth, admin };
+// Middleware to check for specific role
+const requireRole = (role) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ msg: 'Authentication required' });
+    }
+    
+    if (req.user.role === role) {
+      next();
+    } else {
+      console.log(`❌ ${role} access denied for user:`, req.user.id, 'Role:', req.user.role);
+      res.status(403).json({ msg: `Access denied. ${role} privileges required.` });
+    }
+  };
+};
+
+// Middleware to check for multiple allowed roles
+const requireAnyRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ msg: 'Authentication required' });
+    }
+    
+    if (roles.includes(req.user.role)) {
+      next();
+    } else {
+      console.log(`❌ Role access denied for user:`, req.user.id, 'Role:', req.user.role, 'Required:', roles);
+      res.status(403).json({ msg: `Access denied. Required roles: ${roles.join(', ')}` });
+    }
+  };
+};
+
+module.exports = { auth, admin, requireRole, requireAnyRole };
