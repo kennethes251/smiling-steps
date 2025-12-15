@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const automaticIssueResolver = require('../utils/automaticIssueResolver');
+// const automaticIssueResolver = require('../utils/automaticIssueResolver');
 const Session = require('../models/Session'); // Import Session model
 
 /**

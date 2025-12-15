@@ -22,7 +22,7 @@ const {
 const webhookSignature = require('../utils/webhookSignature');
 const encryption = require('../utils/encryption');
 const auditLogger = require('../utils/auditLogger');
-const automaticIssueResolver = require('../utils/automaticIssueResolver');
+// const automaticIssueResolver = require('../utils/automaticIssueResolver');
 const realTimeReconciliationService = require('../services/realTimeReconciliation');
 const fraudDetectionService = require('../services/fraudDetectionService');
 
@@ -359,6 +359,8 @@ router.post('/callback', async (req, res) => {
     setTimeout(async () => {
       try {
         // Check for potential issues that might have been created or resolved
+        // Temporarily disabled automatic issue resolution
+        /*
         if (ResultCode !== 0) {
           // Payment failed - check if we can automatically resolve
           await automaticIssueResolver.resolveIssue(
@@ -377,6 +379,7 @@ router.post('/callback', async (req, res) => {
             }
           );
         }
+        */
       } catch (resolverError) {
         console.error('⚠️ Automatic issue resolution failed:', resolverError);
         // Don't fail the callback if issue resolution fails
