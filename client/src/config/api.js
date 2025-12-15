@@ -13,7 +13,7 @@ if (isLocalhost) {
   API_BASE_URL = 'http://localhost:5000';
 } else {
   // Production on Render - use production backend
-  API_BASE_URL = 'https://smiling-steps-backend.onrender.com';
+  API_BASE_URL = 'https://smiling-steps.onrender.com';
 }
 
 console.log('🌐 API Configuration:', {
