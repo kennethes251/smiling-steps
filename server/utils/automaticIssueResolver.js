@@ -343,9 +343,11 @@ async function resolveOrphanedPaymentIssue(context) {
     }
 
     // Check for duplicate transaction IDs
-    const duplicates = await Session.find({
-      mpesaTransactionID: session.mpesaTransactionID,
-      _id: { $ne: session._id }
+    const duplicates = await global.Session.findAll({
+      where: {
+        mpesaTransactionID: session.mpesaTransactionID,
+        id: { [Op.ne]: session.id }
+      }
     });
 
     if (duplicates.length > 0) {
@@ -384,9 +386,12 @@ async function resolveDuplicateCallbackIssue(context) {
     console.log(`🔍 Resolving duplicate callback issue for session ${sessionId}`);
 
     // Find all sessions with the same checkout request ID
-    const sessions = await Session.find({
-      mpesaCheckoutRequestID: checkoutRequestID
-    }).sort({ paymentVerifiedAt: 1 });
+    const sessions = await global.Session.findAll({
+      where: {
+        mpesaCheckoutRequestID: checkoutRequestID
+      },
+      order: [['paymentVerifiedAt', 'ASC']]
+    });
 
     if (sessions.length <= 1) {
       return {
@@ -838,26 +843,26 @@ async function detectAndResolveIssues() {
     }
 
     // Find sessions with potential issues
+    const { Op } = require('sequelize');
     const potentialIssues = await global.Session.findAll({
       where: {
-        [require('sequelize').Op.or]: [
-      $or: [
+        [Op.or]: [
         // Timeout issues - processing for too long
         {
           paymentStatus: 'Processing',
           paymentInitiatedAt: {
-            $lt: new Date(Date.now() - RESOLUTION_CONFIG.IMMEDIATE_RESOLUTION_WINDOW)
+            [Op.lt]: new Date(Date.now() - RESOLUTION_CONFIG.IMMEDIATE_RESOLUTION_WINDOW)
           }
         },
         // Status inconsistencies
         {
-          mpesaTransactionID: { $exists: true, $ne: null },
-          paymentStatus: { $ne: 'Paid' }
+          mpesaTransactionID: { [Op.ne]: null },
+          paymentStatus: { [Op.ne]: 'Paid' }
         },
         // Orphaned payments
         {
           mpesaResultCode: 0,
-          paymentStatus: { $ne: 'Paid' }
+          paymentStatus: { [Op.ne]: 'Paid' }
         }
       ]
     });
