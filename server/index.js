@@ -139,7 +139,7 @@ const startServer = async () => {
 
   // Initialize models
   const { DataTypes } = require('sequelize');
-  const User = require('./models/User')(sequelize, DataTypes);
+  const User = require('./models/User-sequelize')(sequelize, DataTypes);
   const Session = require('./models/Session-sequelize')(sequelize, DataTypes);
   const Blog = require('./models/Blog-sequelize')(sequelize, DataTypes);
   

@@ -4,7 +4,15 @@ const connectDB = async () => {
   const databaseUrl = process.env.DATABASE_URL;
   
   if (!databaseUrl) {
-    console.error('FATAL ERROR: DATABASE_URL is not defined in environment variables.');
+    console.error('🚨 FATAL ERROR: DATABASE_URL is not defined in environment variables.');
+    console.error('');
+    console.error('📋 SETUP REQUIRED:');
+    console.error('1. Create a PostgreSQL database in Render Dashboard');
+    console.error('2. Copy the Internal Database URL');
+    console.error('3. Set DATABASE_URL environment variable in your service');
+    console.error('');
+    console.error('🔗 Guide: https://render.com/docs/databases');
+    console.error('');
     process.exit(1);
   }
 
