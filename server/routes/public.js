@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+// Use global Sequelize User model (initialized in server/index.js)
 const Blog = require('../models/Blog');
 
 // @route   GET api/public/blogs
@@ -78,9 +78,11 @@ router.get('/blogs/:slug', async (req, res) => {
 router.get('/psychologists', async (req, res) => {
   try {
     console.log('🔍 Public psychologists route hit');
-    const psychologists = await User.find({ role: 'psychologist' })
-      .select('name email profileInfo psychologistDetails createdAt')
-      .sort({ createdAt: -1 });
+    const psychologists = await global.User.findAll({
+      where: { role: 'psychologist' },
+      attributes: ['name', 'email', 'profileInfo', 'psychologistDetails', 'createdAt'],
+      order: [['createdAt', 'DESC']]
+    });
 
     console.log('📊 Found psychologists:', psychologists.length);
 
