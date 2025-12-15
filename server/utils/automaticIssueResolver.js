@@ -4,7 +4,7 @@
  * without manual intervention
  */
 
-const Session = require('../models/Session');
+// Session model will be available globally after initialization
 const mpesaAPI = require('../config/mpesa');
 const { mapResultCode, shouldAutoRetry } = require('./mpesaErrorMapper');
 const { handleApiCall } = require('./mpesaRetryHandler');

@@ -6,16 +6,29 @@
 
 const express = require('express');
 const router = express.Router();
-const { auth, admin } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { generateAccountingExport, generateJournalEntries, getSupportedFormats, CHART_OF_ACCOUNTS } = require('../utils/accountingExport');
 const auditLogger = require('../utils/auditLogger');
 const moment = require('moment');
+
+// Middleware to check admin access
+const adminAuth = async (req, res, next) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
+    next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 /**
  * GET /api/accounting/formats
  * Get supported accounting software formats
  */
-router.get('/formats', auth, admin, async (req, res) => {
+router.get('/formats', auth, adminAuth, async (req, res) => {
   try {
     const formats = getSupportedFormats();
     
@@ -45,7 +58,7 @@ router.get('/formats', auth, admin, async (req, res) => {
  * GET /api/accounting/export
  * Export payment data in specified accounting format
  */
-router.get('/export', auth, admin, async (req, res) => {
+router.get('/export', auth, adminAuth, async (req, res) => {
   try {
     const { 
       format = 'generic',
@@ -160,7 +173,7 @@ router.get('/export', auth, admin, async (req, res) => {
  * GET /api/accounting/journal-entries
  * Generate journal entries for double-entry bookkeeping
  */
-router.get('/journal-entries', auth, admin, async (req, res) => {
+router.get('/journal-entries', auth, adminAuth, async (req, res) => {
   try {
     const { 
       startDate,
@@ -263,7 +276,7 @@ router.get('/journal-entries', auth, admin, async (req, res) => {
  * GET /api/accounting/summary
  * Get accounting summary for dashboard
  */
-router.get('/summary', auth, admin, async (req, res) => {
+router.get('/summary', auth, adminAuth, async (req, res) => {
   try {
     const { 
       startDate = moment().startOf('month').format('YYYY-MM-DD'),
@@ -342,7 +355,7 @@ router.get('/summary', auth, admin, async (req, res) => {
  * POST /api/accounting/schedule-export
  * Schedule automated accounting exports
  */
-router.post('/schedule-export', auth, admin, async (req, res) => {
+router.post('/schedule-export', auth, adminAuth, async (req, res) => {
   try {
     const { 
       format,
