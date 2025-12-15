@@ -1,1 +1,1 @@
-web: node server/index-mongodb.js
+web: node server/index.js

@@ -2,9 +2,9 @@
   "name": "smiling-steps-server",
   "version": "1.0.0",
   "description": "Smiling Steps - Mental Health Platform Backend",
-  "main": "index-mongodb.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node index-mongodb.js",
+    "start": "node index.js",
     "start:postgres": "node index.js",
     "dev": "nodemon index-mongodb.js",
     "build": "npm install",

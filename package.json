@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Smiling Steps - Mental Health Platform",
   "scripts": {
-    "start": "node start.js",
+    "start": "cd server && node index.js",
     "start:mongodb": "cd server && node index-mongodb.js",
-    "start:postgres": "node server/index.js",
+    "start:postgres": "cd server && node index.js",
     "build": "echo 'Build complete'"
   },
   "engines": {
