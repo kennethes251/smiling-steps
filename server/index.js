@@ -36,8 +36,13 @@ app.use(helmet({
 // Enhanced CORS Configuration for Video Calls
 const corsOptions = {
   origin: function (origin, callback) {
+    console.log('🌐 CORS request from origin:', origin);
+    
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
     const allowedOrigins = [
       'http://localhost:3000',
@@ -49,9 +54,11 @@ const corsOptions = {
     ];
     
     if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS: Allowing origin:', origin);
       callback(null, true);
     } else {
       console.warn('🚫 CORS blocked origin:', origin);
+      console.warn('🚫 Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -77,6 +84,15 @@ const corsOptions = {
   maxAge: 86400 // 24 hours preflight cache
 };
 app.use(cors(corsOptions));
+
+// Health check endpoint - should be accessible before auth
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    message: 'Server is running'
+  });
+});
 
 // Enhanced security headers for video calls
 app.use((req, res, next) => {
