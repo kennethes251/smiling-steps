@@ -4,11 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 // Use simple rate limiter to avoid 429 errors
 const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
 const { auth } = require('../middleware/auth');
-const User = require('../models/User'); // Use Mongoose User model
+// Use global Sequelize User model (initialized in server/index.js)
 // Try email utility, fallback to simple one
 let sendEmail;
 try {
@@ -93,8 +92,10 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       userAgent: req.headers['user-agent']?.substring(0, 50) + '...'
     });
 
-    // Check if user already exists (Mongoose syntax)
-    const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
+    // Check if user already exists (Sequelize syntax)
+    const existingUser = await global.User.findOne({ 
+      where: { email: email.toLowerCase().trim() } 
+    });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -142,12 +143,12 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       console.log('🔗 Verification URL: https://smiling-steps-frontend.onrender.com/verify-email?token=' + verificationToken);
     }
 
-    const user = await User.create(userPayload);
+    const user = await global.User.create(userPayload);
 
-    // Create JWT payload (MongoDB uses _id)
+    // Create JWT payload (Sequelize uses id)
     const payload = {
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         role: user.role
       }
     };
@@ -158,9 +159,9 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Prepare response data (exclude sensitive fields) - MongoDB uses _id
+    // Prepare response data (exclude sensitive fields) - Sequelize uses id
     const userData = {
-      id: user._id.toString(),
+      id: user.id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
@@ -238,7 +239,7 @@ router.put('/session-rate', auth, async (req, res) => {
     }
 
     // Find and update user
-    const user = await User.findById(req.user.id);
+    const user = await global.User.findByPk(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -283,7 +284,7 @@ router.get('/verify-email/:token', async (req, res) => {
 
     // Find user with this verification token
     const { Op } = require('sequelize');
-    const user = await User.findOne({
+    const user = await global.User.findOne({
       where: {
         verificationToken: token,
         verificationTokenExpires: { [Op.gt]: Date.now() }
@@ -344,10 +345,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Find user by email (case-insensitive) - Mongoose syntax
-    const user = await User.findOne({ 
-      email: email.toLowerCase().trim() 
-    }).select('+password'); // Include password field
+    // Find user by email (case-insensitive) - Sequelize syntax
+    const user = await global.User.findOne({ 
+      where: { email: email.toLowerCase().trim() }
+    }); // Password is included by default in Sequelize
 
     // Check if user exists
     if (!user) {
@@ -436,10 +437,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    // Create JWT payload (MongoDB uses _id)
+    // Create JWT payload (Sequelize uses id)
     const payload = {
       user: {
-        id: user._id.toString(),
+        id: user.id.toString(),
         role: user.role
       }
     };
@@ -507,7 +508,7 @@ router.get('/approve/:token', async (req, res) => {
     const { Op } = require('sequelize');
 
     // For JSONB fields in Sequelize, we need to query differently
-    const user = await User.findOne({
+    const user = await global.User.findOne({
       where: {
         id: id,
         psychologistDetails: {
