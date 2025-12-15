@@ -831,8 +831,16 @@ async function detectAndResolveIssues() {
   try {
     console.log('🔍 Running automatic issue detection and resolution...');
 
+    // Check if global.Session is available
+    if (!global.Session) {
+      console.log('⚠️ Session model not available, skipping issue detection');
+      return { resolved: 0, failed: 0, skipped: 1 };
+    }
+
     // Find sessions with potential issues
-    const potentialIssues = await Session.find({
+    const potentialIssues = await global.Session.findAll({
+      where: {
+        [require('sequelize').Op.or]: [
       $or: [
         // Timeout issues - processing for too long
         {
