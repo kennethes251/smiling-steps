@@ -6,8 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const { requireAdmin } = require('../middleware/auth');
+const { auth, admin } = require('../middleware/auth');
 const { generateAccountingExport, generateJournalEntries, getSupportedFormats, CHART_OF_ACCOUNTS } = require('../utils/accountingExport');
 const auditLogger = require('../utils/auditLogger');
 const moment = require('moment');
@@ -16,7 +15,7 @@ const moment = require('moment');
  * GET /api/accounting/formats
  * Get supported accounting software formats
  */
-router.get('/formats', auth, requireAdmin, async (req, res) => {
+router.get('/formats', auth, admin, async (req, res) => {
   try {
     const formats = getSupportedFormats();
     
@@ -46,7 +45,7 @@ router.get('/formats', auth, requireAdmin, async (req, res) => {
  * GET /api/accounting/export
  * Export payment data in specified accounting format
  */
-router.get('/export', auth, requireAdmin, async (req, res) => {
+router.get('/export', auth, admin, async (req, res) => {
   try {
     const { 
       format = 'generic',
@@ -161,7 +160,7 @@ router.get('/export', auth, requireAdmin, async (req, res) => {
  * GET /api/accounting/journal-entries
  * Generate journal entries for double-entry bookkeeping
  */
-router.get('/journal-entries', auth, requireAdmin, async (req, res) => {
+router.get('/journal-entries', auth, admin, async (req, res) => {
   try {
     const { 
       startDate,
@@ -264,7 +263,7 @@ router.get('/journal-entries', auth, requireAdmin, async (req, res) => {
  * GET /api/accounting/summary
  * Get accounting summary for dashboard
  */
-router.get('/summary', auth, requireAdmin, async (req, res) => {
+router.get('/summary', auth, admin, async (req, res) => {
   try {
     const { 
       startDate = moment().startOf('month').format('YYYY-MM-DD'),
@@ -343,7 +342,7 @@ router.get('/summary', auth, requireAdmin, async (req, res) => {
  * POST /api/accounting/schedule-export
  * Schedule automated accounting exports
  */
-router.post('/schedule-export', auth, requireAdmin, async (req, res) => {
+router.post('/schedule-export', auth, admin, async (req, res) => {
   try {
     const { 
       format,

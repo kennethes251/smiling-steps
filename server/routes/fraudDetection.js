@@ -9,7 +9,7 @@ const router = express.Router();
 const fraudDetectionService = require('../services/fraudDetectionService');
 const { Session, User, AuditLog } = require('../models');
 const { Op } = require('sequelize');
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 
 // Middleware to ensure admin access for fraud management endpoints
 const requireAdmin = (req, res, next) => {
