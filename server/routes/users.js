@@ -345,10 +345,10 @@ router.post('/login', loginRateLimiter, async (req, res) => {
       });
     }
 
-    // Find user by email (case-insensitive) - Sequelize syntax
-    const user = await global.User.findOne({ 
+    // Find user by email (case-insensitive) - Sequelize syntax with password
+    const user = await global.User.scope('withPassword').findOne({ 
       where: { email: email.toLowerCase().trim() }
-    }); // Password is included by default in Sequelize
+    });
 
     // Check if user exists
     if (!user) {
