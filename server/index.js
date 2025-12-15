@@ -175,13 +175,14 @@ const startServer = async () => {
   global.Blog = Blog;
   
   // Sync database (create tables if they don't exist)
-  // Use 'alter' only when explicitly needed, otherwise just check connection
-  if (process.env.FORCE_SYNC === 'true') {
+  // Always sync to ensure tables exist, use alter to update existing tables safely
+  try {
     await sequelize.sync({ alter: true });
-    console.log('✅ PostgreSQL connected and tables synchronized (FORCE_SYNC)');
-  } else {
+    console.log('✅ PostgreSQL connected and tables synchronized');
+  } catch (syncError) {
+    console.log('⚠️ Sync failed, trying basic connection...');
     await sequelize.authenticate();
-    console.log('✅ PostgreSQL connected (fast mode - no sync)');
+    console.log('✅ PostgreSQL connected (basic mode)');
   }
 
   // Define Routes
