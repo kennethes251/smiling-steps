@@ -102,12 +102,16 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        skipVerification: true // Enable streamlined registration
+        skipVerification: false // Enable email verification
       });
       
-      // For streamlined registration, user should be automatically logged in
-      // The useEffect will handle the redirect when isAuthenticated becomes true
-      console.log('Streamlined registration successful:', result);
+      // For email verification flow, redirect to verification page
+      if (result.requiresVerification) {
+        navigate('/verify-email');
+      } else {
+        // For streamlined registration, user should be automatically logged in
+        console.log('Registration successful:', result);
+      }
     } catch (error) {
       console.error('Registration error:', error);
       // Get the specific error message from backend

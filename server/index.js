@@ -193,6 +193,8 @@ const startServer = async () => {
   console.log('  ✅ auth routes loaded.');
   app.use('/api/users', require('./routes/users'));
   console.log('  ✅ users routes loaded.');
+  app.use('/api/email-verification', require('./routes/emailVerification'));
+  console.log('  ✅ email verification routes loaded.');
   app.use('/api/upload', require('./routes/upload'));
   console.log('  ✅ upload routes loaded.');
   app.use('/api/admin', require('./routes/admin'));

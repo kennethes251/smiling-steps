@@ -45,22 +45,27 @@ import BlogPostPage from './pages/BlogPostPage';
 import ResourcesPage from './pages/ResourcesPage';
 import TherapistsPage from './pages/TherapistsPage';
 import EmailVerification from './pages/EmailVerification';
+import EmailVerificationPage from './pages/EmailVerificationPage';
+import EmailVerificationGuard from './components/EmailVerificationGuard';
+import RoleSelectionPage from './pages/RoleSelectionPage';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <SnackbarProvider>
         <AuthProvider>
-          <Header />
-          <Routes>
+          <EmailVerificationGuard>
+            <Header />
+            <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/learn-more" element={<MarketingPage />} />
             <Route path="/founder" element={<FounderPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register/select-role" element={<RoleSelectionPage />} />
             <Route path="/register/psychologist" element={<PsychologistRegister />} />
-            <Route path="/verify-email" element={<EmailVerification />} />
+            <Route path="/verify-email" element={<EmailVerificationPage />} />
             <Route path="/api-test" element={<ApiTest />} />
             <Route path="/auth-test" element={<AuthTest />} />
             
@@ -153,8 +158,9 @@ function App() {
             <Route path="/privacy" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Privacy Policy - Coming Soon</h2></div>} />
             <Route path="/terms" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Terms of Service - Coming Soon</h2></div>} />
             <Route path="/contact" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Contact Us - Coming Soon</h2></div>} />
-          </Routes>
-          <Footer />
+            </Routes>
+            <Footer />
+          </EmailVerificationGuard>
         </AuthProvider>
       </SnackbarProvider>
     </ThemeProvider>

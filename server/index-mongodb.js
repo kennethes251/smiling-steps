@@ -152,8 +152,10 @@ const startServer = async () => {
   console.log('Loading routes...');
   app.use('/api/auth', require('./routes/auth'));
   console.log('  ✅ auth routes loaded');
-  app.use('/api/users', require('./routes/users'));
+  app.use('/api/users', require('./routes/users-mongodb'));
   console.log('  ✅ users routes loaded');
+  app.use('/api/email-verification', require('./routes/emailVerification'));
+  console.log('  ✅ email verification routes loaded');
   app.use('/api/upload', require('./routes/upload'));
   console.log('  ✅ upload routes loaded');
   app.use('/api/admin', require('./routes/admin'));
@@ -162,7 +164,7 @@ const startServer = async () => {
   console.log('  ✅ blog routes loaded');
   app.use('/api/resources', require('./routes/resources'));
   console.log('  ✅ resource routes loaded');
-  app.use('/api/public', require('./routes/public'));
+  app.use('/api/public', require('./routes/public-mongodb'));
   console.log('  ✅ public routes loaded');
   app.use('/api/sessions', require('./routes/sessions'));
   console.log('  ✅ sessions routes loaded');

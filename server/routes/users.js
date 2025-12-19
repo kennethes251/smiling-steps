@@ -7,6 +7,7 @@ const crypto = require('crypto');
 // Use simple rate limiter to avoid 429 errors
 const loginRateLimiter = require('../middleware/rateLimiter.simple').loginRateLimiter;
 const { auth } = require('../middleware/auth');
+const emailVerificationService = require('../services/emailVerificationService');
 // Use global Sequelize User model (initialized in server/index.js)
 // Try email utility, fallback to simple one
 let sendEmail;
@@ -130,20 +131,19 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       userPayload.isVerified = true; // Skip email verification for psychologists
     }
 
-    // Only add verification tokens for non-streamlined client registration
-    if (!isStreamlined && role === 'client') {
-      const verificationToken = crypto.randomBytes(32).toString('hex');
-      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      userPayload.verificationToken = verificationToken;
-      userPayload.verificationTokenExpires = verificationTokenExpires;
-
-      // Send verification email (for now just log the token)
-      console.log('📧 Email verification token for', email, ':', verificationToken);
-      console.log('🔗 Verification URL: https://smiling-steps-frontend.onrender.com/verify-email?token=' + verificationToken);
-    }
-
     const user = await global.User.create(userPayload);
+
+    // Handle email verification for non-streamlined registration
+    if (!isStreamlined && role === 'client') {
+      try {
+        const verificationToken = await emailVerificationService.createVerificationToken(user.id);
+        await emailVerificationService.sendVerificationEmail(user, verificationToken);
+        console.log('📧 Verification email sent to:', email);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail registration if email fails, but log the error
+      }
+    }
 
     // Create JWT payload (Sequelize uses id)
     const payload = {
