@@ -44,9 +44,9 @@ const validateRegisterInput = (req, res, next) => {
     }
   }
 
-  // Role validation - only allow client registration from frontend
-  if (role && !['client'].includes(role.toLowerCase())) {
-    errors.push('Only client registration is allowed through this endpoint');
+  // Role validation - allow client and psychologist registration from frontend
+  if (role && !['client', 'psychologist'].includes(role.toLowerCase())) {
+    errors.push('Only client and psychologist registration is allowed through this endpoint');
   }
 
   // Skip verification validation (optional boolean)
@@ -62,10 +62,10 @@ const validateRegisterInput = (req, res, next) => {
     });
   }
 
-  // Sanitize inputs - force role to be client for frontend registration
+  // Sanitize inputs - allow both client and psychologist roles
   req.body.name = name.trim();
   req.body.email = email.toLowerCase().trim();
-  req.body.role = 'client'; // Always set to client for frontend registration
+  req.body.role = ['client', 'psychologist'].includes(role?.toLowerCase()) ? role.toLowerCase() : 'client';
 
   // Convert skipVerification to boolean if it's a string
   if (skipVerification === 'true') {
@@ -105,16 +105,15 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       });
     }
 
-    // Determine if this is a streamlined registration or admin/psychologist
+    // Determine if this is a streamlined registration
     const isStreamlined = skipVerification === true || skipVerification === 'true';
-    const isAdminOrPsychologist = role === 'admin' || role === 'psychologist';
 
     let userPayload = {
       name,
       email,
       password,
       role,
-      isVerified: isStreamlined || isAdminOrPsychologist, // Auto-verify for streamlined, admin, or psychologist registration
+      isVerified: isStreamlined, // Only auto-verify for streamlined registration
       lastLogin: new Date()
     };
 
@@ -129,21 +128,18 @@ router.post('/register', validateRegisterInput, async (req, res) => {
         approvalStatus: 'pending', // Requires admin approval
         isActive: false // Not active until approved
       };
-    }
-
-    // Admin users are always verified and active
-    if (role === 'admin') {
-      userPayload.isVerified = true;
+      // Psychologists also need email verification (unless streamlined)
+      userPayload.isVerified = isStreamlined;
     }
 
     const user = await global.User.create(userPayload);
 
-    // Handle email verification for clients only (not admin or psychologist)
-    if (!isStreamlined && role === 'client') {
+    // Handle email verification for both clients AND psychologists (unless streamlined)
+    if (!isStreamlined && (role === 'client' || role === 'psychologist')) {
       try {
         const verificationToken = await emailVerificationService.createVerificationToken(user.id);
         await emailVerificationService.sendVerificationEmail(user, verificationToken);
-        console.log('📧 Verification email sent to:', email);
+        console.log('📧 Verification email sent to:', email, 'Role:', role);
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
         // Don't fail registration if email fails, but log the error
@@ -397,8 +393,8 @@ router.post('/login', loginRateLimiter, async (req, res) => {
     
     console.log('✅ Password verified successfully for:', user.email);
 
-    // Check if email is verified (only for clients)
-    if (user.role === 'client' && !user.isVerified) {
+    // Check if email is verified (for clients and psychologists)
+    if ((user.role === 'client' || user.role === 'psychologist') && !user.isVerified) {
       return res.status(400).json({
         success: false,
         message: 'Email not verified',
