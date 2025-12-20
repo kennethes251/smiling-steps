@@ -242,6 +242,20 @@ const UserSchema = new mongoose.Schema({
     default: Date.now
   },
 
+  // Email verification
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
+
   loginAttempts: {
     type: Number,
     default: 0,

@@ -1,97 +1,79 @@
-require('dotenv').config();
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
+
+const PRODUCTION_MONGODB_URI = "mongodb+srv://KennethEsilo:9213@cluster0.m7v7wpi.mongodb.net/smiling-steps?retryWrites=true&w=majority&appName=Cluster0";
+
+const User = require('./models/User');
 
 const fixProductionAdmin = async () => {
   try {
-    console.log('🔧 Fixing production admin credentials...');
+    console.log('🔗 Connecting to Production MongoDB...');
+    await mongoose.connect(PRODUCTION_MONGODB_URI);
+    console.log('✅ Connected to Production MongoDB');
+
+    // Find admin user
+    const admin = await User.findOne({ email: 'admin@smilingsteps.com' });
     
-    // Connect to MongoDB (production)
-    const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://KennethEsilo:9213@cluster0.m7v7wpi.mongodb.net/smiling-steps?retryWrites=true&w=majority&appName=Cluster0";
-    await mongoose.connect(MONGODB_URI);
-    console.log('✅ Connected to MongoDB');
-
-    // Define User schema (inline to avoid import issues)
-    const bcrypt = require('bcryptjs');
-    const userSchema = new mongoose.Schema({
-      name: { type: String, required: true },
-      email: { type: String, required: true, unique: true },
-      password: { type: String, required: true },
-      role: { type: String, enum: ['client', 'psychologist', 'admin'], default: 'client' },
-      isVerified: { type: Boolean, default: false },
-      accountStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-      profileInfo: {
-        bio: String,
-        profilePicture: String,
-        phone: String,
-        location: String
-      },
-      psychologistDetails: {
-        specializations: [String],
-        experience: String,
-        education: String,
-        rates: {
-          Individual: { amount: Number, duration: Number },
-          Couples: { amount: Number, duration: Number },
-          Family: { amount: Number, duration: Number },
-          Group: { amount: Number, duration: Number }
-        },
-        paymentInfo: {
-          mpesaNumber: String,
-          mpesaName: String
+    if (admin) {
+      console.log('👑 Found admin user, updating...');
+      
+      // Hash the password properly
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      
+      // Update admin with proper fields
+      await User.updateOne(
+        { email: 'admin@smilingsteps.com' },
+        {
+          $set: {
+            password: hashedPassword,
+            isEmailVerified: true,
+            role: 'admin',
+            name: 'Admin User'
+          }
         }
-      },
-      emailVerificationToken: String,
-      emailVerificationExpires: Date,
-      resetPasswordToken: String,
-      resetPasswordExpires: Date
-    }, {
-      timestamps: true
-    });
+      );
+      
+      console.log('✅ Admin user updated with:');
+      console.log('   - Properly hashed password');
+      console.log('   - Email verification: true');
+      console.log('   - Role: admin');
+      
+      // Verify the update
+      const updatedAdmin = await User.findOne({ email: 'admin@smilingsteps.com' });
+      console.log('\n📋 Updated admin details:');
+      console.log('   Email:', updatedAdmin.email);
+      console.log('   Role:', updatedAdmin.role);
+      console.log('   Email Verified:', updatedAdmin.isEmailVerified);
+      console.log('   Password Hash Length:', updatedAdmin.password?.length || 'No password');
+      
+    } else {
+      console.log('❌ Admin user not found, creating new one...');
+      
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const newAdmin = new User({
+        name: 'Admin User',
+        email: 'admin@smilingsteps.com',
+        password: hashedPassword,
+        role: 'admin',
+        isEmailVerified: true
+      });
+      
+      await newAdmin.save();
+      console.log('✅ New admin user created');
+    }
 
-    // Hash password before saving
-    userSchema.pre('save', async function(next) {
-      if (!this.isModified('password')) return next();
-      this.password = await bcrypt.hash(this.password, 12);
-      next();
-    });
-
-    const User = mongoose.model('User', userSchema);
-
-    // Remove all existing admin accounts first
-    await User.deleteMany({ role: 'admin' });
-    console.log('🗑️ Removed existing admin accounts');
-
-    // Create the single admin account
-    const adminData = {
-      name: 'Smiling Steps Admin',
-      email: 'smilingsteps@gmail.com',
-      password: '33285322', // Will be hashed by pre-save hook
-      role: 'admin',
-      isVerified: true,
-      accountStatus: 'approved',
-      profileInfo: {
-        bio: 'System Administrator for Smiling Steps Platform'
-      }
-    };
-
-    const admin = new User(adminData);
-    await admin.save();
-
-    console.log('✅ Admin account created successfully!');
-    console.log('');
-    console.log('🔑 PRODUCTION ADMIN CREDENTIALS:');
-    console.log('📧 Email: smilingsteps@gmail.com');
-    console.log('🔐 Password: 33285322');
-    console.log('');
-    console.log('🌐 Login at: https://smiling-steps-frontend.onrender.com/login');
-    console.log('');
-    console.log('⚠️  These are the ONLY admin credentials that will work in production!');
+    console.log('\n🎉 Production Admin Fixed!');
+    console.log('==========================');
+    console.log('👑 Admin Login: admin@smilingsteps.com / admin123');
+    console.log('🔐 Password properly hashed and ready for login');
+    console.log('📧 Email verification bypassed for admin');
 
   } catch (error) {
-    console.error('❌ Error fixing admin:', error);
+    console.error('❌ Error:', error);
   } finally {
-    await mongoose.connection.close();
-    process.exit(0);
+    await mongoose.disconnect();
+    console.log('🔌 Disconnected from MongoDB');
   }
 };
 
