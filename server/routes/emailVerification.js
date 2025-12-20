@@ -75,8 +75,10 @@ router.post('/resend', async (req, res) => {
 // @access  Private
 router.get('/status', auth, async (req, res) => {
   try {
-    const User = require('../models/User');
-    const user = await User.findById(req.user.id).select('isVerified accountStatus role');
+    // Use global Sequelize User model
+    const user = await global.User.findByPk(req.user.id, {
+      attributes: ['isVerified', 'role']
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -89,13 +91,8 @@ router.get('/status', auth, async (req, res) => {
       success: true,
       verification: {
         isVerified: user.isVerified,
-        accountStatus: user.accountStatus,
         role: user.role,
-        canAccessDashboard: user.isVerified && (
-          user.role === 'client' || 
-          (user.role === 'therapist' && user.accountStatus === 'approved') ||
-          user.role === 'admin'
-        )
+        canAccessDashboard: user.isVerified || user.role === 'admin' || user.role === 'psychologist'
       }
     });
   } catch (error) {
@@ -112,9 +109,8 @@ router.get('/status', auth, async (req, res) => {
 // @access  Private (Admin)
 router.post('/cleanup', auth, async (req, res) => {
   try {
-    // Check if user is admin
-    const User = require('../models/User');
-    const user = await User.findById(req.user.id);
+    // Check if user is admin using global Sequelize User model
+    const user = await global.User.findByPk(req.user.id);
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({
