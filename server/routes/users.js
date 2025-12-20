@@ -105,15 +105,16 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       });
     }
 
-    // Determine if this is a streamlined registration
+    // Determine if this is a streamlined registration or admin/psychologist
     const isStreamlined = skipVerification === true || skipVerification === 'true';
+    const isAdminOrPsychologist = role === 'admin' || role === 'psychologist';
 
     let userPayload = {
       name,
       email,
       password,
       role,
-      isVerified: isStreamlined, // Auto-verify for streamlined registration
+      isVerified: isStreamlined || isAdminOrPsychologist, // Auto-verify for streamlined, admin, or psychologist registration
       lastLogin: new Date()
     };
 
@@ -128,12 +129,16 @@ router.post('/register', validateRegisterInput, async (req, res) => {
         approvalStatus: 'pending', // Requires admin approval
         isActive: false // Not active until approved
       };
-      userPayload.isVerified = true; // Skip email verification for psychologists
+    }
+
+    // Admin users are always verified and active
+    if (role === 'admin') {
+      userPayload.isVerified = true;
     }
 
     const user = await global.User.create(userPayload);
 
-    // Handle email verification for non-streamlined registration
+    // Handle email verification for clients only (not admin or psychologist)
     if (!isStreamlined && role === 'client') {
       try {
         const verificationToken = await emailVerificationService.createVerificationToken(user.id);
