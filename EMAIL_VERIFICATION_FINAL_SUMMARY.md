@@ -11,10 +11,11 @@
    - ✅ Always have `isVerified: true`
 
 2. **👨‍⚕️ Psychologist Users**
-   - ✅ **No email verification required**
-   - ✅ Can login immediately after registration
-   - ✅ Always have `isVerified: true`
-   - ⚠️ May be blocked by admin approval workflow (separate from email verification)
+   - ✅ **Email verification required**
+   - ✅ Cannot login until email is verified
+   - ✅ Receive verification email after registration
+   - ✅ Must click verification link to activate account
+   - ⚠️ May also be blocked by admin approval workflow (separate from email verification)
 
 3. **👤 Client Users**
    - ✅ **Email verification required** (unless using skipVerification)
@@ -39,7 +40,7 @@ POST /api/users/register
 // → Verification email sent
 // → Login blocked until verified
 
-// Psychologist Registration (no email verification)
+// Psychologist Registration (requires email verification)
 POST /api/users/register
 {
   "name": "Dr. Jane Smith",
@@ -48,9 +49,10 @@ POST /api/users/register
   "role": "psychologist",
   "psychologistDetails": { ... }
 }
-// → User created with isVerified: true
-// → Can login immediately
-// → May need admin approval (separate process)
+// → User created with isVerified: false
+// → Verification email sent
+// → Login blocked until verified
+// → May also need admin approval (separate process)
 
 // Admin Registration (backend only)
 // Created through secure backend scripts
@@ -61,13 +63,12 @@ POST /api/users/register
 
 ```javascript
 // Login Check Logic
-if (user.role === 'client' && !user.isVerified) {
+if ((user.role === 'client' || user.role === 'psychologist') && !user.isVerified) {
   // Block login - email verification required
   return error('Please verify your email before logging in');
 }
 
-// Admin and psychologist users bypass email verification check
-// They may have other checks (admin approval, etc.)
+// Only admin users bypass email verification check
 ```
 
 ## 🧪 Production Testing Status
@@ -91,9 +92,10 @@ Your production app at **https://smiling-steps.onrender.com** is ready for email
    - Click link to verify account
    - Login with verified account
 
-3. **Psychologist Registration** (No verification needed)
-   - Can register and login immediately
-   - May need admin approval for full access
+3. **Psychologist Registration** (Email verification required)
+   - Can register but cannot login until email verified
+   - Must click verification email link first
+   - May also need admin approval for full access
 
 ## 📧 Email Configuration
 
@@ -113,7 +115,7 @@ Your production app at **https://smiling-steps.onrender.com** is ready for email
 
 ### Role-Based Access
 - ✅ Admin users bypass email verification (secure creation)
-- ✅ Psychologists bypass email verification (professional accounts)
+- ✅ Psychologists require email verification (professional accounts)
 - ✅ Clients require email verification (public registration)
 
 ## 🎊 Final Status
@@ -121,7 +123,7 @@ Your production app at **https://smiling-steps.onrender.com** is ready for email
 **Email Verification System**: ✅ **COMPLETE AND WORKING**
 
 - **Admin users**: No verification needed ✅
-- **Psychologist users**: No verification needed ✅  
+- **Psychologist users**: Email verification required ✅  
 - **Client users**: Email verification required ✅
 - **Production deployment**: ✅ Live and functional
 - **Email sending**: ✅ Gmail SMTP configured
@@ -132,7 +134,8 @@ Your teletherapy platform is now ready for production use with a properly implem
 ---
 
 **Next Steps**: 
-1. Test client registration with your real email
-2. Verify the email verification flow works end-to-end
-3. Confirm admin and psychologist accounts work without verification
-4. Platform is ready for real users! 🚀
+1. Test psychologist registration with your real email
+2. Verify that psychologists cannot login until email is verified
+3. Test client registration with email verification flow
+4. Confirm admin accounts work without verification
+5. Platform is ready for real users! 🚀
