@@ -78,21 +78,23 @@ router.get('/blogs/:slug', async (req, res) => {
 router.get('/psychologists', async (req, res) => {
   try {
     console.log('🔍 Public psychologists route hit');
+    
+    // Use Sequelize syntax for PostgreSQL
     const psychologists = await global.User.findAll({
       where: { role: 'psychologist' },
-      attributes: ['name', 'email', 'profileInfo', 'psychologistDetails', 'createdAt'],
+      attributes: ['id', 'name', 'email', 'profileInfo', 'psychologistDetails', 'createdAt'],
       order: [['createdAt', 'DESC']]
     });
 
     console.log('📊 Found psychologists:', psychologists.length);
 
-    // Enhance psychologists with default data if missing (Mongoose)
+    // Enhance psychologists with default data if missing (Sequelize)
     const enhancedPsychologists = psychologists.map((psych, index) => {
-      // Mongoose documents can be converted to plain objects
-      const psychObj = psych.toObject ? psych.toObject() : psych;
+      // Sequelize returns dataValues or plain object
+      const psychObj = psych.dataValues || psych;
       
       // Generate consistent but varied ratings based on psychologist ID
-      const seed = psychObj._id.toString().slice(-2);
+      const seed = psychObj.id.toString().slice(-2);
       const baseRating = 3.5 + (parseInt(seed, 16) % 20) / 10; // 3.5 to 5.4
       const rating = Math.min(5, Math.max(3.5, baseRating));
       const reviewCount = 50 + (parseInt(seed, 16) % 200); // 50-250 reviews
@@ -101,7 +103,8 @@ router.get('/psychologists', async (req, res) => {
       const psychDetails = psychObj.psychologistDetails || {};
       
       return {
-        id: psychObj._id.toString(),
+        id: psychObj.id.toString(),
+        _id: psychObj.id, // For backward compatibility
         name: psychObj.name,
         email: psychObj.email,
         profilePicture: profileInfo.profilePicture,
@@ -129,7 +132,7 @@ router.get('/psychologists', async (req, res) => {
     res.json(enhancedPsychologists);
   } catch (err) {
     console.error('❌ Error fetching psychologists:', err);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
 
