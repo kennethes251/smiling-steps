@@ -1,25 +1,21 @@
 console.log('🚀 Starting server...');
 
-try {
-  console.log('📦 Loading dotenv...');
-  require('dotenv').config();
-  console.log('✅ Dotenv loaded');
+// Load dependencies
+console.log('📦 Loading dotenv...');
+require('dotenv').config();
+console.log('✅ Dotenv loaded');
 
-  console.log('📦 Loading express...');
-  const express = require('express');
-  console.log('✅ Express loaded');
+console.log('📦 Loading express...');
+const express = require('express');
+console.log('✅ Express loaded');
 
-  console.log('📦 Loading cors...');
-  const cors = require('cors');
-  console.log('✅ CORS loaded');
+console.log('📦 Loading cors...');
+const cors = require('cors');
+console.log('✅ CORS loaded');
 
-  console.log('📦 Loading mongoose...');
-  const mongoose = require('mongoose');
-  console.log('✅ Mongoose loaded');
-} catch (error) {
-  console.error('❌ Error loading dependencies:', error);
-  process.exit(1);
-}
+console.log('📦 Loading mongoose...');
+const mongoose = require('mongoose');
+console.log('✅ Mongoose loaded');
 
 const app = express();
 const PORT = process.env.PORT || 5000;

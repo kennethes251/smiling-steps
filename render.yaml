@@ -1,34 +1,41 @@
 services:
   - type: web
-    name: smiling-steps-api
+    name: smiling-steps-backend
     env: node
     plan: free
-    buildCommand: cd server && npm install
-    startCommand: cd server && npm run start:mongodb
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: ENCRYPTION_KEY
-        sync: false
+      - key: MONGODB_URI
+        fromDatabase:
+          name: smiling-steps-mongodb
+          property: connectionString
       - key: JWT_SECRET
-        sync: false
-      - key: MPESA_CONSUMER_KEY
-        sync: false
-      - key: MPESA_CONSUMER_SECRET
-        sync: false
-      - key: MPESA_BUSINESS_SHORT_CODE
-        sync: false
-      - key: MPESA_PASSKEY
-        sync: false
-      - key: MPESA_CALLBACK_URL
-        sync: false
-      - key: MPESA_ENVIRONMENT
-        value: sandbox
+        generateValue: true
+      - key: EMAIL_USER
+        value: kennethes251@gmail.com
+      - key: EMAIL_PASSWORD
+        value: gmhp uzew qwpl zepz
+      - key: FROM_EMAIL
+        value: hr@smilingsteps.com
+      - key: FROM_NAME
+        value: Smiling Steps
+      - key: CLIENT_URL
+        value: https://smiling-steps-frontend.onrender.com
+
+  - type: web
+    name: smiling-steps-frontend
+    env: static
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://smiling-steps-backend.onrender.com
 
 databases:
-  - name: smiling-steps-db
-    databaseName: smiling_steps
-    user: smiling_steps_user
-    plan: free
+  - name: smiling-steps-mongodb
+    databaseName: smiling-steps
+    user: smiling-steps-user
