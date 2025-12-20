@@ -9,9 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
-        fromDatabase:
-          name: smiling-steps-mongodb
-          property: connectionString
+        value: mongodb+srv://KennethEsilo:9213@cluster0.m7v7wpi.mongodb.net/smiling-steps?retryWrites=true&w=majority&appName=Cluster0
       - key: JWT_SECRET
         generateValue: true
       - key: EMAIL_USER
@@ -34,8 +32,3 @@ services:
     envVars:
       - key: REACT_APP_API_URL
         value: https://smiling-steps-backend.onrender.com
-
-databases:
-  - name: smiling-steps-mongodb
-    databaseName: smiling-steps
-    user: smiling-steps-user
