@@ -1,11 +1,14 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
-const connectDB = require('./config/database');
+const connectDB = require('./config/database-mongodb');
+const { initializeVideoCallServer } = require('./services/videoCallService');
 const { securityHeaders, enforceTLS, videoCallCorsOptions } = require('./middleware/security');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Security Headers - Apply first for all requests
@@ -36,19 +39,12 @@ app.use(helmet({
 // Enhanced CORS Configuration for Video Calls
 const corsOptions = {
   origin: function (origin, callback) {
-    console.log('🌐 CORS request from origin:', origin);
-    
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) {
-      console.log('✅ CORS: Allowing request with no origin');
-      return callback(null, true);
-    }
+    if (!origin) return callback(null, true);
     
     const allowedOrigins = [
       'http://localhost:3000',
       'https://smiling-steps-frontend.onrender.com',
-      'https://smilingsteps.com',
-      'https://www.smilingsteps.com',
       // Add development origins for video call testing
       'http://localhost:3001',
       'https://localhost:3000',
@@ -56,11 +52,9 @@ const corsOptions = {
     ];
     
     if (allowedOrigins.includes(origin)) {
-      console.log('✅ CORS: Allowing origin:', origin);
       callback(null, true);
     } else {
       console.warn('🚫 CORS blocked origin:', origin);
-      console.warn('🚫 Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -86,15 +80,6 @@ const corsOptions = {
   maxAge: 86400 // 24 hours preflight cache
 };
 app.use(cors(corsOptions));
-
-// Health check endpoint - should be accessible before auth
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    message: 'Server is running'
-  });
-});
 
 // Enhanced security headers for video calls
 app.use((req, res, next) => {
@@ -142,174 +127,82 @@ app.use(express.json());
 // Serve static files for uploaded images
 app.use('/uploads', express.static('uploads'));
 
-// Debug middleware to log all requests
+// Debug middleware
 app.use((req, res, next) => {
-  console.log(`🌐 ${req.method} ${req.path} - Origin: ${req.get('Origin')} - ${new Date().toISOString()}`);
+  console.log(`🌐 ${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
 
 const startServer = async () => {
-  const sequelize = await connectDB();
+  // Connect to MongoDB
+  await connectDB();
+  
+  // Load Mongoose models (they auto-register with mongoose)
+  require('./models/User');
+  require('./models/Session');
+  require('./models/Blog');
+  console.log('✅ Mongoose models loaded');
 
-  // Schedule daily payment reconciliation
-  const { scheduleReconciliation } = require('./scripts/schedule-reconciliation');
-  scheduleReconciliation();
-
-  // Initialize models
-  const { DataTypes } = require('sequelize');
-  const User = require('./models/User-sequelize')(sequelize, DataTypes);
-  const Session = require('./models/Session-sequelize')(sequelize, DataTypes);
-  const Blog = require('./models/Blog-sequelize')(sequelize, DataTypes);
-  
-  // Define associations
-  User.hasMany(Session, { foreignKey: 'clientId', as: 'clientSessions' });
-  User.hasMany(Session, { foreignKey: 'psychologistId', as: 'psychologistSessions' });
-  Session.belongsTo(User, { foreignKey: 'clientId', as: 'client' });
-  Session.belongsTo(User, { foreignKey: 'psychologistId', as: 'psychologist' });
-  
-  // Blog associations
-  User.hasMany(Blog, { foreignKey: 'authorId', as: 'blogs' });
-  Blog.belongsTo(User, { foreignKey: 'authorId', as: 'author' });
-  
-  // Make models globally available
-  global.User = User;
-  global.Session = Session;
-  global.Blog = Blog;
-  
-  // Sync database (create tables if they don't exist)
-  // Always sync to ensure tables exist, use alter to update existing tables safely
-  try {
-    await sequelize.sync({ alter: true });
-    console.log('✅ PostgreSQL connected and tables synchronized');
-  } catch (syncError) {
-    console.log('⚠️ Sync failed, trying basic connection...');
-    await sequelize.authenticate();
-    console.log('✅ PostgreSQL connected (basic mode)');
-  }
+  // Initialize WebSocket server for video calls
+  const io = initializeVideoCallServer(server);
+  app.set('io', io);
+  console.log('✅ WebSocket server initialized for video calls');
 
   // Define Routes
   console.log('Loading routes...');
   app.use('/api/auth', require('./routes/auth'));
-  console.log('  ✅ auth routes loaded.');
-  app.use('/api/users', require('./routes/users'));
-  console.log('  ✅ users routes loaded.');
+  console.log('  ✅ auth routes loaded');
+  app.use('/api/users', require('./routes/users-mongodb'));
+  console.log('  ✅ users routes loaded');
   app.use('/api/email-verification', require('./routes/emailVerification'));
-  console.log('  ✅ email verification routes loaded.');
+  console.log('  ✅ email verification routes loaded');
   app.use('/api/upload', require('./routes/upload'));
-  console.log('  ✅ upload routes loaded.');
+  console.log('  ✅ upload routes loaded');
   app.use('/api/admin', require('./routes/admin'));
-  console.log('  ✅ admin routes loaded.');
+  console.log('  ✅ admin routes loaded');
   app.use('/api/admin/blogs', require('./routes/blogs'));
-  console.log('  ✅ blog routes loaded.');
-  app.use('/api/public', require('./routes/public'));
-  console.log('  ✅ public routes loaded.');
+  console.log('  ✅ blog routes loaded');
+  app.use('/api/resources', require('./routes/resources'));
+  console.log('  ✅ resource routes loaded');
+  app.use('/api/public', require('./routes/public-mongodb'));
+  console.log('  ✅ public routes loaded');
   app.use('/api/sessions', require('./routes/sessions'));
-  console.log('  ✅ sessions routes loaded.');
+  console.log('  ✅ sessions routes loaded');
   app.use('/api/mpesa', require('./routes/mpesa'));
-  console.log('  ✅ mpesa routes loaded.');
+  console.log('  ✅ mpesa routes loaded');
   app.use('/api/reconciliation', require('./routes/reconciliation'));
-  console.log('  ✅ reconciliation routes loaded.');
-  app.use('/api/real-time-reconciliation', require('./routes/realTimeReconciliation').router);
-  console.log('  ✅ real-time reconciliation routes loaded.');
-  app.use('/api/audit-logs', require('./routes/auditLogs'));
-  console.log('  ✅ audit logs routes loaded.');
-  app.use('/api/issue-resolution', require('./routes/issueResolution'));
-  console.log('  ✅ issue resolution routes loaded.');
-  app.use('/api/accounting', require('./routes/accounting'));
-  console.log('  ✅ accounting routes loaded.');
-  app.use('/api/fraud', require('./routes/fraudDetection'));
-  console.log('  ✅ fraud detection routes loaded.');
+  console.log('  ✅ reconciliation routes loaded');
+  app.use('/api/trends', require('./routes/historicalTrends'));
+  console.log('  ✅ historical trends routes loaded');
   // Video calls routes with enhanced CORS
   app.use('/api/video-calls', cors(videoCallCorsOptions), require('./routes/videoCalls'));
-  console.log('  ✅ video calls routes loaded with enhanced CORS.');
-  app.use('/api/video-call-metrics', require('./routes/videoCallMetrics'));
-  console.log('  ✅ video call metrics routes loaded.');
-  app.use('/docs', require('./routes/docs'));
-  console.log('  ✅ documentation routes loaded.');
-  app.use('/api', require('./routes/make-admin'));
-  console.log('  ✅ make-admin route loaded (TEMPORARY).');
+  console.log('  ✅ video call routes loaded with enhanced CORS.');
   
-  // Temporarily disabled routes (need model conversion):
-  // app.use('/api/chat', require('./routes/chat'));
-  // app.use('/api/assessments', require('./routes/assessments'));
-  // app.use('/api/feedback', require('./routes/feedback'));
-  // app.use('/api/checkins', require('./routes/checkins'));
-  // app.use('/api/company', require('./routes/company'));
-  
-  console.log('✅ Core routes loaded (auth, users, upload, admin, public, sessions, mpesa)');
-  console.log('⚠️  Assessment/chat routes temporarily disabled');
-
-  // Start fraud model training scheduler
-  try {
-    const fraudModelScheduler = require('./scripts/schedule-fraud-model-training');
-    fraudModelScheduler.start();
-    console.log('✅ Fraud model training scheduler started');
-  } catch (error) {
-    console.error('⚠️ Failed to start fraud model scheduler:', error.message);
-  }
+  console.log('✅ All routes loaded with MongoDB');
 
   // Basic Route
   app.get('/', (req, res) => {
     res.json({ 
-      message: 'Smiling Steps API is running!',
+      message: 'Smiling Steps API is running with MongoDB!',
       timestamp: new Date().toISOString(),
-      cors: 'Updated CORS configuration active',
-      version: '2.1',
-      status: 'Railway deployment active'
+      database: 'MongoDB',
+      version: '3.0'
     });
   });
-
-  // Test route for admin
-  app.get('/api/test', (req, res) => {
-    res.json({ message: 'Server is running', timestamp: new Date() });
-  });
-
-  // Create HTTP server for WebSocket support
-  const http = require('http');
-  const server = http.createServer(app);
-
-  // Setup WebSocket server for real-time reconciliation
-  const { setupWebSocketServer } = require('./routes/realTimeReconciliation');
-  const wss = setupWebSocketServer(server);
-
-  // Initialize video call service with Socket.io
-  const { initializeVideoCallServer } = require('./services/videoCallService');
-  const videoCallIO = initializeVideoCallServer(server);
-  console.log('✅ Video call Socket.io server initialized');
-
-  // Start real-time reconciliation service
-  const realTimeReconciliationService = require('./services/realTimeReconciliation');
-  
-  // Start periodic reconciliation checks (every 15 minutes)
-  const periodicInterval = realTimeReconciliationService.startPeriodicChecks(15);
 
   server.listen(PORT, () => {
-    console.log(`✅ Server is running on port ${PORT}`);
-    console.log(`📡 WebSocket server ready for real-time reconciliation`);
-  });
-
-  // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    console.log(`✅ Server running on port ${PORT} with MongoDB`);
+    console.log(`✅ WebSocket server ready for video calls`);
     
-    // Stop real-time reconciliation service
-    realTimeReconciliationService.stop();
-    
-    // Clear periodic interval
-    if (periodicInterval) {
-      clearInterval(periodicInterval);
+    // Start session reminder jobs
+    try {
+      const { startReminderJobs } = require('./services/sessionReminderService');
+      startReminderJobs();
+      console.log('✅ Session reminder service started');
+    } catch (error) {
+      console.error('⚠️ Failed to start reminder service:', error.message);
+      console.error('   Reminders will not be sent. Check SMS configuration.');
     }
-    
-    // Close WebSocket server
-    wss.close(() => {
-      console.log('📡 WebSocket server closed');
-    });
-    
-    // Close HTTP server
-    server.close(() => {
-      console.log('🛑 HTTP server closed');
-      process.exit(0);
-    });
   });
 };
 
