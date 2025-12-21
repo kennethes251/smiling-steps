@@ -158,7 +158,7 @@ class EmailVerificationService {
     }
 
     // Update user verification status
-    user.isVerified = true;
+    user.isEmailVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     
@@ -179,7 +179,7 @@ class EmailVerificationService {
         name: user.name,
         email: user.email,
         role: user.role,
-        isVerified: user.isVerified,
+        isVerified: user.isEmailVerified,
         accountStatus: user.accountStatus
       }
     };
@@ -196,7 +196,7 @@ class EmailVerificationService {
       throw new Error('User not found');
     }
 
-    if (user.isVerified) {
+    if (user.isEmailVerified) {
       throw new Error('Email is already verified');
     }
 

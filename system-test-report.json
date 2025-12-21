@@ -1,0 +1,76 @@
+{
+  "timestamp": "2025-12-21T06:32:58.111Z",
+  "summary": {
+    "passed": 6,
+    "failed": 6,
+    "total": 12
+  },
+  "results": [
+    {
+      "name": "Health Check",
+      "status": "FAIL",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "name": "CORS Configuration",
+      "status": "FAIL",
+      "error": "Request failed with status code 404"
+    },
+    {
+      "name": "Error Handling",
+      "status": "PASS",
+      "result": "Error handling working correctly"
+    },
+    {
+      "name": "Admin Login",
+      "status": "PASS",
+      "result": "Admin logged in successfully, role: admin"
+    },
+    {
+      "name": "Email Verification Status",
+      "status": "FAIL",
+      "error": "Request failed with status code 500"
+    },
+    {
+      "name": "Client Registration",
+      "status": "PASS",
+      "result": "Client registered, requires verification: true"
+    },
+    {
+      "name": "Psychologist Registration",
+      "status": "FAIL",
+      "error": "Request failed with status code 400"
+    },
+    {
+      "name": "Unverified Client Login Block",
+      "status": "PASS",
+      "result": "Unverified client login correctly blocked"
+    },
+    {
+      "name": "Unverified Psychologist Login Block",
+      "status": "FAIL",
+      "error": "Test psychologist not available"
+    },
+    {
+      "name": "Public Psychologists API",
+      "status": "FAIL",
+      "error": "Public psychologists API failed"
+    },
+    {
+      "name": "Database Field Consistency",
+      "status": "PASS",
+      "result": "Database fields consistent, verification field present"
+    },
+    {
+      "name": "Email Verification Service",
+      "status": "PASS",
+      "result": "Email verification service handling errors correctly"
+    }
+  ],
+  "systemStatus": {
+    "database": "MongoDB Atlas",
+    "emailVerification": "Required for clients and psychologists",
+    "adminAccess": "Bypasses verification",
+    "overallStatus": "ISSUES_DETECTED"
+  }
+}

@@ -152,7 +152,7 @@ const startServer = async () => {
   console.log('Loading routes...');
   app.use('/api/auth', require('./routes/auth'));
   console.log('  ✅ auth routes loaded');
-  app.use('/api/users', require('./routes/users-mongodb'));
+  app.use('/api/users', require('./routes/users-mongodb-fixed'));
   console.log('  ✅ users routes loaded');
   app.use('/api/email-verification', require('./routes/emailVerification'));
   console.log('  ✅ email verification routes loaded');

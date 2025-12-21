@@ -50,8 +50,6 @@ const validateRegisterInput = (req, res, next) => {
   req.body.name = name.trim();
   req.body.email = email.toLowerCase().trim();
   req.body.role = ['client', 'psychologist'].includes(role?.toLowerCase()) ? role.toLowerCase() : 'client';
-  req.body.email = email.toLowerCase().trim();
-  req.body.role = role ? role.toLowerCase() : 'client';
 
   // Convert skipVerification to boolean if it's a string
   if (skipVerification === 'true') {
@@ -151,7 +149,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin,
-      isVerified: user.isVerified
+      isVerified: user.isEmailVerified
     };
 
     // Return appropriate response based on registration type
@@ -210,7 +208,10 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('🔐 Login attempt:', { email, hasPassword: !!password });
+    console.log('🔐 Login attempt:', {
+      email,
+      hasPassword: !!password
+    });
 
     // Basic validation
     if (!email || !password) {
@@ -221,7 +222,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user by email (include password for verification)
+    // Find user by email (case-insensitive) with password
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
 
     // Check if user exists
@@ -233,33 +234,19 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if account is locked
-    if (user.isAccountLocked()) {
-      const retryAfter = Math.ceil((user.lockUntil - Date.now()) / 1000 / 60);
-      return res.status(429).json({
-        success: false,
-        message: 'Account temporarily locked',
-        errors: [`Too many failed attempts. Try again in ${retryAfter} minutes.`]
-      });
-    }
-
     // Verify password
     const isMatch = await user.correctPassword(password);
     
     if (!isMatch) {
-      console.log('❌ Password mismatch for:', user.email);
-      // Handle failed login
-      await User.failedLogin(user._id);
-
       return res.status(400).json({
         success: false,
         message: 'Authentication failed',
-        errors: ['Invalid email or password. Please check your credentials and try again.']
+        errors: ['Invalid email or password']
       });
     }
 
-    // Check if email is verified (only for clients)
-    if (user.role === 'client' && !user.isVerified) {
+    // Check if email is verified (for clients and psychologists - admin bypasses)
+    if ((user.role === 'client' || user.role === 'psychologist') && !user.isEmailVerified) {
       return res.status(400).json({
         success: false,
         message: 'Email not verified',
@@ -268,15 +255,16 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if therapist account is approved
-    if (user.role === 'therapist') {
+    // Check if psychologist account is approved and active
+    if (user.role === 'psychologist') {
       const approvalStatus = user.psychologistDetails?.approvalStatus || 'pending';
+      const isActive = user.psychologistDetails?.isActive;
 
       if (approvalStatus === 'pending') {
         return res.status(403).json({
           success: false,
           message: 'Account pending approval',
-          errors: ['Your therapist application is under review. You will receive an email once approved.']
+          errors: ['Your psychologist application is under review. You will receive an email once approved.']
         });
       }
 
@@ -284,14 +272,20 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({
           success: false,
           message: 'Application rejected',
-          errors: ['Your therapist application was not approved. Please contact support for more information.']
+          errors: ['Your psychologist application was not approved. Please contact support for more information.']
+        });
+      }
+
+      if (isActive === false) {
+        return res.status(403).json({
+          success: false,
+          message: 'Account disabled',
+          errors: ['Your account has been disabled by an administrator. Please contact support for assistance.']
         });
       }
     }
 
-    // Reset login attempts on successful login
-    user.loginAttempts = 0;
-    user.lockUntil = undefined;
+    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
@@ -316,7 +310,7 @@ router.post('/login', async (req, res) => {
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin,
-      isVerified: user.isVerified
+      isVerified: user.isEmailVerified
     };
 
     // Return success response
@@ -348,30 +342,65 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @route   GET api/users/profile
-// @desc    Get current user's profile
-// @access  Private
-router.get('/profile', auth, async (req, res) => {
+// @route   GET api/users/psychologists
+// @desc    Get all approved psychologists for booking
+// @access  Public
+router.get('/psychologists', async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    console.log('🔍 Fetching psychologists for booking...');
+    
+    const psychologists = await User.find({ 
+      role: 'psychologist',
+      'psychologistDetails.approvalStatus': 'approved'
+    }).select('name email psychologistDetails createdAt');
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
+    console.log(`📊 Found ${psychologists.length} psychologist(s)`);
 
+    // Enhance psychologists with default data if missing
+    const enhancedPsychologists = psychologists.map(psych => {
+      const psychDetails = psych.psychologistDetails || {};
+      
+      return {
+        id: psych._id.toString(),
+        _id: psych._id,
+        name: psych.name,
+        email: psych.email,
+        bio: psychDetails.bio || `Dr. ${psych.name} is a dedicated mental health professional.`,
+        specializations: psychDetails.specializations && psychDetails.specializations.length > 0 
+          ? psychDetails.specializations 
+          : ['General Therapy', 'Anxiety', 'Depression'],
+        experience: psychDetails.experience || '5 years',
+        psychologistDetails: {
+          specializations: psychDetails.specializations || ['General Therapy', 'Anxiety', 'Depression'],
+          experience: psychDetails.experience || '5 years',
+          rates: psychDetails.rates || {
+            Individual: { amount: 2000, duration: 60 },
+            Couples: { amount: 3500, duration: 75 },
+            Family: { amount: 4500, duration: 90 },
+            Group: { amount: 1500, duration: 90 }
+          }
+        },
+        rates: psychDetails.rates || {
+          Individual: { amount: 2000, duration: 60 },
+          Couples: { amount: 3500, duration: 75 },
+          Family: { amount: 4500, duration: 90 },
+          Group: { amount: 1500, duration: 90 }
+        }
+      };
+    });
+
+    console.log('✅ Sending psychologists data');
     res.json({
       success: true,
-      user
+      data: enhancedPsychologists
     });
 
   } catch (err) {
-    console.error('Error fetching user profile:', err);
+    console.error('❌ Error fetching psychologists:', err);
     res.status(500).json({
       success: false,
-      message: 'Server error fetching profile'
+      message: 'Failed to fetch psychologists',
+      error: err.message
     });
   }
 });

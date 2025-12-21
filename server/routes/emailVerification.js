@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/User'); // Add Mongoose User model
 const emailVerificationService = require('../services/emailVerificationService');
 const { auth } = require('../middleware/auth');
 
@@ -75,10 +76,8 @@ router.post('/resend', async (req, res) => {
 // @access  Private
 router.get('/status', auth, async (req, res) => {
   try {
-    // Use global Sequelize User model
-    const user = await global.User.findByPk(req.user.id, {
-      attributes: ['isVerified', 'role']
-    });
+    // Use Mongoose User model
+    const user = await User.findById(req.user.id, 'isEmailVerified role');
 
     if (!user) {
       return res.status(404).json({
@@ -90,9 +89,9 @@ router.get('/status', auth, async (req, res) => {
     res.json({
       success: true,
       verification: {
-        isVerified: user.isVerified,
+        isVerified: user.isEmailVerified,
         role: user.role,
-        canAccessDashboard: user.isVerified || user.role === 'admin' || user.role === 'psychologist'
+        canAccessDashboard: user.isEmailVerified || user.role === 'admin' || user.role === 'psychologist'
       }
     });
   } catch (error) {
@@ -109,8 +108,8 @@ router.get('/status', auth, async (req, res) => {
 // @access  Private (Admin)
 router.post('/cleanup', auth, async (req, res) => {
   try {
-    // Check if user is admin using global Sequelize User model
-    const user = await global.User.findByPk(req.user.id);
+    // Check if user is admin using Mongoose User model
+    const user = await User.findById(req.user.id);
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({
