@@ -37,7 +37,7 @@ services:
       - key: MPESA_PASSKEY
         fromSecret: MPESA_PASSKEY
       - key: MPESA_CALLBACK_URL
-        value: https://smiling-steps.onrender.com/api/mpesa/callback
+        value: https://smiling-steps-backend.onrender.com/api/mpesa/callback
       - key: MPESA_ENVIRONMENT
         value: sandbox
       - key: ENABLE_FILE_LOGGING
