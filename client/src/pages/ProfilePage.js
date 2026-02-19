@@ -233,7 +233,7 @@ const ProfilePage = () => {
       formDataWithFile.append('profilePicture', file);
 
       const response = await axios.put(
-        `${API_BASE_URL}/api/users/profile/picture`,
+        `${API_BASE_URL}/api/profile/picture`,
         formDataWithFile,
         {
           headers: {
@@ -295,7 +295,7 @@ const ProfilePage = () => {
         return;
       }
 
-      const response = await axios.put(`${API_BASE_URL}/api/users/profile`, cleanedFormData, {
+      const response = await axios.put(`${API_BASE_URL}/api/profile`, cleanedFormData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -348,7 +348,7 @@ const ProfilePage = () => {
       const token = localStorage.getItem('token');
 
       const response = await axios.put(
-        `${API_BASE_URL}/api/users/rates`,
+        `${API_BASE_URL}/api/profile/rates`,
         sessionRates,
         {
           headers: {
