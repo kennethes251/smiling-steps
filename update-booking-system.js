@@ -80,7 +80,7 @@ async function updateBookingSystem() {
       if (!psych.psychologistDetails?.paymentInfo) {
         psych.psychologistDetails = psych.psychologistDetails || {};
         psych.psychologistDetails.paymentInfo = {
-          mpesaNumber: '0707439299',
+          mpesaNumber: '0118832083',
           mpesaName: psych.name
         };
         updated = true;

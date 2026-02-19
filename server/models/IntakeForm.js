@@ -5,14 +5,14 @@ const IntakeFormSchema = new mongoose.Schema({
   client: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
+    // Note: Compound unique index { client: 1, session: 1 } covers client queries
   },
   session: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Session',
-    required: true,
-    index: true
+    required: true
+    // Note: Compound unique index { client: 1, session: 1 } covers session queries
   },
   
   // Basic Information (encrypted)

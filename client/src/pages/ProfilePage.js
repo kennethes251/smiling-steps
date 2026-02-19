@@ -15,28 +15,46 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
   Chip,
   Alert,
   CircularProgress,
   Card,
   CardContent,
-  Divider,
-  IconButton
+  IconButton,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   PhotoCamera,
   Person,
   Email,
-  Work,
   Favorite,
-  School,
-  Security,
   Edit,
   Save,
-  Cancel
+  Cancel,
+  Schedule,
+  Notifications,
+  Security,
+  AttachMoney
 } from '@mui/icons-material';
+import AvailabilityCalendar from '../components/AvailabilityCalendar';
+import SecuritySettings from '../components/SecuritySettings';
+import NotificationSettings from '../components/NotificationSettings';
+
+// Tab Panel component
+function TabPanel({ children, value, index, ...other }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`profile-tabpanel-${index}`}
+      aria-labelledby={`profile-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 const ProfilePage = () => {
   const { user, updateUser } = useContext(AuthContext);
@@ -46,6 +64,7 @@ const ProfilePage = () => {
   const [error, setError] = useState('');
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -74,7 +93,18 @@ const ProfilePage = () => {
     emailNotifications: true,
     smsNotifications: false,
     reminderNotifications: true,
-    bio: ''
+    bio: '',
+    // Psychologist-specific fields
+    specializations: [],
+    experience: ''
+  });
+
+  // Session rates for psychologists
+  const [sessionRates, setSessionRates] = useState({
+    individual: 2000,
+    couples: 3500,
+    family: 5000,
+    group: 5000
   });
 
   const [editingSections, setEditingSections] = useState({
@@ -83,8 +113,13 @@ const ProfilePage = () => {
     personal: false,
     health: false,
     preferences: false,
-    privacy: false
+    privacy: false,
+    rates: false
   });
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
 
   useEffect(() => {
     if (user) {
@@ -115,15 +150,25 @@ const ProfilePage = () => {
         emailNotifications: user.emailNotifications !== false,
         smsNotifications: user.smsNotifications || false,
         reminderNotifications: user.reminderNotifications !== false,
-        bio: user.bio || ''
+        bio: user.bio || user.psychologistDetails?.bio || '',
+        specializations: user.psychologistDetails?.specializations || [],
+        experience: user.psychologistDetails?.experience || ''
       });
 
+      // Set session rates for psychologists
+      if (user.role === 'psychologist' && user.sessionRates) {
+        setSessionRates({
+          individual: user.sessionRates.individual || 2000,
+          couples: user.sessionRates.couples || 3500,
+          family: user.sessionRates.family || 5000,
+          group: user.sessionRates.group || 5000
+        });
+      }
+
       if (user.profilePicture) {
-        // Convert relative path to full URL with cache busting
         const imageUrl = user.profilePicture.startsWith('http') 
           ? user.profilePicture 
           : `${API_ENDPOINTS.BASE_URL}${user.profilePicture}?t=${Date.now()}`;
-        console.log('🖼️ Setting profile picture URL:', imageUrl);
         setImagePreview(imageUrl);
       }
     }
@@ -144,11 +189,25 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleRateChange = (field, value) => {
+    setSessionRates(prev => ({
+      ...prev,
+      [field]: Number(value) || 0
+    }));
+  };
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError('Image size must be less than 5MB');
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Only JPG, PNG, and GIF images are allowed');
         return;
       }
 
@@ -158,6 +217,47 @@ const ProfilePage = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+
+      // Upload immediately
+      await uploadProfilePicture(file);
+    }
+  };
+
+  const uploadProfilePicture = async (file) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const token = localStorage.getItem('token');
+      const formDataWithFile = new FormData();
+      formDataWithFile.append('profilePicture', file);
+
+      const response = await axios.put(
+        `${API_BASE_URL}/api/users/profile/picture`,
+        formDataWithFile,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        const imageUrl = response.data.profilePicture.startsWith('http') 
+          ? response.data.profilePicture 
+          : `${API_ENDPOINTS.BASE_URL}${response.data.profilePicture}?t=${Date.now()}`;
+        setImagePreview(imageUrl);
+        updateUser({ ...user, profilePicture: response.data.profilePicture });
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Profile picture upload failed:', err);
+      setError(err.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setLoading(false);
+      setProfileImage(null);
     }
   };
 
@@ -175,16 +275,13 @@ const ProfilePage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      
-      console.log('🔄 Updating profile...', { section, formData });
-      console.log('🔑 Token exists:', !!token);
 
       if (!token) {
         setError('Authentication token not found. Please log in again.');
         return;
       }
 
-      // Clean the form data - remove empty strings for enum fields
+      // Clean the form data
       const cleanedFormData = { ...formData };
       const enumFields = ['gender', 'preferredTherapyType', 'profileVisibility'];
       enumFields.forEach(field => {
@@ -193,72 +290,11 @@ const ProfilePage = () => {
         }
       });
 
-      // Ensure name is never empty (required field)
       if (!cleanedFormData.name || cleanedFormData.name.trim() === '') {
         setError('Name is required and cannot be empty.');
         return;
       }
 
-      console.log('🧹 Cleaned form data:', cleanedFormData);
-
-      // Handle file upload if image is selected
-      if (profileImage) {
-        const formDataWithFile = new FormData();
-        formDataWithFile.append('profilePicture', profileImage);
-        
-        // Add other form fields to FormData
-        Object.keys(cleanedFormData).forEach(key => {
-          if (Array.isArray(cleanedFormData[key])) {
-            formDataWithFile.append(key, JSON.stringify(cleanedFormData[key]));
-          } else {
-            formDataWithFile.append(key, cleanedFormData[key]);
-          }
-        });
-
-        const response = await axios.put(`${API_BASE_URL}/api/users/profile`, formDataWithFile, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-
-        console.log('✅ Profile update with image response:', response.data);
-
-        if (response.data.success) {
-          updateUser(response.data.user);
-          setSuccess(true);
-          setProfileImage(null);
-          
-          // Update image preview with the new profile picture
-          if (response.data.user.profilePicture) {
-            const imageUrl = response.data.user.profilePicture.startsWith('http') 
-              ? response.data.user.profilePicture 
-              : `${API_ENDPOINTS.BASE_URL}${response.data.user.profilePicture}?t=${Date.now()}`;
-            console.log('🖼️ Updated profile picture URL:', imageUrl);
-            setImagePreview(imageUrl);
-          }
-          
-          if (section !== 'all') {
-            setEditingSections(prev => ({ ...prev, [section]: false }));
-          } else {
-            setEditingSections({
-              basic: false,
-              contact: false,
-              personal: false,
-              health: false,
-              preferences: false,
-              privacy: false
-            });
-          }
-
-          setTimeout(() => setSuccess(false), 3000);
-        } else {
-          setError(response.data.message || 'Update failed');
-        }
-        return;
-      }
-
-      // For JSON-only updates (no file upload)
       const response = await axios.put(`${API_BASE_URL}/api/users/profile`, cleanedFormData, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -266,21 +302,9 @@ const ProfilePage = () => {
         }
       });
 
-      console.log('✅ Profile update response:', response.data);
-
       if (response.data.success) {
         updateUser(response.data.user);
         setSuccess(true);
-        setProfileImage(null);
-        
-        // Update image preview if profile picture was updated
-        if (response.data.user.profilePicture) {
-          const imageUrl = response.data.user.profilePicture.startsWith('http') 
-            ? response.data.user.profilePicture 
-            : `${API_ENDPOINTS.BASE_URL}${response.data.user.profilePicture}?t=${Date.now()}`;
-          console.log('🖼️ Updated profile picture URL (JSON):', imageUrl);
-          setImagePreview(imageUrl);
-        }
 
         if (section !== 'all') {
           setEditingSections(prev => ({ ...prev, [section]: false }));
@@ -291,7 +315,8 @@ const ProfilePage = () => {
             personal: false,
             health: false,
             preferences: false,
-            privacy: false
+            privacy: false,
+            rates: false
           });
         }
 
@@ -301,18 +326,46 @@ const ProfilePage = () => {
       }
 
     } catch (err) {
-      console.error('❌ Profile update failed:', err);
-      console.error('Error response:', err.response?.data);
-      
+      console.error('Profile update failed:', err);
       if (err.response?.status === 401) {
         setError('Authentication failed. Please log in again.');
       } else if (err.response?.status === 400) {
         setError(err.response.data.message || 'Invalid data provided');
-      } else if (err.response?.status === 500) {
-        setError('Server error. Please try again later.');
       } else {
-        setError(err.response?.data?.message || err.message || 'Failed to update profile');
+        setError(err.response?.data?.message || 'Failed to update profile');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveRates = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      const response = await axios.put(
+        `${API_BASE_URL}/api/users/rates`,
+        sessionRates,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        setSuccess(true);
+        setEditingSections(prev => ({ ...prev, rates: false }));
+        setTimeout(() => setSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Session rates update failed:', err);
+      setError(err.response?.data?.message || 'Failed to update session rates');
     } finally {
       setLoading(false);
     }
@@ -333,9 +386,24 @@ const ProfilePage = () => {
     'Life Transitions', 'Addiction Recovery', 'Sleep Issues', 'Anger Management'
   ];
 
+  const specializationOptions = [
+    'Anxiety', 'Depression', 'Trauma & PTSD', 'Relationship Issues', 'Family Therapy',
+    'Child & Adolescent', 'Couples Therapy', 'Grief & Loss', 'Addiction', 'Eating Disorders',
+    'OCD', 'ADHD', 'Stress Management', 'Career Counseling', 'Life Coaching'
+  ];
+
+  // Determine which tabs to show based on user role
+  const isPsychologist = user.role === 'psychologist';
+  const tabs = [
+    { label: 'Profile', icon: <Person /> },
+    ...(isPsychologist ? [{ label: 'Availability', icon: <Schedule /> }] : []),
+    { label: 'Notifications', icon: <Notifications /> },
+    { label: 'Security', icon: <Security /> }
+  ];
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
+      {/* Header with Profile Picture */}
       <Paper elevation={3} sx={{ p: 4, mb: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Box sx={{ position: 'relative', mr: 3 }}>
@@ -355,6 +423,7 @@ const ProfilePage = () => {
                 '&:hover': { backgroundColor: 'primary.dark' }
               }}
               onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
             >
               <PhotoCamera />
             </IconButton>
@@ -362,7 +431,7 @@ const ProfilePage = () => {
               type="file"
               ref={fileInputRef}
               onChange={handleImageUpload}
-              accept="image/*"
+              accept="image/jpeg,image/jpg,image/png,image/gif"
               style={{ display: 'none' }}
             />
           </Box>
@@ -371,11 +440,12 @@ const ProfilePage = () => {
               {formData.preferredName || formData.name}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              {formData.occupation && `${formData.occupation} • `}
-              Member since {new Date(user.createdAt).getFullYear()}
+              {user.role === 'psychologist' ? 'Psychologist' : user.role === 'admin' ? 'Administrator' : 'Client'}
+              {formData.occupation && ` • ${formData.occupation}`}
+              {' • '}Member since {new Date(user.createdAt).getFullYear()}
             </Typography>
             {formData.bio && (
-              <Typography variant="body2" sx={{ mt: 1, maxWidth: 400 }}>
+              <Typography variant="body2" sx={{ mt: 1, maxWidth: 500 }}>
                 {formData.bio}
               </Typography>
             )}
@@ -383,303 +453,487 @@ const ProfilePage = () => {
         </Box>
 
         {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
+          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(false)}>
             Profile updated successfully!
           </Alert>
         )}
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
             {error}
           </Alert>
         )}
+
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          {tabs.map((tab, index) => (
+            <Tab
+              key={index}
+              label={tab.label}
+              icon={tab.icon}
+              iconPosition="start"
+              id={`profile-tab-${index}`}
+              aria-controls={`profile-tabpanel-${index}`}
+            />
+          ))}
+        </Tabs>
       </Paper>
 
-      <Grid container spacing={3}>
-        {/* Basic Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Person sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6">Basic Information</Typography>
+      {/* Profile Tab */}
+      <TabPanel value={activeTab} index={0}>
+        <Grid container spacing={3}>
+          {/* Basic Information */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Person sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6">Basic Information</Typography>
+                  </Box>
+                  <IconButton onClick={() => toggleEditSection('basic')}>
+                    {editingSections.basic ? <Cancel /> : <Edit />}
+                  </IconButton>
                 </Box>
-                <IconButton onClick={() => toggleEditSection('basic')}>
-                  {editingSections.basic ? <Cancel /> : <Edit />}
-                </IconButton>
-              </Box>
 
-              {editingSections.basic ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField
-                    label="Full Name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    fullWidth
-                  />
-                  <TextField
-                    label="Preferred Name"
-                    name="preferredName"
-                    value={formData.preferredName}
-                    onChange={handleInputChange}
-                    fullWidth
-                    helperText="Name displayed to others for privacy"
-                  />
-                  <TextField
-                    label="Date of Birth"
-                    name="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                  />
-                  <FormControl fullWidth>
-                    <InputLabel>Gender</InputLabel>
-                    <Select
-                      name="gender"
-                      value={formData.gender}
+                {editingSections.basic ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      label="Full Name"
+                      name="name"
+                      value={formData.name}
                       onChange={handleInputChange}
-                      label="Gender"
+                      required
+                      fullWidth
+                    />
+                    <TextField
+                      label="Preferred Name"
+                      name="preferredName"
+                      value={formData.preferredName}
+                      onChange={handleInputChange}
+                      fullWidth
+                      helperText="Name displayed to others for privacy"
+                    />
+                    <TextField
+                      label="Date of Birth"
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={handleInputChange}
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                    />
+                    <FormControl fullWidth>
+                      <InputLabel>Gender</InputLabel>
+                      <Select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        label="Gender"
+                      >
+                        <MenuItem value="">Not specified</MenuItem>
+                        <MenuItem value="male">Male</MenuItem>
+                        <MenuItem value="female">Female</MenuItem>
+                        <MenuItem value="non-binary">Non-binary</MenuItem>
+                        <MenuItem value="prefer-not-to-say">Prefer not to say</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      label="Bio"
+                      name="bio"
+                      value={formData.bio}
+                      onChange={handleInputChange}
+                      multiline
+                      rows={3}
+                      fullWidth
+                      placeholder="Tell us a bit about yourself..."
+                    />
+                    <Button
+                      variant="contained"
+                      startIcon={<Save />}
+                      onClick={() => handleSubmit('basic')}
+                      disabled={loading}
                     >
-                      <MenuItem value="male">Male</MenuItem>
-                      <MenuItem value="female">Female</MenuItem>
-                      <MenuItem value="non-binary">Non-binary</MenuItem>
-                      <MenuItem value="prefer-not-to-say">Prefer not to say</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    label="Bio"
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    multiline
-                    rows={3}
-                    fullWidth
-                    placeholder="Tell us a bit about yourself..."
-                  />
-                  <Button
-                    variant="contained"
-                    startIcon={<Save />}
-                    onClick={() => handleSubmit('basic')}
-                    disabled={loading}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography><strong>Name:</strong> {formData.name}</Typography>
-                  <Typography><strong>Preferred Name:</strong> {formData.preferredName || 'Not set'}</Typography>
-                  <Typography><strong>Date of Birth:</strong> {formData.dateOfBirth || 'Not set'}</Typography>
-                  <Typography><strong>Gender:</strong> {formData.gender || 'Not specified'}</Typography>
-                  {formData.bio && <Typography><strong>Bio:</strong> {formData.bio}</Typography>}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Contact Information */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Email sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6">Contact Information</Typography>
-                </Box>
-                <IconButton onClick={() => toggleEditSection('contact')}>
-                  {editingSections.contact ? <Cancel /> : <Edit />}
-                </IconButton>
-              </Box>
-
-              {editingSections.contact ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField
-                    label="Email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    fullWidth
-                  />
-                  <TextField
-                    label="Phone Number"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    fullWidth
-                  />
-                  <TextField
-                    label="Address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    fullWidth
-                  />
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                      label="City"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      fullWidth
-                    />
-                    <TextField
-                      label="State"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      fullWidth
-                    />
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <TextField
-                      label="ZIP Code"
-                      name="zipCode"
-                      value={formData.zipCode}
-                      onChange={handleInputChange}
-                      fullWidth
-                    />
-                    <TextField
-                      label="Country"
-                      name="country"
-                      value={formData.country}
-                      onChange={handleInputChange}
-                      fullWidth
-                    />
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography><strong>Name:</strong> {formData.name}</Typography>
+                    <Typography><strong>Preferred Name:</strong> {formData.preferredName || 'Not set'}</Typography>
+                    <Typography><strong>Date of Birth:</strong> {formData.dateOfBirth || 'Not set'}</Typography>
+                    <Typography><strong>Gender:</strong> {formData.gender || 'Not specified'}</Typography>
+                    {formData.bio && <Typography><strong>Bio:</strong> {formData.bio}</Typography>}
                   </Box>
-                  <Button
-                    variant="contained"
-                    startIcon={<Save />}
-                    onClick={() => handleSubmit('contact')}
-                    disabled={loading}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography><strong>Email:</strong> {formData.email}</Typography>
-                  <Typography><strong>Phone:</strong> {formData.phone || 'Not set'}</Typography>
-                  <Typography><strong>Address:</strong> {formData.address || 'Not set'}</Typography>
-                  <Typography><strong>City:</strong> {formData.city || 'Not set'}</Typography>
-                  <Typography><strong>State:</strong> {formData.state || 'Not set'}</Typography>
-                  <Typography><strong>ZIP:</strong> {formData.zipCode || 'Not set'}</Typography>
-                  <Typography><strong>Country:</strong> {formData.country}</Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Health & Wellness */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Favorite sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6">Health & Wellness</Typography>
+          {/* Contact Information */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Email sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6">Contact Information</Typography>
+                  </Box>
+                  <IconButton onClick={() => toggleEditSection('contact')}>
+                    {editingSections.contact ? <Cancel /> : <Edit />}
+                  </IconButton>
                 </Box>
-                <IconButton onClick={() => toggleEditSection('health')}>
-                  {editingSections.health ? <Cancel /> : <Edit />}
-                </IconButton>
-              </Box>
 
-              {editingSections.health ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField
-                    label="Medical Conditions"
-                    value={formData.medicalConditions.join(', ')}
-                    onChange={(e) => handleArrayFieldChange('medicalConditions', e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    helperText="Separate multiple conditions with commas"
-                  />
-                  <TextField
-                    label="Current Medications"
-                    value={formData.medications.join(', ')}
-                    onChange={(e) => handleArrayFieldChange('medications', e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    helperText="Separate multiple medications with commas"
-                  />
-                  <TextField
-                    label="Allergies"
-                    value={formData.allergies.join(', ')}
-                    onChange={(e) => handleArrayFieldChange('allergies', e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                    helperText="Separate multiple allergies with commas"
-                  />
-                  <Typography variant="subtitle2">Therapy Goals</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {therapyGoalOptions.map((goal) => (
-                      <Chip
-                        key={goal}
-                        label={goal}
-                        onClick={() => {
-                          const goals = formData.therapyGoals.includes(goal)
-                            ? formData.therapyGoals.filter(g => g !== goal)
-                            : [...formData.therapyGoals, goal];
-                          setFormData(prev => ({ ...prev, therapyGoals: goals }));
-                        }}
-                        color={formData.therapyGoals.includes(goal) ? 'primary' : 'default'}
-                        variant={formData.therapyGoals.includes(goal) ? 'filled' : 'outlined'}
+                {editingSections.contact ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                      label="Email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      fullWidth
+                      disabled
+                      helperText="Email cannot be changed"
+                    />
+                    <TextField
+                      label="Phone Number"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      fullWidth
+                    />
+                    <TextField
+                      label="Address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      fullWidth
+                    />
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField
+                        label="City"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        fullWidth
                       />
-                    ))}
+                      <TextField
+                        label="State"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        fullWidth
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <TextField
+                        label="ZIP Code"
+                        name="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
+                        fullWidth
+                      />
+                      <TextField
+                        label="Country"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        fullWidth
+                      />
+                    </Box>
+                    <Button
+                      variant="contained"
+                      startIcon={<Save />}
+                      onClick={() => handleSubmit('contact')}
+                      disabled={loading}
+                    >
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
                   </Box>
-                  <Button
-                    variant="contained"
-                    startIcon={<Save />}
-                    onClick={() => handleSubmit('health')}
-                    disabled={loading}
-                  >
-                    Save Changes
-                  </Button>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography><strong>Medical Conditions:</strong> {formData.medicalConditions.length ? formData.medicalConditions.join(', ') : 'None listed'}</Typography>
-                  <Typography><strong>Medications:</strong> {formData.medications.length ? formData.medications.join(', ') : 'None listed'}</Typography>
-                  <Typography><strong>Allergies:</strong> {formData.allergies.length ? formData.allergies.join(', ') : 'None listed'}</Typography>
-                  <Typography><strong>Therapy Goals:</strong></Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                    {formData.therapyGoals.length ? formData.therapyGoals.map((goal) => (
-                      <Chip key={goal} label={goal} size="small" />
-                    )) : <Typography variant="body2" color="text.secondary">No goals set</Typography>}
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Typography><strong>Email:</strong> {formData.email}</Typography>
+                    <Typography><strong>Phone:</strong> {formData.phone || 'Not set'}</Typography>
+                    <Typography><strong>Address:</strong> {formData.address || 'Not set'}</Typography>
+                    <Typography><strong>City:</strong> {formData.city || 'Not set'}</Typography>
+                    <Typography><strong>State:</strong> {formData.state || 'Not set'}</Typography>
+                    <Typography><strong>ZIP:</strong> {formData.zipCode || 'Not set'}</Typography>
+                    <Typography><strong>Country:</strong> {formData.country}</Typography>
                   </Box>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
 
-        {/* Save All Button */}
-        <Grid item xs={12}>
-          <Box sx={{ textAlign: 'center', mt: 3 }}>
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={loading ? <CircularProgress size={20} /> : <Save />}
-              onClick={() => handleSubmit('all')}
-              disabled={loading}
-              sx={{ minWidth: 200 }}
-            >
-              {loading ? 'Saving...' : 'Save All Changes'}
-            </Button>
-          </Box>
+          {/* Psychologist-specific: Session Rates */}
+          {isPsychologist && (
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <AttachMoney sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6">Session Rates (KES)</Typography>
+                    </Box>
+                    <IconButton onClick={() => toggleEditSection('rates')}>
+                      {editingSections.rates ? <Cancel /> : <Edit />}
+                    </IconButton>
+                  </Box>
+
+                  {editingSections.rates ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <TextField
+                        label="Individual Session"
+                        type="number"
+                        value={sessionRates.individual}
+                        onChange={(e) => handleRateChange('individual', e.target.value)}
+                        fullWidth
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <TextField
+                        label="Couples Session"
+                        type="number"
+                        value={sessionRates.couples}
+                        onChange={(e) => handleRateChange('couples', e.target.value)}
+                        fullWidth
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <TextField
+                        label="Family Session"
+                        type="number"
+                        value={sessionRates.family}
+                        onChange={(e) => handleRateChange('family', e.target.value)}
+                        fullWidth
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <TextField
+                        label="Group Session"
+                        type="number"
+                        value={sessionRates.group}
+                        onChange={(e) => handleRateChange('group', e.target.value)}
+                        fullWidth
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={handleSaveRates}
+                        disabled={loading}
+                      >
+                        {loading ? 'Saving...' : 'Save Rates'}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography><strong>Individual:</strong> KES {sessionRates.individual.toLocaleString()}</Typography>
+                      <Typography><strong>Couples:</strong> KES {sessionRates.couples.toLocaleString()}</Typography>
+                      <Typography><strong>Family:</strong> KES {sessionRates.family.toLocaleString()}</Typography>
+                      <Typography><strong>Group:</strong> KES {sessionRates.group.toLocaleString()}</Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Psychologist-specific: Specializations */}
+          {isPsychologist && (
+            <Grid item xs={12} md={6}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Favorite sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6">Specializations</Typography>
+                    </Box>
+                    <IconButton onClick={() => toggleEditSection('personal')}>
+                      {editingSections.personal ? <Cancel /> : <Edit />}
+                    </IconButton>
+                  </Box>
+
+                  {editingSections.personal ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <TextField
+                        label="Years of Experience"
+                        name="experience"
+                        type="number"
+                        value={formData.experience}
+                        onChange={handleInputChange}
+                        fullWidth
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                      <Typography variant="subtitle2">Select Specializations</Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {specializationOptions.map((spec) => (
+                          <Chip
+                            key={spec}
+                            label={spec}
+                            onClick={() => {
+                              const specs = formData.specializations.includes(spec)
+                                ? formData.specializations.filter(s => s !== spec)
+                                : [...formData.specializations, spec];
+                              setFormData(prev => ({ ...prev, specializations: specs }));
+                            }}
+                            color={formData.specializations.includes(spec) ? 'primary' : 'default'}
+                            variant={formData.specializations.includes(spec) ? 'filled' : 'outlined'}
+                          />
+                        ))}
+                      </Box>
+                      <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={() => handleSubmit('personal')}
+                        disabled={loading}
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography><strong>Experience:</strong> {formData.experience ? `${formData.experience} years` : 'Not set'}</Typography>
+                      <Typography><strong>Specializations:</strong></Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                        {formData.specializations.length > 0 ? formData.specializations.map((spec) => (
+                          <Chip key={spec} label={spec} size="small" />
+                        )) : <Typography variant="body2" color="text.secondary">No specializations set</Typography>}
+                      </Box>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Health & Wellness (for clients) */}
+          {!isPsychologist && (
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Favorite sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6">Health & Wellness</Typography>
+                    </Box>
+                    <IconButton onClick={() => toggleEditSection('health')}>
+                      {editingSections.health ? <Cancel /> : <Edit />}
+                    </IconButton>
+                  </Box>
+
+                  {editingSections.health ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <TextField
+                        label="Medical Conditions"
+                        value={formData.medicalConditions.join(', ')}
+                        onChange={(e) => handleArrayFieldChange('medicalConditions', e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={2}
+                        helperText="Separate multiple conditions with commas"
+                      />
+                      <TextField
+                        label="Current Medications"
+                        value={formData.medications.join(', ')}
+                        onChange={(e) => handleArrayFieldChange('medications', e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={2}
+                        helperText="Separate multiple medications with commas"
+                      />
+                      <TextField
+                        label="Allergies"
+                        value={formData.allergies.join(', ')}
+                        onChange={(e) => handleArrayFieldChange('allergies', e.target.value)}
+                        fullWidth
+                        multiline
+                        rows={2}
+                        helperText="Separate multiple allergies with commas"
+                      />
+                      <Typography variant="subtitle2">Therapy Goals</Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {therapyGoalOptions.map((goal) => (
+                          <Chip
+                            key={goal}
+                            label={goal}
+                            onClick={() => {
+                              const goals = formData.therapyGoals.includes(goal)
+                                ? formData.therapyGoals.filter(g => g !== goal)
+                                : [...formData.therapyGoals, goal];
+                              setFormData(prev => ({ ...prev, therapyGoals: goals }));
+                            }}
+                            color={formData.therapyGoals.includes(goal) ? 'primary' : 'default'}
+                            variant={formData.therapyGoals.includes(goal) ? 'filled' : 'outlined'}
+                          />
+                        ))}
+                      </Box>
+                      <Button
+                        variant="contained"
+                        startIcon={<Save />}
+                        onClick={() => handleSubmit('health')}
+                        disabled={loading}
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography><strong>Medical Conditions:</strong> {formData.medicalConditions.length ? formData.medicalConditions.join(', ') : 'None listed'}</Typography>
+                      <Typography><strong>Medications:</strong> {formData.medications.length ? formData.medications.join(', ') : 'None listed'}</Typography>
+                      <Typography><strong>Allergies:</strong> {formData.allergies.length ? formData.allergies.join(', ') : 'None listed'}</Typography>
+                      <Typography><strong>Therapy Goals:</strong></Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                        {formData.therapyGoals.length ? formData.therapyGoals.map((goal) => (
+                          <Chip key={goal} label={goal} size="small" />
+                        )) : <Typography variant="body2" color="text.secondary">No goals set</Typography>}
+                      </Box>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          )}
+
+          {/* Save All Button */}
+          <Grid item xs={12}>
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <Save />}
+                onClick={() => handleSubmit('all')}
+                disabled={loading}
+                sx={{ minWidth: 200 }}
+              >
+                {loading ? 'Saving...' : 'Save All Changes'}
+              </Button>
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
+      </TabPanel>
+
+      {/* Availability Tab (Psychologist only) */}
+      {isPsychologist && (
+        <TabPanel value={activeTab} index={1}>
+          <AvailabilityCalendar />
+        </TabPanel>
+      )}
+
+      {/* Notifications Tab */}
+      <TabPanel value={activeTab} index={isPsychologist ? 2 : 1}>
+        <NotificationSettings />
+      </TabPanel>
+
+      {/* Security Tab */}
+      <TabPanel value={activeTab} index={isPsychologist ? 3 : 2}>
+        <SecuritySettings />
+      </TabPanel>
     </Container>
   );
 };

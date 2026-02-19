@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -7,21 +7,17 @@ import {
   Box, 
   Container, 
   TextField, 
-  Button, 
   Paper, 
   Typography, 
-  List, 
-  ListItem, 
-  ListItemText, 
   Avatar, 
-  Divider, 
   CircularProgress,
   Card,
   CardContent,
   IconButton,
   Chip,
   AppBar,
-  Toolbar
+  Toolbar,
+  Button
 } from '@mui/material';
 import { 
   Send as SendIcon,
@@ -32,13 +28,14 @@ import {
 } from '@mui/icons-material';
 
 const ChatPage = () => {
-  const { assessmentId } = useParams();
+  const { recipientId } = useParams();
   const { user } = useContext(AuthContext);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [psychologist, setPsychologist] = useState(null);
+  const [otherParty, setOtherParty] = useState(null);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -53,32 +50,48 @@ const ChatPage = () => {
     const initializeConversation = async () => {
       if (!user) return;
       setLoading(true);
+      setError(null);
+      
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { 'x-auth-token': token } };
         
+        // Determine the request body based on user role
+        let requestBody = {};
+        if (user.role === 'client') {
+          requestBody = { psychologistId: recipientId };
+        } else if (user.role === 'psychologist') {
+          requestBody = { clientId: recipientId };
+        }
+        
         // Find or create a conversation
-        const res = await axios.post('https://smiling-steps.onrender.com/api/chat/conversations', { assessmentResultId: assessmentId }, config);
+        const res = await axios.post(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations`, requestBody, config);
         setConversation(res.data);
         
         // Fetch messages for this conversation
-        const messagesRes = await axios.get(`https://smiling-steps.onrender.com/api/chat/conversations/${res.data._id}/messages`, config);
+        const messagesRes = await axios.get(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations/${res.data._id}/messages`, config);
         setMessages(messagesRes.data);
 
-        // Fetch psychologist details
-        const psychologistId = user.role === 'client' ? res.data.psychologist : res.data.client;
-        const psychologistRes = await axios.get(`https://smiling-steps.onrender.com/api/users/${psychologistId}`, config);
-        setPsychologist(psychologistRes.data);
+        // Set the other party's details from the conversation response
+        if (user.role === 'client') {
+          setOtherParty(res.data.psychologist);
+        } else {
+          setOtherParty(res.data.client);
+        }
+        
+        // Mark messages as read
+        await axios.put(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations/${res.data._id}/read`, {}, config);
 
-      } catch (error) {
-        console.error('Failed to initialize conversation', error);
+      } catch (err) {
+        console.error('Failed to initialize conversation', err);
+        setError(err.response?.data?.msg || 'Failed to load conversation');
       } finally {
         setLoading(false);
       }
     };
 
     initializeConversation();
-  }, [assessmentId, user]);
+  }, [recipientId, user]);
 
   const handleSendMessage = async () => {
     if (newMessage.trim() === '' || !conversation) return;
@@ -86,7 +99,7 @@ const ChatPage = () => {
     try {
       const token = localStorage.getItem('token');
       const config = { headers: { 'x-auth-token': token } };
-      const res = await axios.post(`https://smiling-steps.onrender.com/api/chat/conversations/${conversation._id}/messages`, { text: newMessage }, config);
+      const res = await axios.post(`${API_ENDPOINTS.BASE_URL}/api/chat/conversations/${conversation._id}/messages`, { text: newMessage }, config);
       setMessages([...messages, res.data]);
       setNewMessage('');
     } catch (error) {
@@ -98,6 +111,24 @@ const ChatPage = () => {
     return <CircularProgress sx={{ display: 'block', margin: 'auto', mt: 5 }} />;
   }
 
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Paper sx={{ p: 3, textAlign: 'center' }}>
+          <Typography color="error" variant="h6">{error}</Typography>
+          <Button onClick={() => window.history.back()} sx={{ mt: 2 }}>
+            Go Back
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
+
+  // Determine display name based on user role
+  const displayName = user?.role === 'client' 
+    ? `Dr. ${otherParty?.name || 'Psychologist'}`
+    : otherParty?.name || 'Client';
+
   return (
     <Container maxWidth="md" sx={{ mt: 2, mb: 2, height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Paper elevation={3} sx={{ height: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 3 }}>
@@ -108,11 +139,11 @@ const ChatPage = () => {
               <ArrowBackIcon />
             </IconButton>
             <Avatar sx={{ mr: 2, bgcolor: 'primary.light' }}>
-              {psychologist?.name?.charAt(0) || 'P'}
+              {otherParty?.name?.charAt(0) || 'U'}
             </Avatar>
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                Dr. {psychologist?.name || 'Psychologist'}
+                {displayName}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>
                 Online • Responds within minutes
@@ -143,14 +174,14 @@ const ChatPage = () => {
           {messages.length === 0 ? (
             <Box sx={{ textAlign: 'center', mt: 4 }}>
               <Typography variant="body1" color="text.secondary">
-                Start your conversation with Dr. {psychologist?.name}
+                Start your conversation with {displayName}
               </Typography>
               <Chip label="Messages are encrypted" size="small" sx={{ mt: 1 }} />
             </Box>
           ) : (
             messages.map((msg, index) => {
-              const isOwnMessage = msg.sender._id === user._id;
-              const showAvatar = index === 0 || messages[index - 1].sender._id !== msg.sender._id;
+              const isOwnMessage = msg.sender?._id === user?._id || msg.sender === user?._id;
+              const showAvatar = index === 0 || messages[index - 1].sender?._id !== msg.sender?._id;
               
               return (
                 <Box
@@ -164,7 +195,7 @@ const ChatPage = () => {
                 >
                   {!isOwnMessage && showAvatar && (
                     <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.main' }}>
-                      {psychologist?.name?.charAt(0) || 'P'}
+                      {otherParty?.name?.charAt(0) || 'U'}
                     </Avatar>
                   )}
                   {!isOwnMessage && !showAvatar && (
@@ -221,7 +252,7 @@ const ChatPage = () => {
               placeholder="Type a message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSendMessage();

@@ -91,7 +91,7 @@ const Header = () => {
               <Button 
                 color="inherit" 
                 component={RouterLink} 
-                to="/about"
+                to="/learn-more"
                 sx={{ color: theme.palette.text.primary }}
               >
                 About
@@ -107,7 +107,7 @@ const Header = () => {
               <Button 
                 color="inherit" 
                 component={RouterLink} 
-                to="/blog"
+                to="/blogs"
                 sx={{ color: theme.palette.text.primary }}
               >
                 Blog

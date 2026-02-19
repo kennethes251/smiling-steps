@@ -11,6 +11,123 @@ const UserSchema = new mongoose.Schema({
     minlength: [2, 'Name must be at least 2 characters'],
     maxlength: [50, 'Name cannot exceed 50 characters']
   },
+  
+  // Account status - Requirements 2.4, 2.5, 2.6
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'deleted'],
+    default: 'active'
+    // Note: Compound index { role: 1, status: 1 } covers status queries
+  },
+  
+  // Approval status for psychologists - Requirements 3.1, 3.4, 3.5
+  approvalStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'not_applicable'],
+    default: function() {
+      return this.role === 'psychologist' ? 'pending' : 'not_applicable';
+    }
+    // Note: Compound index { role: 1, approvalStatus: 1 } covers approvalStatus queries
+  },
+  approvalReason: {
+    type: String,
+    trim: true
+  },
+  approvedAt: {
+    type: Date
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
+  // Availability schedule for psychologists - Requirements 6.2, 6.3
+  availability: [{
+    dayOfWeek: {
+      type: Number,
+      min: 0,
+      max: 6,
+      required: true
+    },
+    startTime: {
+      type: String,
+      required: true,
+      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Start time must be in HH:MM format']
+    },
+    endTime: {
+      type: String,
+      required: true,
+      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'End time must be in HH:MM format']
+    }
+  }],
+  blockedDates: [{
+    type: Date
+  }],
+  
+  // Session rates for different session types - Requirements 5.2
+  // Standard rates (KES): Individual=2000, Couples=3500, Family=5000, Group=5000
+  sessionRates: {
+    individual: {
+      type: Number,
+      default: 2000,
+      min: 0
+    },
+    couples: {
+      type: Number,
+      default: 3500,
+      min: 0
+    },
+    family: {
+      type: Number,
+      default: 5000,
+      min: 0
+    },
+    group: {
+      type: Number,
+      default: 5000,
+      min: 0
+    }
+  },
+  
+  // Notification preferences - Requirements 13.2, 13.3
+  notifications: {
+    email: {
+      type: Boolean,
+      default: true
+    },
+    sms: {
+      type: Boolean,
+      default: true
+    },
+    quietHoursStart: {
+      type: String,
+      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Quiet hours start must be in HH:MM format']
+    },
+    quietHoursEnd: {
+      type: String,
+      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Quiet hours end must be in HH:MM format']
+    },
+    sessionReminders: {
+      type: Boolean,
+      default: true
+    },
+    paymentAlerts: {
+      type: Boolean,
+      default: true
+    },
+    marketingEmails: {
+      type: Boolean,
+      default: false
+    }
+  },
+  
+  // Soft delete and anonymization fields - Requirements 2.6
+  deletedAt: {
+    type: Date
+  },
+  anonymizedAt: {
+    type: Date
+  },
   preferredName: {
     type: String,
     trim: true
@@ -131,8 +248,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Please provide an email'],
-    unique: true,
-    index: true, // Add index here instead of separate index() call
+    unique: true, // unique: true already creates an index
     lowercase: true,
     trim: true,
     validate: {
@@ -193,27 +309,63 @@ const UserSchema = new mongoose.Schema({
     },
     languages: [String],
     portfolioUrls: [String],
+    // Credentials storage - Requirements 5.3
+    credentials: [{
+      type: {
+        type: String,
+        enum: ['license', 'certification', 'degree', 'other']
+      },
+      documentUrl: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      },
+      verified: {
+        type: Boolean,
+        default: false
+      }
+    }],
+    // Clarification requests from admin - Requirement 6.5
+    clarificationRequests: [{
+      requestedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      message: String,
+      requestedAt: {
+        type: Date,
+        default: Date.now
+      },
+      respondedAt: Date,
+      response: String,
+      status: {
+        type: String,
+        enum: ['pending', 'responded', 'resolved'],
+        default: 'pending'
+      }
+    }],
     // Pricing for different session types
+    // Standard rates (KES): Individual=2000, Couples=3500, Family=5000, Group=5000
     rates: {
       individual: {
         type: Number,
-        default: 2000, // Default rate in cents ($20.00)
-        min: 1000 // Minimum $10.00
+        default: 2000, // Default rate in KES
+        min: 500 // Minimum KES 500
       },
       couples: {
         type: Number,
-        default: 3500, // Default rate in cents ($35.00)
-        min: 2000 // Minimum $20.00
+        default: 3500, // Default rate in KES
+        min: 1000 // Minimum KES 1000
       },
       family: {
         type: Number,
-        default: 4000, // Default rate in cents ($40.00)
-        min: 2500 // Minimum $25.00
+        default: 5000, // Default rate in KES
+        min: 1500 // Minimum KES 1500
       },
       group: {
         type: Number,
-        default: 1500, // Default rate in cents ($15.00)
-        min: 800 // Minimum $8.00
+        default: 5000, // Default rate in KES
+        min: 500 // Minimum KES 500
       }
     },
     rating: {
@@ -278,14 +430,72 @@ const UserSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// ============================================
+// INDEXES for performance optimization (Task 22.1)
+// ============================================
+
+// Role-based queries
+UserSchema.index({ role: 1, status: 1 }, { name: 'idx_role_status' });
+UserSchema.index({ role: 1, approvalStatus: 1 }, { name: 'idx_role_approval' });
+
+// Psychologist queries
+UserSchema.index({ role: 1, 'psychologistDetails.approvalStatus': 1 }, { name: 'idx_psychologist_approval' });
+
+// Last login queries
+UserSchema.index({ lastLogin: -1 }, { name: 'idx_last_login' });
+
+// Created date queries
+UserSchema.index({ createdAt: -1 }, { name: 'idx_created_desc' });
+
+// Verification status queries
+UserSchema.index({ isVerified: 1, role: 1 }, { name: 'idx_verified_role' });
+
 
 // Password hashing middleware
 UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  // Sync approvalStatus for psychologists
+  if (this.role === 'psychologist') {
+    // If top-level approvalStatus is not set, default to pending
+    if (!this.approvalStatus || this.approvalStatus === 'not_applicable') {
+      this.approvalStatus = 'pending';
+    }
+    // Sync with psychologistDetails.approvalStatus
+    if (this.psychologistDetails) {
+      this.psychologistDetails.approvalStatus = this.approvalStatus;
+    }
+  } else if (!this.approvalStatus) {
+    this.approvalStatus = 'not_applicable';
+  }
+  
+  // Set default status if not set
+  if (!this.status) {
+    this.status = 'active';
+  }
+  
+  if (!this.isModified('password')) {
+    console.log('🔐 Pre-save: Password not modified, skipping hash');
+    return next();
+  }
   
   try {
+    // Check if password is already hashed (starts with $2a$ or $2b$)
+    if (this.password && this.password.startsWith('$2')) {
+      console.log('⚠️ Pre-save: Password appears to already be hashed, skipping');
+      return next();
+    }
+    
+    console.log('🔐 Pre-save: Hashing password', {
+      passwordLength: this.password ? this.password.length : 0,
+      isNew: this.isNew
+    });
+    
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
+    
+    console.log('✅ Pre-save: Password hashed successfully', {
+      hashLength: this.password.length,
+      hashPrefix: this.password.substring(0, 7)
+    });
     
     // Set passwordChangedAt if not new user
     if (!this.isNew) {
@@ -294,14 +504,24 @@ UserSchema.pre('save', async function(next) {
     
     next();
   } catch (error) {
+    console.error('❌ Pre-save: Password hashing failed', error);
     next(error);
   }
 });
 
 // Instance method to check password
 UserSchema.methods.correctPassword = async function(candidatePassword) {
+  console.log('🔐 correctPassword method called:', {
+    candidateLength: candidatePassword ? candidatePassword.length : 0,
+    storedHashLength: this.password ? this.password.length : 0,
+    storedHashPrefix: this.password ? this.password.substring(0, 7) : 'N/A'
+  });
+  
   // 'this.password' refers to the password of the user instance
-  return await bcrypt.compare(candidatePassword, this.password);
+  const result = await bcrypt.compare(candidatePassword, this.password);
+  
+  console.log('🔐 correctPassword result:', result);
+  return result;
 };
 
 // Instance method to check if password was changed after token was issued
@@ -336,9 +556,12 @@ UserSchema.statics.failedLogin = async function(userId) {
   return user;
 };
 
-// Query middleware to filter out inactive users by default
+// Query middleware to filter out inactive and deleted users by default
 UserSchema.pre(/^find/, function(next) {
+  // Filter out inactive users (existing behavior)
   this.find({ active: { $ne: false } });
+  // Filter out deleted users (new behavior)
+  this.find({ status: { $ne: 'deleted' } });
   next();
 });
 
@@ -364,6 +587,52 @@ UserSchema.methods.createApprovalToken = function() {
   this.psychologistDetails.approvalTokenExpires = Date.now() + 10 * 24 * 60 * 60 * 1000;
 
   return approvalToken;
+};
+
+// Method to soft delete and anonymize user data - Requirements 2.6
+UserSchema.methods.softDeleteAndAnonymize = async function() {
+  const now = new Date();
+  
+  this.status = 'deleted';
+  this.deletedAt = now;
+  this.anonymizedAt = now;
+  
+  // Anonymize personal data
+  this.name = 'Deleted User';
+  this.email = `deleted_${this._id}@anonymized.local`;
+  this.phone = null;
+  this.preferredName = null;
+  this.profilePicture = null;
+  this.dateOfBirth = null;
+  this.address = null;
+  this.city = null;
+  this.state = null;
+  this.zipCode = null;
+  this.emergencyContact = null;
+  this.emergencyPhone = null;
+  this.bio = null;
+  
+  // Clear sensitive arrays
+  this.medicalConditions = [];
+  this.medications = [];
+  this.allergies = [];
+  this.therapyGoals = [];
+  
+  // Clear psychologist details if applicable
+  if (this.psychologistDetails) {
+    this.psychologistDetails.bio = null;
+    this.psychologistDetails.licenseUrl = null;
+    this.psychologistDetails.profilePictureUrl = null;
+    this.psychologistDetails.credentials = [];
+    this.psychologistDetails.portfolioUrls = [];
+  }
+  
+  return this.save();
+};
+
+// Method to check if user can login based on status
+UserSchema.methods.canLogin = function() {
+  return this.status === 'active' && !this.isAccountLocked();
 };
 
 module.exports = mongoose.model('User', UserSchema);

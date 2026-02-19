@@ -5,80 +5,97 @@ import { SnackbarProvider } from 'notistack';
 import theme from './theme';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
+import RoleGuard from './components/RoleGuard';
 
 // Import components
 import Header from './components/Header';
 import Footer from './components/Footer';
-import ApiTest from './components/ApiTest';
-import AuthTest from './components/AuthTest';
+
+// Public pages
 import LandingPage from './pages/LandingPage';
+import LandingPageRefactored from './pages/LandingPageRefactored';
+import MarketingPage from './pages/MarketingPage';
+import LearnMorePage from './pages/LearnMorePage';
 import Login from './components/auth/Login';
 import Register from './pages/Register';
 import PsychologistRegister from './pages/PsychologistRegister';
-import PsychologistDashboard from './components/dashboards/PsychologistDashboard';
-
-import Dashboard from './pages/Dashboard';
-import BookingPage from './pages/BookingPageSimple';
-import BookingPageNew from './pages/BookingPageNew';
-import AssessmentsPage from './pages/AssessmentsPage';
-import TakeAssessment from './pages/TakeAssessment';
-import AssessmentDetailPage from './pages/AssessmentDetailPage';
-import AssessmentResultsPage from './pages/AssessmentResultsPage';
-import AssessmentResultDetailPage from './pages/AssessmentResultDetailPage';
-import ProfilePage from './pages/ProfilePage';
-import ChatPage from './pages/ChatPage';
-import MessagesHub from './pages/MessagesHub';
-import ProgressPage from './pages/ProgressPage';
-import CheckInPage from './pages/CheckInPage';
-import MarketingPage from './pages/MarketingPage';
-import FounderPage from './pages/FounderPage';
-import VideoCallPage from './pages/VideoCallPage';
-import VideoCallPageNew from './pages/VideoCallPageNew';
-import TestVideoCall from './pages/TestVideoCall';
-import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
-import AdminDashboardNew from './components/dashboards/AdminDashboard-new';
-import AdminPaymentDashboard from './components/dashboards/AdminPaymentDashboard';
-import AccountingDashboard from './components/dashboards/AccountingDashboard';
-import BlogManagementPage from './pages/BlogManagementPage';
+import RoleSelectionPage from './pages/RoleSelectionPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
+import TherapistsPage from './pages/TherapistsPage';
 import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import ResourcesPage from './pages/ResourcesPage';
-import TherapistsPage from './pages/TherapistsPage';
-import EmailVerification from './pages/EmailVerification';
-import EmailVerificationPage from './pages/EmailVerificationPage';
-import EmailVerificationGuard from './components/EmailVerificationGuard';
-import RoleSelectionPage from './pages/RoleSelectionPage';
+import FounderPage from './pages/FounderPage';
+
+import CredentialSubmission from './components/CredentialSubmission';
+import ClarificationRequests from './components/ClarificationRequests';
+
+// Protected pages
+import Dashboard from './pages/Dashboard';
+import BookingPage from './pages/BookingPage';
+import BookingPageNew from './pages/BookingPageNew';
+import ProfilePage from './pages/ProfilePage';
+import AssessmentsPage from './pages/AssessmentsPage';
+import AssessmentDetailPage from './pages/AssessmentDetailPage';
+import AssessmentResultsPage from './pages/AssessmentResultsPage';
+import AssessmentResultDetailPage from './pages/AssessmentResultDetailPage';
+import TakeAssessment from './pages/TakeAssessment';
+import ProgressPage from './pages/ProgressPage';
+import CheckInPage from './pages/CheckInPage';
+import MessagesHub from './pages/MessagesHub';
+import ChatPage from './pages/ChatPage';
+import VideoCallPage from './pages/VideoCallPage';
+import VideoCallPageNew from './pages/VideoCallPageNew';
+
+// Admin pages
+import AdminCreatePsychologist from './pages/AdminCreatePsychologist';
+import BlogManagementPage from './pages/BlogManagementPage';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <SnackbarProvider>
+      <SnackbarProvider maxSnack={3}>
         <AuthProvider>
-          <EmailVerificationGuard>
-            <Header />
-            <Routes>
+          <Header />
+          <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/learn-more" element={<MarketingPage />} />
-            <Route path="/founder" element={<FounderPage />} />
+            <Route path="/" element={<LandingPageRefactored />} />
+            <Route path="/landing-old" element={<LandingPage />} />
+            <Route path="/learn-more" element={<LearnMorePage />} />
+            <Route path="/marketing" element={<MarketingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/get-started" element={<RoleSelectionPage />} />
+            <Route path="/join" element={<RoleSelectionPage />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/register/select-role" element={<RoleSelectionPage />} />
+            <Route path="/register/client" element={<Register />} />
             <Route path="/register/psychologist" element={<PsychologistRegister />} />
+            <Route path="/register/therapist" element={<PsychologistRegister />} />
             <Route path="/verify-email" element={<EmailVerificationPage />} />
-            <Route path="/api-test" element={<ApiTest />} />
-            <Route path="/auth-test" element={<AuthTest />} />
+            <Route path="/therapists" element={<TherapistsPage />} />
+            <Route path="/blogs" element={<BlogListPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route path="/founder" element={<FounderPage />} />
             
-            {/* Protected Routes */}
-            <Route path="/psychologist-dashboard" element={<PrivateRoute roles={['psychologist']}><PsychologistDashboard /></PrivateRoute>} />
-
-            <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+            {/* Protected Routes - All authenticated users */}
             <Route path="/dashboard" element={
               <PrivateRoute>
-                <Dashboard />
+                <RoleGuard>
+                  <Dashboard />
+                </RoleGuard>
+              </PrivateRoute>
+            } />
+            <Route path="/profile" element={
+              <PrivateRoute>
+                <ProfilePage />
               </PrivateRoute>
             } />
             <Route path="/bookings" element={
+              <PrivateRoute>
+                <BookingPage />
+              </PrivateRoute>
+            } />
+            <Route path="/book" element={
               <PrivateRoute>
                 <BookingPageNew />
               </PrivateRoute>
@@ -89,6 +106,11 @@ function App() {
               </PrivateRoute>
             } />
             <Route path="/assessment/:id" element={
+              <PrivateRoute>
+                <AssessmentDetailPage />
+              </PrivateRoute>
+            } />
+            <Route path="/take-assessment/:id" element={
               <PrivateRoute>
                 <TakeAssessment />
               </PrivateRoute>
@@ -103,9 +125,14 @@ function App() {
                 <AssessmentResultDetailPage />
               </PrivateRoute>
             } />
-            <Route path="/profile" element={
+            <Route path="/progress" element={
               <PrivateRoute>
-                <ProfilePage />
+                <ProgressPage />
+              </PrivateRoute>
+            } />
+            <Route path="/check-in" element={
+              <PrivateRoute>
+                <CheckInPage />
               </PrivateRoute>
             } />
             <Route path="/messages" element={
@@ -113,54 +140,56 @@ function App() {
                 <MessagesHub />
               </PrivateRoute>
             } />
-            <Route path="/chat" element={
+            <Route path="/chat/:recipientId" element={
               <PrivateRoute>
                 <ChatPage />
               </PrivateRoute>
             } />
-            <Route path="/chat/:conversationId" element={
+            <Route path="/video-call/:sessionId" element={
               <PrivateRoute>
-                <ChatPage />
+                <VideoCallPage />
               </PrivateRoute>
             } />
-            <Route path="/settings" element={
+            <Route path="/video/:sessionId" element={
               <PrivateRoute>
-                <ProfilePage />
+                <VideoCallPageNew />
               </PrivateRoute>
             } />
-            {/* Video Call Routes */}
-            <Route path="/video-call/:sessionId" element={<PrivateRoute><VideoCallPageNew /></PrivateRoute>} />
-            <Route path="/video-call-old/:sessionId" element={<PrivateRoute><VideoCallPage /></PrivateRoute>} />
-            <Route path="/test-video-call" element={<PrivateRoute><TestVideoCall /></PrivateRoute>} />
+            
+            {/* Therapist Routes */}
+            <Route path="/credentials" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['psychologist']}>
+                  <CredentialSubmission />
+                </RoleGuard>
+              </PrivateRoute>
+            } />
+            
+            <Route path="/clarifications" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['psychologist']}>
+                  <ClarificationRequests />
+                </RoleGuard>
+              </PrivateRoute>
+            } />
             
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<PrivateRoute roles={['admin']}><AdminDashboardNew /></PrivateRoute>} />
-            <Route path="/admin/payments" element={<PrivateRoute roles={['admin']}><AdminPaymentDashboard /></PrivateRoute>} />
-            <Route path="/admin/accounting" element={<PrivateRoute roles={['admin']}><AccountingDashboard /></PrivateRoute>} />
-            <Route path="/admin/create-psychologist" element={<PrivateRoute roles={['admin']}><AdminCreatePsychologist /></PrivateRoute>} />
-            <Route path="/admin/blogs" element={<PrivateRoute roles={['admin']}><BlogManagementPage /></PrivateRoute>} />
-            {/* Developer dashboard removed - all features now in main admin dashboard */}
-            
-            {/* Placeholder routes for missing pages */}
-            <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
-            <Route path="/checkin" element={<PrivateRoute><CheckInPage /></PrivateRoute>} />
-            <Route path="/schedule-session" element={<PrivateRoute><BookingPageNew /></PrivateRoute>} />
-            <Route path="/clients" element={<PrivateRoute><div style={{padding: '2rem', textAlign: 'center'}}><h2>Client Management - Coming Soon</h2></div></PrivateRoute>} />
-            <Route path="/client-assessments" element={<PrivateRoute><AssessmentResultsPage /></PrivateRoute>} />
-            {/* Public placeholder routes */}
-            <Route path="/about" element={<MarketingPage />} />
-            <Route path="/therapists" element={<TherapistsPage />} />
-            <Route path="/blog" element={<BlogListPage />} />
-            <Route path="/blog/:slug" element={<BlogPostPage />} />
-            <Route path="/resources" element={<ResourcesPage />} />
-            <Route path="/careers" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Careers - Coming Soon</h2></div>} />
-            <Route path="/faq" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>FAQ - Coming Soon</h2></div>} />
-            <Route path="/privacy" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Privacy Policy - Coming Soon</h2></div>} />
-            <Route path="/terms" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Terms of Service - Coming Soon</h2></div>} />
-            <Route path="/contact" element={<div style={{padding: '2rem', textAlign: 'center'}}><h2>Contact Us - Coming Soon</h2></div>} />
-            </Routes>
-            <Footer />
-          </EmailVerificationGuard>
+            <Route path="/admin/create-psychologist" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['admin']}>
+                  <AdminCreatePsychologist />
+                </RoleGuard>
+              </PrivateRoute>
+            } />
+            <Route path="/admin/blogs" element={
+              <PrivateRoute>
+                <RoleGuard allowedRoles={['admin']}>
+                  <BlogManagementPage />
+                </RoleGuard>
+              </PrivateRoute>
+            } />
+          </Routes>
+          <Footer />
         </AuthProvider>
       </SnackbarProvider>
     </ThemeProvider>

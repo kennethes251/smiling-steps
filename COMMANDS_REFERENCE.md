@@ -206,6 +206,18 @@ render logs
 
 ## 🧪 Testing Commands
 
+### Run Specific Property-Based Tests
+```bash
+# Run a specific test file (avoids picking up other tests)
+npm test --prefix server -- test/profile-updates.property.test.js --verbose --testTimeout=60000
+
+# Run tests matching a pattern
+npm test --prefix server -- --testPathPattern="profile-updates" --verbose
+
+# Run with specific test name
+npm test --prefix server -- test/user-search.property.test.js --testNamePattern="Property 2" --verbose
+```
+
 ### Test Registration
 ```bash
 # Using curl (Windows PowerShell)

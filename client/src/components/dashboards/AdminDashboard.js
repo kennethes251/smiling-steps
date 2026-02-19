@@ -27,6 +27,7 @@ import {
   Payment as PaymentIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import PaymentVerificationPanel from './PaymentVerificationPanel';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -262,6 +263,11 @@ const AdminDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Payment Verification Panel - Manual Till Number System */}
+      <Box sx={{ mb: 4 }}>
+        <PaymentVerificationPanel />
+      </Box>
 
       {/* Quick Actions & Management */}
       <Grid container spacing={3}>

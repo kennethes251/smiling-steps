@@ -67,7 +67,7 @@ async function updateBookingSystem() {
       // Add default payment info if missing
       if (!details.paymentInfo) {
         details.paymentInfo = {
-          mpesaNumber: '0707439299',
+          mpesaNumber: '0118832083',
           mpesaName: psych.name
         };
         updated = true;

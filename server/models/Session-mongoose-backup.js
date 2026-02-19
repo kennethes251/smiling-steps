@@ -84,7 +84,7 @@ const SessionSchema = new mongoose.Schema({
   },
   paymentInstructions: {
     type: String,
-    default: 'Send payment to M-Pesa number: 0707439299'
+    default: 'Send payment to M-Pesa number: 0118832083'
   },
   paymentNotifiedAt: {
     type: Date

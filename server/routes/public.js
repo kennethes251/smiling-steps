@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 // Use global Sequelize User model (initialized in server/index.js)
 const Blog = require('../models/Blog');
+const platformStatsService = require('../services/platformStatsService');
 
 // @route   GET api/public/blogs
 // @desc    Get all published blogs
@@ -133,6 +134,86 @@ router.get('/psychologists', async (req, res) => {
   } catch (err) {
     console.error('❌ Error fetching psychologists:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// @route   GET api/public/platform-stats
+// @desc    Get platform statistics for marketing pages
+// @access  Public
+router.get('/platform-stats', async (req, res) => {
+  try {
+    console.log('📊 Fetching platform statistics...');
+    
+    // Get stats from service (with caching)
+    const stats = await platformStatsService.getStats();
+    
+    console.log('✅ Platform statistics retrieved:', {
+      source: stats.metadata?.source,
+      cached: stats.metadata?.cached,
+      cacheAge: stats.metadata?.cacheAge
+    });
+    
+    res.json({
+      success: true,
+      stats,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('❌ Error fetching platform stats:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching platform statistics',
+      error: error.message 
+    });
+  }
+});
+
+// @route   GET api/public/platform-stats/refresh
+// @desc    Force refresh platform statistics cache (admin use)
+// @access  Public (should be protected in production)
+router.post('/platform-stats/refresh', async (req, res) => {
+  try {
+    console.log('🔄 Force refreshing platform statistics cache...');
+    
+    const stats = await platformStatsService.refreshCache();
+    
+    console.log('✅ Platform statistics cache refreshed');
+    
+    res.json({
+      success: true,
+      message: 'Platform statistics cache refreshed successfully',
+      stats,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('❌ Error refreshing platform stats cache:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error refreshing platform statistics cache',
+      error: error.message 
+    });
+  }
+});
+
+// @route   GET api/public/platform-stats/status
+// @desc    Get cache status information
+// @access  Public
+router.get('/platform-stats/status', (req, res) => {
+  try {
+    const status = platformStatsService.getCacheStatus();
+    
+    res.json({
+      success: true,
+      status,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('❌ Error getting cache status:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error getting cache status',
+      error: error.message 
+    });
   }
 });
 

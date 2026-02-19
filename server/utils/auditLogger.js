@@ -597,6 +597,46 @@ async function logVideoCallSecurityValidation({
 }
 
 /**
+ * Log session status change
+ * Records transitions in session status for audit trail
+ * 
+ * Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6
+ * 
+ * @param {Object} params - Status change parameters
+ * @param {string} params.sessionId - Session ID
+ * @param {string} params.previousStatus - Previous session status
+ * @param {string} params.newStatus - New session status
+ * @param {string} params.reason - Reason for status change
+ * @param {string} params.userId - User ID who made the change
+ * @param {string} params.userRole - Role of user making the change
+ * @param {string} params.ipAddress - IP address of the request
+ */
+async function logSessionStatusChange({
+  sessionId,
+  previousStatus,
+  newStatus,
+  reason,
+  userId,
+  userRole,
+  ipAddress = null
+}) {
+  const logEntry = await createAuditLogEntry('SESSION_STATUS_CHANGE', {
+    sessionId,
+    previousStatus,
+    newStatus,
+    reason,
+    userId,
+    userType: userRole,
+    ipAddress,
+    action: `Session status changed from ${previousStatus} to ${newStatus}`
+  });
+  
+  console.log('📝 AUDIT LOG [SESSION_STATUS_CHANGE]:', JSON.stringify(logEntry, null, 2));
+  
+  return logEntry;
+}
+
+/**
  * Retrieve audit logs with tamper-evident format
  * Returns logs in a format that can be verified for integrity
  * 
@@ -699,6 +739,37 @@ function verifyLogIntegrity(logEntry, previousHash) {
   return calculatedHash === logHash;
 }
 
+/**
+ * Generic audit event logger
+ * Used for logging various system events
+ * 
+ * @param {Object} params - Event parameters
+ * @param {string} params.action - Action type
+ * @param {string} params.userId - User ID performing the action
+ * @param {string} params.targetUserId - Target user ID (if applicable)
+ * @param {string} params.sessionId - Session ID (if applicable)
+ * @param {Object} params.details - Additional details
+ */
+async function logAuditEvent({
+  action,
+  userId,
+  targetUserId = null,
+  sessionId = null,
+  details = {}
+}) {
+  const logEntry = await createAuditLogEntry(action, {
+    userId,
+    targetUserId,
+    sessionId,
+    details,
+    action: `Audit event: ${action}`
+  });
+  
+  console.log(`📝 AUDIT LOG [${action}]:`, JSON.stringify(logEntry, null, 2));
+  
+  return logEntry;
+}
+
 module.exports = {
   ACTION_TYPES,
   logPaymentInitiation,
@@ -714,6 +785,8 @@ module.exports = {
   logVideoCallEnd,
   logVideoCallJoinAttempt,
   logVideoCallSecurityValidation,
+  logSessionStatusChange,
+  logAuditEvent,
   retrieveAuditLogs,
   verifyLogIntegrity
 };

@@ -268,15 +268,23 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if therapist account is approved
-    if (user.role === 'therapist') {
-      const approvalStatus = user.psychologistDetails?.approvalStatus || 'pending';
+    // Check if psychologist account is approved
+    if (user.role === 'psychologist') {
+      // Check both top-level and nested approvalStatus for compatibility
+      const approvalStatus = user.approvalStatus || user.psychologistDetails?.approvalStatus || 'pending';
+
+      console.log('🔍 Psychologist approval check:', {
+        email: user.email,
+        topLevelStatus: user.approvalStatus,
+        nestedStatus: user.psychologistDetails?.approvalStatus,
+        effectiveStatus: approvalStatus
+      });
 
       if (approvalStatus === 'pending') {
         return res.status(403).json({
           success: false,
           message: 'Account pending approval',
-          errors: ['Your therapist application is under review. You will receive an email once approved.']
+          errors: ['Your psychologist application is under review. You will receive an email once approved.']
         });
       }
 
@@ -284,7 +292,7 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({
           success: false,
           message: 'Application rejected',
-          errors: ['Your therapist application was not approved. Please contact support for more information.']
+          errors: ['Your psychologist application was not approved. Please contact support for more information.']
         });
       }
     }
@@ -310,14 +318,20 @@ router.post('/login', async (req, res) => {
     );
 
     // Prepare response data (exclude sensitive fields)
+    // Include approvalStatus for psychologists so frontend RoleGuard can check it
     const userData = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin,
-      isVerified: user.isVerified
+      isVerified: user.isVerified,
+      approvalStatus: user.role === 'psychologist' 
+        ? (user.approvalStatus || user.psychologistDetails?.approvalStatus || 'pending')
+        : 'not_applicable'
     };
+
+    console.log('✅ Login successful for:', user.email, 'Role:', user.role, 'ApprovalStatus:', userData.approvalStatus);
 
     // Return success response
     res.json({

@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const mpesaAPI = require('../config/mpesa');
 const { auth } = require('../middleware/auth');
+const { 
+  validatePaymentState, 
+  logStateTransition,
+  handleStateValidationError 
+} = require('../middleware/stateValidation');
 // Use global Sequelize models (initialized in server/index.js)
 const { 
   formatErrorResponse, 

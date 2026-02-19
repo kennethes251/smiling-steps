@@ -25,7 +25,8 @@ import {
   Person as PersonIcon,
   AccessTime as AccessTimeIcon,
   Receipt as ReceiptIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -300,6 +301,38 @@ Thank you for using our service!
                             size="small"
                             variant="outlined"
                           />
+                        )}
+                        {/* Admin-created indicator - Requirements: 15.7 */}
+                        {session.createdByAdmin && (
+                          <Tooltip 
+                            title={
+                              <Box>
+                                <Typography variant="body2">
+                                  <strong>Admin Booking</strong>
+                                </Typography>
+                                {session.adminName && (
+                                  <Typography variant="caption" display="block">
+                                    Created by: {session.adminName}
+                                  </Typography>
+                                )}
+                                {session.adminBookingReason && (
+                                  <Typography variant="caption" display="block">
+                                    Reason: {session.adminBookingReason}
+                                  </Typography>
+                                )}
+                              </Box>
+                            }
+                            arrow
+                          >
+                            <Chip
+                              icon={<AdminIcon fontSize="small" />}
+                              label="Admin Booked"
+                              size="small"
+                              color="secondary"
+                              variant="outlined"
+                              sx={{ cursor: 'help' }}
+                            />
+                          </Tooltip>
                         )}
                       </Box>
                     </Box>

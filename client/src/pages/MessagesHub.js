@@ -19,11 +19,11 @@ import {
   Badge,
   Chip,
   Button,
-  Divider,
   IconButton,
   Tab,
   Tabs,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -90,7 +90,7 @@ const MessagesHub = () => {
     }
   };
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_, newValue) => {
     setActiveTab(newValue);
   };
 
@@ -156,37 +156,46 @@ const MessagesHub = () => {
       </Typography>
       {conversations.length > 0 ? (
         <List>
-          {conversations.map((conversation, index) => (
-            <ListItem
-              key={conversation._id || index}
-              button
-              onClick={() => navigate(`/chat/${conversation._id}`)}
-              sx={{
-                borderRadius: 1,
-                mb: 1,
-                '&:hover': { bgcolor: 'action.hover' }
-              }}
-            >
-              <ListItemAvatar>
-                <Badge badgeContent={2} color="primary">
-                  <Avatar sx={{ bgcolor: 'primary.main' }}>
-                    <PsychologyIcon />
-                  </Avatar>
-                </Badge>
-              </ListItemAvatar>
-              <ListItemText
-                primary="Dr. Smith"
-                secondary="How are you feeling today? Let's discuss..."
-                secondaryTypographyProps={{
-                  noWrap: true,
-                  sx: { maxWidth: 200 }
+          {conversations.map((conversation, index) => {
+            // Determine the other party based on current user role
+            const otherParty = user?.role === 'client' 
+              ? conversation.psychologist 
+              : conversation.client;
+            
+            return (
+              <ListItem
+                key={conversation._id || index}
+                onClick={() => navigate(`/chat/${conversation._id}`)}
+                sx={{
+                  borderRadius: 1,
+                  mb: 1,
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'action.hover' }
                 }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                2h ago
-              </Typography>
-            </ListItem>
-          ))}
+              >
+                <ListItemAvatar>
+                  <Badge badgeContent={conversation.unreadCount || 0} color="primary">
+                    <Avatar sx={{ bgcolor: 'primary.main' }}>
+                      <PsychologyIcon />
+                    </Avatar>
+                  </Badge>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={otherParty?.name || 'Unknown'}
+                  secondary={conversation.lastMessage?.text || 'No messages yet'}
+                  secondaryTypographyProps={{
+                    noWrap: true,
+                    sx: { maxWidth: 200 }
+                  }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {conversation.lastMessage?.timestamp 
+                    ? new Date(conversation.lastMessage.timestamp).toLocaleDateString()
+                    : ''}
+                </Typography>
+              </ListItem>
+            );
+          })}
         </List>
       ) : (
         <Alert severity="info">
@@ -268,6 +277,14 @@ const MessagesHub = () => {
     </Paper>
   );
 
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -324,13 +341,22 @@ const MessagesHub = () => {
               Resources
             </Typography>
             <List dense>
-              <ListItem button>
+              <ListItem 
+                onClick={() => navigate('/resources')}
+                sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+              >
                 <ListItemText primary="Crisis Support" />
               </ListItem>
-              <ListItem button>
+              <ListItem 
+                onClick={() => navigate('/resources')}
+                sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+              >
                 <ListItemText primary="Self-Help Resources" />
               </ListItem>
-              <ListItem button>
+              <ListItem 
+                onClick={() => navigate('/resources')}
+                sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+              >
                 <ListItemText primary="FAQ" />
               </ListItem>
             </List>

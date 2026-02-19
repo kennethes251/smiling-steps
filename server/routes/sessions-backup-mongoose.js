@@ -276,7 +276,7 @@ router.put('/:id/approve', auth, async (req, res) => {
     // Get psychologist's payment info
     const psychologist = await User.findByPk(req.user.id);
     const sessionRate = req.body.sessionRate || psychologist?.psychologistDetails?.sessionRate || 2500;
-    const mpesaNumber = psychologist?.psychologistDetails?.paymentInfo?.mpesaNumber || '0707439299';
+    const mpesaNumber = psychologist?.psychologistDetails?.paymentInfo?.mpesaNumber || '0118832083';
     const mpesaName = psychologist?.psychologistDetails?.paymentInfo?.mpesaName || psychologist?.name;
     
     // Update session

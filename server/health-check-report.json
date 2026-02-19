@@ -1,0 +1,239 @@
+{
+  "timestamp": "2026-01-06T08:53:10.269Z",
+  "overall": "UNHEALTHY",
+  "checks": [
+    {
+      "name": "Database Connection",
+      "status": "PASS",
+      "message": "MongoDB connected successfully",
+      "details": {
+        "readyState": 2
+      },
+      "timestamp": "2026-01-06T08:53:10.274Z"
+    },
+    {
+      "name": "Database Connection",
+      "status": "FAIL",
+      "message": "Database connection failed: Cannot call `users.findOne()` before initial connection is complete if `bufferCommands = false`. Make sure you `await mongoose.connect()` if you have `bufferCommands = false`.",
+      "details": {
+        "error": "Cannot call `users.findOne()` before initial connection is complete if `bufferCommands = false`. Make sure you `await mongoose.connect()` if you have `bufferCommands = false`."
+      },
+      "timestamp": "2026-01-06T08:53:10.287Z"
+    },
+    {
+      "name": "API Endpoint GET /api/health",
+      "status": "FAIL",
+      "message": "Endpoint error: app.address is not a function",
+      "details": {
+        "error": "app.address is not a function"
+      },
+      "timestamp": "2026-01-06T08:53:10.290Z"
+    },
+    {
+      "name": "API Endpoint GET /api/public/psychologists",
+      "status": "FAIL",
+      "message": "Endpoint error: app.address is not a function",
+      "details": {
+        "error": "app.address is not a function"
+      },
+      "timestamp": "2026-01-06T08:53:10.290Z"
+    },
+    {
+      "name": "API Endpoint POST /api/auth/login",
+      "status": "FAIL",
+      "message": "Endpoint error: app.address is not a function",
+      "details": {
+        "error": "app.address is not a function"
+      },
+      "timestamp": "2026-01-06T08:53:10.291Z"
+    },
+    {
+      "name": "API Endpoint POST /api/auth/register",
+      "status": "FAIL",
+      "message": "Endpoint error: app.address is not a function",
+      "details": {
+        "error": "app.address is not a function"
+      },
+      "timestamp": "2026-01-06T08:53:10.292Z"
+    },
+    {
+      "name": "Data Encryption",
+      "status": "FAIL",
+      "message": "Encryption system error: Failed to encrypt data",
+      "details": {
+        "error": "Failed to encrypt data"
+      },
+      "timestamp": "2026-01-06T08:53:10.293Z"
+    },
+    {
+      "name": "Environment Variable JWT_SECRET",
+      "status": "PASS",
+      "message": "Variable configured: JWT token signing secret",
+      "details": {
+        "length": 24,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.295Z"
+    },
+    {
+      "name": "Environment Variable ENCRYPTION_KEY",
+      "status": "FAIL",
+      "message": "Required variable missing: Data encryption key",
+      "details": {},
+      "timestamp": "2026-01-06T08:53:10.295Z"
+    },
+    {
+      "name": "Environment Variable MONGODB_URI",
+      "status": "PASS",
+      "message": "Variable configured: MongoDB connection string",
+      "details": {
+        "length": 119,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.295Z"
+    },
+    {
+      "name": "Environment Variable EMAIL_USER",
+      "status": "PASS",
+      "message": "Variable configured: SMTP email user",
+      "details": {
+        "length": 22,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.295Z"
+    },
+    {
+      "name": "Environment Variable EMAIL_PASSWORD",
+      "status": "PASS",
+      "message": "Variable configured: SMTP email password",
+      "details": {
+        "length": 19,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.296Z"
+    },
+    {
+      "name": "Environment Variable MPESA_CONSUMER_KEY",
+      "status": "PASS",
+      "message": "Variable configured: M-Pesa API consumer key",
+      "details": {
+        "length": 48,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.296Z"
+    },
+    {
+      "name": "Environment Variable MPESA_CONSUMER_SECRET",
+      "status": "PASS",
+      "message": "Variable configured: M-Pesa API consumer secret",
+      "details": {
+        "length": 64,
+        "hasValue": true
+      },
+      "timestamp": "2026-01-06T08:53:10.296Z"
+    },
+    {
+      "name": "Environment Configuration",
+      "status": "FAIL",
+      "message": "1 required variables missing, 0 optional variables missing",
+      "details": {},
+      "timestamp": "2026-01-06T08:53:10.296Z"
+    },
+    {
+      "name": "JWT Security",
+      "status": "FAIL",
+      "message": "JWT secret too short (should be at least 32 characters)",
+      "details": {
+        "currentLength": 24,
+        "recommendedLength": 32
+      },
+      "timestamp": "2026-01-06T08:53:10.297Z"
+    },
+    {
+      "name": "Performance Check",
+      "status": "FAIL",
+      "message": "Performance check error: app.address is not a function",
+      "details": {
+        "error": "app.address is not a function"
+      },
+      "timestamp": "2026-01-06T08:53:10.298Z"
+    },
+    {
+      "name": "Model User",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 85,
+        "indexes": 9
+      },
+      "timestamp": "2026-01-06T08:53:10.299Z"
+    },
+    {
+      "name": "Model Session",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 82,
+        "indexes": 28
+      },
+      "timestamp": "2026-01-06T08:53:10.318Z"
+    },
+    {
+      "name": "Model AuditLog",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 36,
+        "indexes": 24
+      },
+      "timestamp": "2026-01-06T08:53:10.327Z"
+    },
+    {
+      "name": "Model ConfidentialityAgreement",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 18,
+        "indexes": 5
+      },
+      "timestamp": "2026-01-06T08:53:10.332Z"
+    },
+    {
+      "name": "Model IntakeForm",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 28,
+        "indexes": 4
+      },
+      "timestamp": "2026-01-06T08:53:10.337Z"
+    },
+    {
+      "name": "Model SessionRate",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 13,
+        "indexes": 11
+      },
+      "timestamp": "2026-01-06T08:53:10.345Z"
+    },
+    {
+      "name": "Model AvailabilityWindow",
+      "status": "PASS",
+      "message": "Model properly defined with schema",
+      "details": {
+        "paths": 29,
+        "indexes": 7
+      },
+      "timestamp": "2026-01-06T08:53:10.354Z"
+    }
+  ],
+  "summary": {
+    "total": 24,
+    "passed": 14,
+    "failed": 10,
+    "warnings": 0,
+    "successRate": "58.3"
+  }
+}

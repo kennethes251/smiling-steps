@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import axios from 'axios';
 import setAuthToken from '../utils/setAuthToken';
-import { API_ENDPOINTS } from '../config/api';
+import API_BASE_URL from '../config/api';
 
 // Initial State
 const initialState = {
@@ -9,21 +9,11 @@ const initialState = {
   isAuthenticated: null,
   loading: true,
   user: null,
-  error: null,
-  pendingVerification: false,
-  verificationMessage: null
+  error: null
 };
 
 // Create Context
 export const AuthContext = createContext(initialState);
-
-export const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 // Reducer
 const authReducer = (state, action) => {
@@ -35,41 +25,17 @@ const authReducer = (state, action) => {
         ...state,
         isAuthenticated: true,
         loading: false,
-        user: payload,
-        error: null
+        user: payload
       };
     case 'REGISTER_SUCCESS':
-      localStorage.setItem('token', payload.token);
-      setAuthToken(payload.token);
-      return {
-        ...state,
-        token: payload.token,
-        isAuthenticated: true,
-        loading: false,
-        user: payload.user,
-        error: null
-      };
     case 'LOGIN_SUCCESS':
       localStorage.setItem('token', payload.token);
       setAuthToken(payload.token);
       return {
         ...state,
-        token: payload.token,
+        ...payload,
         isAuthenticated: true,
-        loading: false,
-        user: payload.user,
-        error: null
-      };
-    case 'REGISTER_PENDING_VERIFICATION':
-      return {
-        ...state,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-        user: null,
-        error: null,
-        pendingVerification: true,
-        verificationMessage: payload.message
+        loading: false
       };
     case 'REGISTER_FAIL':
     case 'AUTH_ERROR':
@@ -94,189 +60,80 @@ const authReducer = (state, action) => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Load user if token exists on initial load
+  // Load user if token exists
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          setAuthToken(token);
-          try {
-            const res = await axios.get(API_ENDPOINTS.AUTH);
-            dispatch({ 
-              type: 'USER_LOADED', 
-              payload: res.data 
-            });
-          } catch (err) {
-            console.error('Failed to load user:', err);
-            dispatch({ 
-              type: 'AUTH_ERROR',
-              payload: 'Failed to load user session'
-            });
-          }
+    const loadUser = async () => {
+      if (localStorage.token) {
+        setAuthToken(localStorage.token);
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/auth`);
+          dispatch({ type: 'USER_LOADED', payload: res.data });
+        } catch (err) {
+          dispatch({ type: 'AUTH_ERROR' });
         }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        dispatch({ 
-          type: 'AUTH_ERROR',
-          payload: 'Error initializing authentication'
-        });
       }
     };
-    
-    initializeAuth();
+    loadUser();
   }, []);
 
   // Register User
-  const register = async (userData) => {
+  const register = async (formData) => {
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-      
-      const res = await axios.post(
-        `${API_ENDPOINTS.USERS}/register`, 
-        userData,
-        config
-      );
-      
-      console.log('Registration successful:', res.data);
-      
-      // Check if email verification is required
-      if (res.data.requiresVerification) {
-        // Don't set as authenticated yet, user needs to verify email
-        dispatch({ type: 'REGISTER_PENDING_VERIFICATION', payload: res.data });
-        return res.data;
-      } else {
-        // Streamlined registration or pre-approved accounts
-        // User is immediately authenticated with token
-        if (res.data.token) {
-          dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
-        } else {
-          // Fallback for cases where token might not be provided
-          dispatch({ type: 'REGISTER_PENDING_VERIFICATION', payload: res.data });
-        }
-        return res.data;
-      }
+      const res = await axios.post(`${API_BASE_URL}/api/users/register`, formData);
+      dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
+      return res.data;
     } catch (err) {
-      console.error('Registration error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        message: err.message
-      });
-      
-      // Get specific error message from backend
-      let errorMsg = 'Registration failed';
-      if (err.response?.data?.message) {
-        errorMsg = err.response.data.message;
-      } else if (err.response?.data?.errors && err.response.data.errors.length > 0) {
-        errorMsg = err.response.data.errors[0];
-      } else if (err.response?.data?.msg) {
-        errorMsg = err.response.data.msg;
-      }
-      
-      dispatch({ type: 'REGISTER_FAIL', payload: errorMsg });
-      throw new Error(errorMsg);
+      dispatch({ type: 'REGISTER_FAIL', payload: err.response.data.msg });
+      throw err;
     }
   };
 
   // Login User
   const login = async (email, password) => {
     try {
-      const config = {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
+      console.log('AuthContext: Attempting login...');
+      const res = await axios.post(`${API_BASE_URL}/api/users/login`, { email, password });
+      console.log('AuthContext: Server response:', res.data);
       
-      const res = await axios.post(
-        `${API_ENDPOINTS.USERS}/login`, 
-        { email, password }, 
-        config
-      );
-      
-      console.log('Login successful:', { 
-        user: res.data.user ? 'User data received' : 'No user data',
-        token: res.data.token ? 'Token received' : 'No token'
-      });
-      
-      dispatch({ type: 'LOGIN_SUCCESS', payload: res.data });
-      return res.data;
-    } catch (err) {
-      console.error('Login error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        message: err.message,
-        config: {
-          url: err.config?.url,
-          method: err.config?.method,
-          data: err.config?.data
-        }
-      });
-      
-      const errorMsg = err.response?.data?.msg || 'Login failed. Please check your credentials and try again.';
-      dispatch({ type: 'LOGIN_FAIL', payload: errorMsg });
-      throw new Error(errorMsg);
-    }
-  };
-
-  // Check if user is already logged in (on app load)
-  const loadUser = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        return null;
+      if (!res.data || !res.data.token) {
+        throw new Error('Invalid response from server');
       }
-      
-      setAuthToken(token);
-      
+
+      // Set the token in localStorage and axios headers
+      localStorage.setItem('token', res.data.token);
+      setAuthToken(res.data.token);
+
+      // Load user data immediately after login
       try {
-        const userRes = await axios.get(API_ENDPOINTS.AUTH);
-        const userData = userRes.data;
+        const userRes = await axios.get(`${API_BASE_URL}/api/auth`);
+        console.log('AuthContext: User data loaded:', userRes.data);
         
-        // If we got user data, consider the login successful
-        if (userData && userData.id) {
-          dispatch({
-            type: 'USER_LOADED',
-            payload: userData
-          });
-          return userData;
-        }
+        // Dispatch both login success and user loaded actions
+        dispatch({ 
+          type: 'LOGIN_SUCCESS', 
+          payload: { 
+            token: res.data.token,
+            user: userRes.data
+          } 
+        });
         
-        throw new Error('No user data available');
+        return userRes.data;
       } catch (userErr) {
-        console.error('AuthContext: Error in session-based auth:', userErr);
-        // Clear invalid token
+        console.error('AuthContext: Error loading user data:', userErr);
+        // Clear token if user data couldn't be loaded
         localStorage.removeItem('token');
         setAuthToken(null);
-        return null;
+        throw new Error('Failed to load user data');
       }
-    } catch (error) {
-      console.error('AuthContext: Error in loadUser:', error);
-      // Clear token on error
-      localStorage.removeItem('token');
-      setAuthToken(null);
-      
-      // Reset auth state
-      dispatch({
-        type: 'AUTH_ERROR'
+    } catch (err) {
+      console.error('AuthContext: Login error:', err);
+      const errorMessage = err.response?.data?.msg || err.message || 'Login failed';
+      dispatch({ 
+        type: 'LOGIN_FAIL', 
+        payload: errorMessage 
       });
-      
-      return null;
+      throw new Error(errorMessage);
     }
-  };
-
-  // Update User
-  const updateUser = (updatedUserData) => {
-    dispatch({ 
-      type: 'USER_LOADED', 
-      payload: updatedUserData 
-    });
   };
 
   // Logout User
@@ -294,9 +151,7 @@ export const AuthProvider = ({ children }) => {
         error: state.error,
         register,
         login,
-        logout,
-        loadUser,
-        updateUser
+        logout
       }}
     >
       {children}

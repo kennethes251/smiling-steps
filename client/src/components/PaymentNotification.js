@@ -28,7 +28,7 @@ const PaymentNotification = ({
   onPaymentSent 
 }) => {
   const [copied, setCopied] = useState(false);
-  const paymentNumber = '0707439299';
+  const paymentNumber = '0118832083';
 
   const handleCopyNumber = () => {
     navigator.clipboard.writeText(paymentNumber);
@@ -163,8 +163,12 @@ const PaymentNotification = ({
         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
           <Typography variant="body2" color="text.secondary">
             <strong>Need help?</strong> Contact us at{' '}
-            <a href="mailto:kennethes251@gmail.com" style={{ color: 'inherit' }}>
-              kennethes251@gmail.com
+            <a href="mailto:smilingstep254@gmail.com" style={{ color: 'inherit' }}>
+              smilingstep254@gmail.com
+            </a>
+            {' '}or{' '}
+            <a href="https://wa.me/254118832083" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit' }}>
+              WhatsApp us
             </a>
           </Typography>
         </Box>

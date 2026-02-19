@@ -92,7 +92,7 @@ BlogSchema.pre('save', function(next) {
 });
 
 // Indexes for better performance
-BlogSchema.index({ slug: 1 });
+// Note: slug already has unique: true which creates an index
 BlogSchema.index({ category: 1 });
 BlogSchema.index({ published: 1 });
 BlogSchema.index({ publishedAt: -1 });

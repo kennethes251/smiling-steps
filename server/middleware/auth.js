@@ -89,4 +89,8 @@ const requireAnyRole = (...roles) => {
   };
 };
 
+// Note: For more robust role-based access control with database verification,
+// use the middleware from './roleAuth.js' instead of requireRole/requireAnyRole here.
+// The roleAuth.js middleware fetches fresh user data and checks account status.
+
 module.exports = { auth, admin, requireRole, requireAnyRole };

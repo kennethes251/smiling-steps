@@ -11,19 +11,55 @@ if (process.env.AFRICASTALKING_API_KEY && process.env.AFRICASTALKING_USERNAME) {
   smsClient = africastalking.SMS;
 }
 
-// Email transporter
+// Email transporter - Initialize with Gmail fallback like emailVerificationService
 let emailTransporter = null;
-if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-  emailTransporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+
+function initializeEmailTransporter() {
+  // Check if we have custom email hosting configured
+  if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD && 
+      process.env.EMAIL_PASSWORD !== 'your-email-password') {
+    console.log('📧 NotificationService: Using custom email hosting:', process.env.EMAIL_HOST);
+    return nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+  }
+
+  // Check for Gmail configuration (EMAIL_USER + EMAIL_PASSWORD without EMAIL_HOST)
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD && 
+      process.env.EMAIL_PASSWORD !== 'your-email-password') {
+    console.log('📧 NotificationService: Using Gmail SMTP');
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  }
+
+  // For development/testing without credentials, use mock transporter
+  console.log('⚠️ NotificationService: No email credentials configured, using mock transporter');
+  return {
+    sendMail: async (mailOptions) => {
+      console.log('📧 MOCK EMAIL SENT:');
+      console.log('  To:', mailOptions.to);
+      console.log('  Subject:', mailOptions.subject);
+      return { messageId: 'mock-' + Date.now() };
+    }
+  };
 }
+
+// Initialize the transporter
+emailTransporter = initializeEmailTransporter();
 
 /**
  * Send email notification
@@ -690,6 +726,241 @@ const sendRealTimeDiscrepancySMS = async (reconciliationResult, adminPhone) => {
   }
 };
 
+/**
+ * Send booking confirmation notification with booking reference (Requirement 1.5)
+ * @param {Object} session - Session object with bookingReference
+ * @param {Object} client - Client user object
+ * @param {Object} psychologist - Psychologist user object
+ */
+const sendBookingConfirmationNotification = async (session, client, psychologist) => {
+  const sessionDate = new Date(session.sessionDate).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const bookingReference = session.bookingReference || 'N/A';
+
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #4CAF50;">Booking Request Submitted! 📋</h2>
+      <p>Dear ${client.name},</p>
+      <p>Your therapy session booking request has been submitted successfully. Please save your booking reference for future reference.</p>
+      
+      <div style="background-color: #e8f5e9; padding: 20px; border-radius: 8px; border-left: 4px solid #4CAF50; margin: 20px 0; text-align: center;">
+        <h3 style="margin-top: 0; color: #2e7d32;">Your Booking Reference</h3>
+        <p style="font-size: 28px; font-weight: bold; color: #1b5e20; letter-spacing: 2px; margin: 10px 0;">${bookingReference}</p>
+        <p style="font-size: 12px; color: #666; margin: 0;">Use this reference for all inquiries about this booking</p>
+      </div>
+
+      <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #333;">Session Details</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li style="padding: 5px 0;"><strong>Booking Reference:</strong> ${bookingReference}</li>
+          <li style="padding: 5px 0;"><strong>Therapist:</strong> Dr. ${psychologist.name}</li>
+          <li style="padding: 5px 0;"><strong>Session Type:</strong> ${session.sessionType}</li>
+          <li style="padding: 5px 0;"><strong>Date & Time:</strong> ${sessionDate}</li>
+          <li style="padding: 5px 0;"><strong>Amount:</strong> KES ${session.price || session.sessionRate}</li>
+          <li style="padding: 5px 0;"><strong>Status:</strong> Pending Approval</li>
+        </ul>
+      </div>
+
+      <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; border-left: 4px solid #2196F3; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1565c0;">What's Next?</h3>
+        <ol style="line-height: 1.8;">
+          <li>Your therapist will review and approve your booking</li>
+          <li>You'll receive payment instructions once approved</li>
+          <li>Complete payment to confirm your session</li>
+          <li>Receive your meeting link for the video call</li>
+        </ol>
+      </div>
+
+      <p>You can track your booking status anytime using your booking reference: <strong>${bookingReference}</strong></p>
+      
+      <p style="margin-top: 30px;">If you have any questions, please don't hesitate to contact us.</p>
+      
+      <p>Best regards,<br>
+      <strong>Smiling Steps Team</strong></p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="font-size: 12px; color: #666;">
+        Booking Reference: ${bookingReference} | This is an automated message.
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: client.email,
+    subject: `Booking Submitted - Ref: ${bookingReference} | Smiling Steps`,
+    html: emailHtml
+  });
+};
+
+/**
+ * Send booking confirmation SMS with booking reference (Requirement 1.5)
+ * @param {Object} session - Session object with bookingReference
+ * @param {Object} client - Client user object
+ */
+const sendBookingConfirmationSMS = async (session, client) => {
+  if (!client.phone) {
+    console.warn(`⚠️ No phone number for client ${client.name}. Skipping SMS.`);
+    return { success: false, reason: 'No phone number' };
+  }
+
+  const bookingReference = session.bookingReference || 'N/A';
+  const sessionDate = new Date(session.sessionDate).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const message = `Smiling Steps: Booking submitted! Ref: ${bookingReference}. Session on ${sessionDate}. Awaiting therapist approval. Track status in your dashboard.`;
+
+  return await sendSMS({
+    to: client.phone,
+    message: message
+  });
+};
+
+/**
+ * Send session request notification to therapist with booking reference
+ * @param {Object} session - Session object with bookingReference
+ * @param {Object} client - Client user object
+ * @param {Object} psychologist - Psychologist user object
+ */
+const sendSessionRequestNotification = async (session, client, psychologist) => {
+  const sessionDate = new Date(session.sessionDate).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const bookingReference = session.bookingReference || 'N/A';
+
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #2196F3;">New Booking Request 📅</h2>
+      <p>Dear Dr. ${psychologist.name},</p>
+      <p>You have received a new therapy session booking request.</p>
+      
+      <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; border-left: 4px solid #2196F3; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1565c0;">Booking Reference: ${bookingReference}</h3>
+      </div>
+
+      <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #333;">Request Details</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li style="padding: 5px 0;"><strong>Client:</strong> ${client.name}</li>
+          <li style="padding: 5px 0;"><strong>Email:</strong> ${client.email}</li>
+          <li style="padding: 5px 0;"><strong>Session Type:</strong> ${session.sessionType}</li>
+          <li style="padding: 5px 0;"><strong>Requested Date:</strong> ${sessionDate}</li>
+          <li style="padding: 5px 0;"><strong>Amount:</strong> KES ${session.price || session.sessionRate}</li>
+        </ul>
+      </div>
+
+      <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #856404;">Action Required</h3>
+        <p>Please review this request and approve or decline it from your dashboard.</p>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <a href="${process.env.CLIENT_URL || 'https://smilingsteps.com'}/dashboard" 
+           style="display: inline-block; background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+          Review Request
+        </a>
+      </div>
+
+      <p style="margin-top: 30px;">Best regards,<br>
+      <strong>Smiling Steps Team</strong></p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="font-size: 12px; color: #666;">
+        Booking Reference: ${bookingReference} | This is an automated message.
+      </p>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: psychologist.email,
+    subject: `New Booking Request - Ref: ${bookingReference} | Smiling Steps`,
+    html: emailHtml
+  });
+};
+
+/**
+ * Send payment verification notification to client
+ * Called when admin verifies a manual payment submission
+ * @param {Object} session - Session object with payment details
+ * @param {Object} client - Client user object
+ * @param {Object} psychologist - Psychologist user object
+ */
+const sendPaymentVerificationNotification = async (session, client, psychologist) => {
+  const sessionDate = new Date(session.sessionDate).toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const bookingReference = session.bookingReference || session._id?.toString().slice(-8).toUpperCase();
+  const amount = session.sessionRate || session.price || 0;
+
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">✅ Payment Verified!</h1>
+      </div>
+      
+      <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 16px;">Dear ${client.name},</p>
+        
+        <p style="font-size: 16px;">Great news! Your payment has been verified and your session is now confirmed.</p>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+          <h3 style="margin-top: 0; color: #333;">Session Details</h3>
+          <p style="margin: 5px 0;"><strong>Booking Reference:</strong> ${bookingReference}</p>
+          <p style="margin: 5px 0;"><strong>Psychologist:</strong> ${psychologist?.name || 'Your Therapist'}</p>
+          <p style="margin: 5px 0;"><strong>Date & Time:</strong> ${sessionDate}</p>
+          <p style="margin: 5px 0;"><strong>Amount Paid:</strong> KSh ${amount.toLocaleString()}</p>
+          <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #4CAF50; font-weight: bold;">CONFIRMED</span></p>
+        </div>
+        
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h4 style="margin-top: 0; color: #2e7d32;">📹 Video Call Information</h4>
+          <p style="margin: 5px 0;">Your video call link will be available in your dashboard before the session.</p>
+          <p style="margin: 5px 0;">Please log in 5 minutes before your scheduled time.</p>
+        </div>
+        
+        <p style="font-size: 14px; color: #666;">
+          If you need to reschedule or have any questions, please contact us or visit your dashboard.
+        </p>
+        
+        <p style="font-size: 16px;">We look forward to your session!</p>
+        
+        <p style="font-size: 16px;">
+          Warm regards,<br>
+          <strong>The Smiling Steps Team</strong>
+        </p>
+      </div>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: client.email,
+    subject: `✅ Payment Verified - Session Confirmed | Ref: ${bookingReference}`,
+    html: emailHtml
+  });
+};
+
 module.exports = {
   sendEmail,
   sendSMS,
@@ -701,5 +972,11 @@ module.exports = {
   sendReconciliationDiscrepancyAlert,
   sendReconciliationDiscrepancySMS,
   sendRealTimeDiscrepancyAlert,
-  sendRealTimeDiscrepancySMS
+  sendRealTimeDiscrepancySMS,
+  // Booking reference notifications (Requirement 1.5)
+  sendBookingConfirmationNotification,
+  sendBookingConfirmationSMS,
+  sendSessionRequestNotification,
+  // Manual payment verification
+  sendPaymentVerificationNotification
 };

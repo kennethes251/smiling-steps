@@ -7,6 +7,26 @@ const User = require('../models/User'); // Mongoose User model
 const emailVerificationService = require('../services/emailVerificationService');
 const { auth } = require('../middleware/auth');
 
+// Import error monitoring service
+let registrationErrorMonitoring;
+try {
+  const { registrationErrorMonitoringService, ERROR_CATEGORIES, ERROR_SEVERITY } = require('../services/registrationErrorMonitoringService');
+  registrationErrorMonitoring = { service: registrationErrorMonitoringService, ERROR_CATEGORIES, ERROR_SEVERITY };
+} catch (error) {
+  console.warn('⚠️ Registration error monitoring service not available');
+  registrationErrorMonitoring = null;
+}
+
+// Import performance monitoring service
+let registrationPerformance;
+try {
+  const { registrationPerformanceService, REGISTRATION_STEPS, USER_TYPES } = require('../services/registrationPerformanceService');
+  registrationPerformance = { service: registrationPerformanceService, REGISTRATION_STEPS, USER_TYPES };
+} catch (error) {
+  console.warn('⚠️ Registration performance service not available');
+  registrationPerformance = null;
+}
+
 // Validation middleware
 const validateRegisterInput = (req, res, next) => {
   const { name, email, password, role, skipVerification } = req.body;
@@ -88,15 +108,28 @@ router.post('/register', validateRegisterInput, async (req, res) => {
     // Determine if this is a streamlined registration
     const isStreamlined = skipVerification === true || skipVerification === 'true';
 
+    console.log('🔍 Registration debug:', {
+      skipVerification,
+      isStreamlined,
+      skipVerificationType: typeof skipVerification
+    });
+
     // Create user payload
     let userPayload = {
       name,
       email,
       password, // Will be hashed by pre-save middleware
       role,
-      isEmailVerified: isStreamlined, // Auto-verify for streamlined registration
+      isVerified: isStreamlined, // Auto-verify for streamlined registration (correct field name)
       lastLogin: new Date()
     };
+
+    console.log('🔍 User payload debug:', {
+      isVerified: userPayload.isVerified,
+      isStreamlined,
+      passwordLength: password.length,
+      passwordPreview: password.substring(0, 3) + '***'
+    });
 
     // Handle psychologist registration with approval workflow
     if (role === 'psychologist') {
@@ -110,11 +143,24 @@ router.post('/register', validateRegisterInput, async (req, res) => {
         isActive: false // Not active until approved
       };
       // Psychologists also need email verification (unless streamlined)
-      userPayload.isEmailVerified = isStreamlined;
+      userPayload.isVerified = isStreamlined;
     }
 
     // Create user
     const user = await User.create(userPayload);
+
+    // Track performance metric for account creation
+    const registrationStartTime = Date.now(); // Approximate start time
+    if (registrationPerformance) {
+      const userType = role === 'psychologist' 
+        ? registrationPerformance.USER_TYPES.THERAPIST 
+        : registrationPerformance.USER_TYPES.CLIENT;
+      registrationPerformance.service.trackAccountCreated(
+        user._id.toString(), 
+        userType, 
+        registrationStartTime - 30000 // Estimate 30 seconds for form fill
+      );
+    }
 
     // Handle email verification for both clients AND psychologists (unless streamlined)
     if (!isStreamlined && (role === 'client' || role === 'psychologist')) {
@@ -122,9 +168,38 @@ router.post('/register', validateRegisterInput, async (req, res) => {
         const verificationToken = await emailVerificationService.createVerificationToken(user._id);
         await emailVerificationService.sendVerificationEmail(user, verificationToken);
         console.log('📧 Verification email sent to:', email, 'Role:', role);
+        
+        // Track successful registration with verification
+        if (registrationErrorMonitoring) {
+          registrationErrorMonitoring.service.trackAttempt('registration', true, {
+            email,
+            role,
+            requiresVerification: true
+          });
+        }
       } catch (emailError) {
         console.error('Failed to send verification email:', emailError);
+        
+        // Track email sending failure (error already tracked in emailVerificationService)
+        if (registrationErrorMonitoring) {
+          registrationErrorMonitoring.service.trackAttempt('registration', true, {
+            email,
+            role,
+            requiresVerification: true,
+            emailSendFailed: true
+          });
+        }
         // Don't fail registration if email fails, but log the error
+      }
+    } else if (isStreamlined) {
+      // Track streamlined registration
+      if (registrationErrorMonitoring) {
+        registrationErrorMonitoring.service.trackAttempt('registration', true, {
+          email,
+          role,
+          requiresVerification: false,
+          streamlined: true
+        });
       }
     }
 
@@ -149,7 +224,7 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin,
-      isVerified: user.isEmailVerified
+      isVerified: user.isVerified
     };
 
     // Return appropriate response based on registration type
@@ -173,6 +248,33 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 
   } catch (err) {
     console.error('Registration error:', err);
+
+    // Track error in monitoring service
+    if (registrationErrorMonitoring) {
+      let errorCategory = registrationErrorMonitoring.ERROR_CATEGORIES.REGISTRATION;
+      let errorCode = 'REGISTRATION_FAILED';
+      let severity = registrationErrorMonitoring.ERROR_SEVERITY.MEDIUM;
+
+      if (err.code === 11000) {
+        errorCode = 'DUPLICATE_EMAIL';
+        severity = registrationErrorMonitoring.ERROR_SEVERITY.LOW;
+      } else if (err.name === 'ValidationError') {
+        errorCategory = registrationErrorMonitoring.ERROR_CATEGORIES.VALIDATION;
+        errorCode = 'VALIDATION_ERROR';
+        severity = registrationErrorMonitoring.ERROR_SEVERITY.LOW;
+      } else {
+        severity = registrationErrorMonitoring.ERROR_SEVERITY.HIGH;
+      }
+
+      registrationErrorMonitoring.service.trackError({
+        category: errorCategory,
+        code: errorCode,
+        message: err.message,
+        severity,
+        context: { email: req.body.email, role: req.body.role },
+        originalError: err
+      });
+    }
 
     // Handle duplicate key error
     if (err.code === 11000) {
@@ -205,12 +307,16 @@ router.post('/register', validateRegisterInput, async (req, res) => {
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', async (req, res) => {
+  const securityMonitoringService = require('../services/securityMonitoringService');
+  const breachAlertingService = require('../services/breachAlertingService');
+  
   try {
     const { email, password } = req.body;
 
     console.log('🔐 Login attempt:', {
       email,
-      hasPassword: !!password
+      hasPassword: !!password,
+      passwordLength: password ? password.length : 0
     });
 
     // Basic validation
@@ -223,10 +329,35 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by email (case-insensitive) with password
-    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+password +loginAttempts +lockUntil');
 
     // Check if user exists
     if (!user) {
+      console.log('❌ User not found:', email);
+      
+      // Monitor failed authentication attempt
+      const monitoringResult = await securityMonitoringService.runSecurityMonitoring({
+        actionType: 'failed_login',
+        email: email.toLowerCase().trim(),
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        action: 'user_not_found'
+      });
+      
+      // Trigger breach alerting if detected
+      if (monitoringResult.breachDetected) {
+        await breachAlertingService.processSecurityBreach({
+          alerts: monitoringResult.alerts,
+          recommendations: monitoringResult.recommendations,
+          context: {
+            actionType: 'failed_login',
+            email: email.toLowerCase().trim(),
+            ipAddress: req.ip,
+            reason: 'user_not_found'
+          }
+        });
+      }
+      
       return res.status(400).json({
         success: false,
         message: 'Authentication failed',
@@ -234,19 +365,144 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Verify password
-    const isMatch = await user.correctPassword(password);
+    // Debug: Log password info
+    console.log('🔍 User found:', {
+      id: user._id,
+      email: user.email,
+      hasPasswordField: !!user.password,
+      passwordLength: user.password ? user.password.length : 0,
+      passwordStartsWith: user.password ? user.password.substring(0, 7) : 'N/A',
+      isVerified: user.isVerified,
+      role: user.role
+    });
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingTime = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      console.log('🔒 Account locked:', { email, remainingMinutes: remainingTime });
+      
+      // Monitor locked account access attempt
+      const monitoringResult = await securityMonitoringService.runSecurityMonitoring({
+        actionType: 'failed_login',
+        userId: user._id.toString(),
+        email: email.toLowerCase().trim(),
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        action: 'account_locked'
+      });
+      
+      // Trigger breach alerting if detected
+      if (monitoringResult.breachDetected) {
+        await breachAlertingService.processSecurityBreach({
+          alerts: monitoringResult.alerts,
+          recommendations: monitoringResult.recommendations,
+          context: {
+            actionType: 'failed_login',
+            userId: user._id.toString(),
+            email: email.toLowerCase().trim(),
+            ipAddress: req.ip,
+            reason: 'account_locked'
+          }
+        });
+      }
+      
+      return res.status(423).json({
+        success: false,
+        message: 'Account temporarily locked',
+        errors: [`Too many failed attempts. Try again in ${remainingTime} minutes.`]
+      });
+    }
+
+    // Verify password using bcrypt directly for debugging
+    const bcrypt = require('bcryptjs');
+    const directCompare = await bcrypt.compare(password, user.password);
+    const methodCompare = await user.correctPassword(password);
+    
+    console.log('🔐 Password verification:', {
+      directBcryptCompare: directCompare,
+      modelMethodCompare: methodCompare,
+      inputPassword: password.substring(0, 3) + '***',
+      storedHashPrefix: user.password ? user.password.substring(0, 10) : 'N/A'
+    });
+
+    const isMatch = directCompare; // Use direct compare for reliability
     
     if (!isMatch) {
+      // Increment failed login attempts
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = Date.now() + (15 * 60 * 1000); // Lock for 15 minutes
+      }
+      await user.save({ validateBeforeSave: false });
+      
+      console.log('❌ Password mismatch for:', email);
+      
+      // Monitor failed authentication attempt
+      const monitoringResult = await securityMonitoringService.runSecurityMonitoring({
+        actionType: 'failed_login',
+        userId: user._id.toString(),
+        email: email.toLowerCase().trim(),
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        action: 'invalid_password'
+      });
+      
+      // Trigger breach alerting if detected
+      if (monitoringResult.breachDetected) {
+        await breachAlertingService.processSecurityBreach({
+          alerts: monitoringResult.alerts,
+          recommendations: monitoringResult.recommendations,
+          context: {
+            actionType: 'failed_login',
+            userId: user._id.toString(),
+            email: email.toLowerCase().trim(),
+            ipAddress: req.ip,
+            reason: 'invalid_password',
+            attemptCount: user.loginAttempts
+          }
+        });
+      }
+      
       return res.status(400).json({
         success: false,
         message: 'Authentication failed',
         errors: ['Invalid email or password']
+      });
+    }
+    
+    // Reset login attempts on successful login
+    if (user.loginAttempts > 0 || user.lockUntil) {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+    }
+
+    // Monitor successful login for suspicious IP patterns
+    const successMonitoringResult = await securityMonitoringService.runSecurityMonitoring({
+      actionType: 'login_success',
+      userId: user._id.toString(),
+      userRole: user.role,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      action: 'successful_login'
+    });
+    
+    // Trigger breach alerting if suspicious patterns detected
+    if (successMonitoringResult.breachDetected) {
+      await breachAlertingService.processSecurityBreach({
+        alerts: successMonitoringResult.alerts,
+        recommendations: successMonitoringResult.recommendations,
+        context: {
+          actionType: 'login_success',
+          userId: user._id.toString(),
+          userRole: user.role,
+          ipAddress: req.ip,
+          reason: 'suspicious_login_pattern'
+        }
       });
     }
 
     // Check if email is verified (for clients and psychologists - admin bypasses)
-    if ((user.role === 'client' || user.role === 'psychologist') && !user.isEmailVerified) {
+    if ((user.role === 'client' || user.role === 'psychologist') && !user.isVerified) {
       return res.status(400).json({
         success: false,
         message: 'Email not verified',
@@ -304,14 +560,24 @@ router.post('/login', async (req, res) => {
     );
 
     // Prepare response data (exclude sensitive fields)
+    // Include approvalStatus for psychologists so frontend RoleGuard can check it
     const userData = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin,
-      isVerified: user.isEmailVerified
+      isVerified: user.isVerified,
+      approvalStatus: user.role === 'psychologist' 
+        ? (user.approvalStatus || user.psychologistDetails?.approvalStatus || 'pending')
+        : 'not_applicable'
     };
+
+    console.log('✅ Login successful:', {
+      email: user.email,
+      role: user.role,
+      approvalStatus: userData.approvalStatus
+    });
 
     // Return success response
     res.json({

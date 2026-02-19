@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 import API_BASE_URL from '../../config/api';
-import { Container, Typography, Grid, Paper, List, ListItem, ListItemText, Divider, Button, CircularProgress, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Chip, Tooltip } from '@mui/material';
-import { Videocam as VideocamIcon, Schedule as ScheduleIcon, CheckCircle as CheckCircleIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Receipt as ReceiptIcon } from '@mui/icons-material';
+import { Container, Typography, Grid, Paper, List, ListItem, ListItemText, Divider, Button, CircularProgress, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Chip, Tooltip, Tabs, Tab } from '@mui/material';
+import { Videocam as VideocamIcon, Schedule as ScheduleIcon, CheckCircle as CheckCircleIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Receipt as ReceiptIcon, AdminPanelSettings as AdminIcon, AttachMoney as MoneyIcon, Chat as ChatIcon } from '@mui/icons-material';
 import QuickActions from '../shared/QuickActions';
 import CompactProfile from '../CompactProfile';
 import QuickVideoCall from '../VideoCall/QuickVideoCall';
 import SessionHistory from '../SessionHistory';
+import TherapistSessionHistory from '../TherapistSessionHistory';
+import EarningsDashboard from './EarningsDashboard';
+import SessionRateManager from '../SessionRateManager';
 import Logo from '../Logo';
 
 const PsychologistDashboard = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [clientAssessments, setClientAssessments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,11 +25,13 @@ const PsychologistDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
 
   // State for form inputs
   const [meetingLink, setMeetingLink] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
   const [sessionProof, setSessionProof] = useState('');
+  const [declineReason, setDeclineReason] = useState('');
   
   // Video call state
   const [videoCallDialogOpen, setVideoCallDialogOpen] = useState(false);
@@ -35,6 +41,9 @@ const PsychologistDashboard = () => {
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [newRate, setNewRate] = useState('');
   const [selectedSessionForCall, setSelectedSessionForCall] = useState(null);
+  
+  // Tab state for dashboard sections
+  const [activeTab, setActiveTab] = useState(0);
 
   // Helper function to get payment status display information
   const getPaymentStatusInfo = (session) => {
@@ -76,6 +85,43 @@ const PsychologistDashboard = () => {
           borderColor: 'grey.400'
         };
     }
+  };
+
+  // Helper component for admin-created indicator - Requirements: 15.7
+  const AdminCreatedIndicator = ({ session }) => {
+    if (!session.createdByAdmin) return null;
+    
+    return (
+      <Tooltip 
+        title={
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+              Admin Booking
+            </Typography>
+            {session.adminName && (
+              <Typography variant="caption" display="block">
+                Created by: {session.adminName}
+              </Typography>
+            )}
+            {session.adminBookingReason && (
+              <Typography variant="caption" display="block">
+                Reason: {session.adminBookingReason}
+              </Typography>
+            )}
+          </Box>
+        }
+        arrow
+      >
+        <Chip
+          icon={<AdminIcon fontSize="small" />}
+          label="Admin Booked"
+          size="small"
+          color="secondary"
+          variant="outlined"
+          sx={{ cursor: 'help', ml: 1 }}
+        />
+      </Tooltip>
+    );
   };
 
   const fetchData = async () => {
@@ -141,6 +187,48 @@ const PsychologistDashboard = () => {
     } catch (err) {
       console.error('Failed to approve session', err);
       alert(err.response?.data?.msg || 'Failed to approve session.');
+    }
+  };
+
+  // --- Handlers for Decline Dialog ---
+  const handleOpenDeclineDialog = (session) => {
+    setSelectedSession(session);
+    setDeclineReason('');
+    setDeclineDialogOpen(true);
+  };
+
+  const handleCloseDeclineDialog = () => {
+    setDeclineDialogOpen(false);
+    setSelectedSession(null);
+    setDeclineReason('');
+  };
+
+  const handleDeclineSession = async () => {
+    if (!selectedSession) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+      
+      const id = selectedSession._id || selectedSession.id;
+      if (!id) {
+        console.error('Session ID is undefined');
+        alert('Error: Session ID is missing');
+        return;
+      }
+      
+      await axios.put(`${API_BASE_URL}/api/sessions/${id}/decline`, {
+        reason: declineReason || 'Not available at this time'
+      }, config);
+      
+      // Refresh data to show updated status
+      await fetchData();
+      
+      handleCloseDeclineDialog();
+      alert('Session declined. Client will be notified.');
+    } catch (err) {
+      console.error('Failed to decline session', err);
+      alert(err.response?.data?.msg || 'Failed to decline session.');
     }
   };
 
@@ -382,61 +470,23 @@ const PsychologistDashboard = () => {
       {/* Compact Profile Section */}
       <CompactProfile userType="psychologist" />
       
-      {/* Session Rate Management */}
-      <Paper sx={{ p: 3, mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Session Rate Management
-            </Typography>
-            <Typography variant="body1">
-              Current Rate: KES {sessionRate.toLocaleString()} per session
-            </Typography>
-          </Box>
-          <Button 
-            variant="contained" 
-            onClick={() => {
-              setNewRate(sessionRate.toString());
-              setRateDialogOpen(true);
-            }}
-            sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
-          >
-            Update Rate
-          </Button>
-        </Box>
-      </Paper>
-      
+      {/* Tab Navigation */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} aria-label="dashboard tabs">
+          <Tab label="Sessions Overview" />
+          <Tab label="Rate Management" />
+          <Tab label="Session History" />
+          <Tab label="Earnings" />
+        </Tabs>
+      </Box>
+
+      {/* Tab Content */}
+      {activeTab === 0 && (
+      <>
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>
       ) : (
         <Grid container spacing={3}>
-          {/* Session Rate Management */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Session Rate Management
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Typography variant="body1">
-                  Current Rate: <strong>KES {user?.sessionRate || 0}</strong> per session
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  size="small"
-                  onClick={() => {
-                    setNewRate(user?.sessionRate || 0);
-                    setRateDialogOpen(true);
-                  }}
-                >
-                  Update Rate
-                </Button>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Set your session rate. Clients will be prompted to pay this amount after session approval.
-              </Typography>
-            </Paper>
-          </Grid>
-
           {/* Pending Approval */}
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 3, border: sessions.filter(s => s.status === 'Pending Approval').length > 0 ? '2px solid #ff9800' : 'none' }}>
@@ -469,7 +519,7 @@ const PsychologistDashboard = () => {
                         }}
                       >
                         <Box sx={{ flexGrow: 1, mr: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
                             <Typography variant="subtitle2" component="div" sx={{ fontWeight: 'bold' }}>
                               {session.sessionType} Session
                             </Typography>
@@ -479,6 +529,7 @@ const PsychologistDashboard = () => {
                               color={paymentInfo.color}
                               size="small"
                             />
+                            <AdminCreatedIndicator session={session} />
                           </Box>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                             Client: {session.client?.name || 'Unknown'}
@@ -490,7 +541,7 @@ const PsychologistDashboard = () => {
                             Rate: KES {sessionRate}
                           </Typography>
                         </Box>
-                        <Box sx={{ flexShrink: 0 }}>
+                        <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
                           <Button 
                             variant="contained" 
                             color="success" 
@@ -499,6 +550,15 @@ const PsychologistDashboard = () => {
                             sx={{ minWidth: 100 }}
                           >
                             Approve
+                          </Button>
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            size="small"
+                            onClick={() => handleOpenDeclineDialog(session)}
+                            sx={{ minWidth: 100 }}
+                          >
+                            Decline
                           </Button>
                         </Box>
                       </ListItem>
@@ -846,6 +906,18 @@ const PsychologistDashboard = () => {
                               Join Video Call
                             </Button>
                           )}
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<ChatIcon />}
+                            onClick={() => {
+                              const clientId = session.client?._id || session.client;
+                              navigate(`/chat/${clientId}`);
+                            }}
+                          >
+                            Message Client
+                          </Button>
                           <Button 
                             size="small" 
                             variant="outlined"
@@ -1138,10 +1210,37 @@ const PsychologistDashboard = () => {
           </Grid>
         </Grid>
       )}
+      </>
+      )}
+
+      {/* Rate Management Tab */}
+      {activeTab === 1 && (
+        <SessionRateManager />
+      )}
+
+      {/* Session History Tab */}
+      {activeTab === 2 && (
+        <TherapistSessionHistory />
+      )}
+
+      {/* Earnings Tab */}
+      {activeTab === 3 && (
+        <EarningsDashboard />
+      )}
 
       {/* Session History */}
       <Box sx={{ mt: 4 }}>
         <SessionHistory userRole="psychologist" maxItems={10} showPagination={true} />
+      </Box>
+
+      {/* Advanced Session History with Filtering */}
+      <Box sx={{ mt: 4 }}>
+        <TherapistSessionHistory />
+      </Box>
+
+      {/* Earnings Dashboard */}
+      <Box sx={{ mt: 4 }}>
+        <EarningsDashboard />
       </Box>
 
       {/* Add/Edit Link Dialog */}
@@ -1200,6 +1299,33 @@ const PsychologistDashboard = () => {
         <DialogActions>
           <Button onClick={() => setRateDialogOpen(false)}>Cancel</Button>
           <Button onClick={updateSessionRate} variant="contained">Update Rate</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Decline Session Dialog */}
+      <Dialog open={declineDialogOpen} onClose={handleCloseDeclineDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Decline Booking Request</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Please provide a reason for declining this booking request. The client will be notified.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Reason for declining"
+            type="text"
+            fullWidth
+            multiline
+            rows={3}
+            variant="outlined"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            placeholder="e.g., Not available at this time, Schedule conflict, etc."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeclineDialog}>Cancel</Button>
+          <Button onClick={handleDeclineSession} variant="contained" color="error">Decline Booking</Button>
         </DialogActions>
       </Dialog>
     </Container>

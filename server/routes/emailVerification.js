@@ -11,24 +11,40 @@ router.post('/verify', async (req, res) => {
   try {
     const { token } = req.body;
 
-    if (!token) {
+    // Validate token presence
+    if (!token || typeof token !== 'string') {
       return res.status(400).json({
         success: false,
+        code: 'MISSING_TOKEN',
         message: 'Verification token is required'
       });
     }
 
-    const result = await emailVerificationService.verifyEmailToken(token);
+    // Relaxed token validation - just check minimum length
+    // Tokens can be hex, base64, or other formats depending on generation method
+    const trimmedToken = token.trim();
+    if (trimmedToken.length < 10) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_TOKEN_FORMAT',
+        message: 'Invalid verification token format'
+      });
+    }
+
+    const result = await emailVerificationService.verifyEmailToken(trimmedToken);
 
     if (result.success) {
       res.status(200).json(result);
     } else {
-      res.status(400).json(result);
+      // Use appropriate status codes based on error type
+      const statusCode = result.code === 'ALREADY_VERIFIED' ? 200 : 400;
+      res.status(statusCode).json(result);
     }
   } catch (error) {
-    console.error('Email verification error:', error);
+    console.error('Email verification error:', error.message);
     res.status(500).json({
       success: false,
+      code: 'SERVER_ERROR',
       message: 'Server error during email verification'
     });
   }
@@ -76,8 +92,8 @@ router.post('/resend', async (req, res) => {
 // @access  Private
 router.get('/status', auth, async (req, res) => {
   try {
-    // Use Mongoose User model
-    const user = await User.findById(req.user.id, 'isEmailVerified role');
+    // Use Mongoose User model - use correct field name 'isVerified'
+    const user = await User.findById(req.user.id).select('isVerified role status');
 
     if (!user) {
       return res.status(404).json({
@@ -89,9 +105,10 @@ router.get('/status', auth, async (req, res) => {
     res.json({
       success: true,
       verification: {
-        isVerified: user.isEmailVerified,
+        isVerified: user.isVerified,
         role: user.role,
-        canAccessDashboard: user.isEmailVerified || user.role === 'admin' || user.role === 'psychologist'
+        status: user.status,
+        canAccessDashboard: user.isVerified || user.role === 'admin' || user.role === 'psychologist'
       }
     });
   } catch (error) {

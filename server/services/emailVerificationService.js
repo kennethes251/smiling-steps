@@ -1,13 +1,59 @@
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const User = require('../models/User');
+const tokenGenerationService = require('./tokenGenerationService');
+
+// Use production email service for reliable delivery
+let productionEmailService;
+try {
+  productionEmailService = require('./productionEmailService');
+} catch (error) {
+  console.warn('⚠️ Production email service not available, using fallback');
+  productionEmailService = null;
+}
+
+// Import error monitoring service
+let registrationErrorMonitoring;
+try {
+  const { registrationErrorMonitoringService, ERROR_CATEGORIES, ERROR_SEVERITY } = require('./registrationErrorMonitoringService');
+  registrationErrorMonitoring = { service: registrationErrorMonitoringService, ERROR_CATEGORIES, ERROR_SEVERITY };
+} catch (error) {
+  console.warn('⚠️ Registration error monitoring service not available');
+  registrationErrorMonitoring = null;
+}
+
+// Import performance monitoring service
+let registrationPerformance;
+try {
+  const { registrationPerformanceService, REGISTRATION_STEPS, USER_TYPES } = require('./registrationPerformanceService');
+  registrationPerformance = { service: registrationPerformanceService, REGISTRATION_STEPS, USER_TYPES };
+} catch (error) {
+  console.warn('⚠️ Registration performance service not available');
+  registrationPerformance = null;
+}
 
 class EmailVerificationService {
   constructor() {
-    this.transporter = this.createTransporter();
+    this.useProductionService = !!productionEmailService;
   }
 
-  createTransporter() {
+  /**
+   * Get the email transporter (for backward compatibility)
+   * @returns {Object} Email transporter or production service
+   */
+  get transporter() {
+    if (this.useProductionService) {
+      return {
+        sendMail: async (mailOptions) => {
+          return productionEmailService.sendEmail(mailOptions);
+        }
+      };
+    }
+    return this._createFallbackTransporter();
+  }
+
+  _createFallbackTransporter() {
+    const nodemailer = require('nodemailer');
+    
     // Check if we have custom email hosting configured
     if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD && 
         process.env.EMAIL_PASSWORD !== 'your-email-password') {
@@ -15,18 +61,18 @@ class EmailVerificationService {
       return nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
         port: process.env.EMAIL_PORT || 587,
-        secure: false, // true for 465, false for other ports
+        secure: false,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASSWORD
         },
         tls: {
-          rejectUnauthorized: false // Allow self-signed certificates
+          rejectUnauthorized: false
         }
       });
     }
 
-    // For development/testing, use a mock transporter that just logs emails
+    // For development/testing, use a mock transporter
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD || 
         process.env.EMAIL_USER === 'your-email@gmail.com' || 
         process.env.EMAIL_PASSWORD === 'your-email-password') {
@@ -36,10 +82,8 @@ class EmailVerificationService {
           console.log('📧 MOCK EMAIL SENT:');
           console.log('  To:', mailOptions.to);
           console.log('  Subject:', mailOptions.subject);
-          console.log('  HTML:', mailOptions.html.substring(0, 200) + '...');
           
-          // Extract verification URL from HTML
-          const urlMatch = mailOptions.html.match(/href="([^"]*verify-email[^"]*)"/);
+          const urlMatch = mailOptions.html?.match(/href="([^"]*verify-email[^"]*)"/);
           if (urlMatch) {
             console.log('  🔗 Verification URL:', urlMatch[1]);
           }
@@ -49,63 +93,43 @@ class EmailVerificationService {
       };
     }
 
-    // Configure email transporter based on environment
-    if (process.env.NODE_ENV === 'production') {
-      // Production: Use SendGrid or AWS SES
-      return nodemailer.createTransport({
-        service: 'SendGrid',
-        auth: {
-          user: process.env.SENDGRID_USERNAME,
-          pass: process.env.SENDGRID_PASSWORD
-        }
-      });
-    } else {
-      // Development: Use Gmail or test account
-      return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
-    }
-  }
-
-  /**
-   * Generate a secure verification token
-   * @returns {string} Plain text token (to be sent in email)
-   */
-  generateVerificationToken() {
-    return crypto.randomBytes(32).toString('hex');
-  }
-
-  /**
-   * Hash a token for secure storage
-   * @param {string} token - Plain text token
-   * @returns {string} Hashed token
-   */
-  hashToken(token) {
-    return crypto.createHash('sha256').update(token).digest('hex');
+    // Default: Use Gmail
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
   }
 
   /**
    * Generate and store verification token for user
+   * Uses the dedicated TokenGenerationService for secure token generation
    * @param {string} userId - User ID
    * @returns {Promise<string>} Plain text token
    */
   async createVerificationToken(userId) {
-    const token = this.generateVerificationToken();
-    const hashedToken = this.hashToken(token);
-    
-    // Set token expiration to 24 hours from now
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await User.findByIdAndUpdate(userId, {
-      verificationToken: hashedToken,
-      verificationTokenExpires: expiresAt
-    });
-
-    return token;
+    try {
+      const result = await tokenGenerationService.createVerificationToken(userId);
+      return result.token;
+    } catch (error) {
+      console.error('❌ Failed to create verification token:', error);
+      
+      // Track error in monitoring service
+      if (registrationErrorMonitoring) {
+        registrationErrorMonitoring.service.trackError({
+          category: registrationErrorMonitoring.ERROR_CATEGORIES.TOKEN_GENERATION,
+          code: 'TOKEN_GENERATION_FAILED',
+          message: error.message,
+          severity: registrationErrorMonitoring.ERROR_SEVERITY.HIGH,
+          context: { userId },
+          originalError: error
+        });
+      }
+      
+      throw error;
+    }
   }
 
   /**
@@ -130,59 +154,156 @@ class EmailVerificationService {
     try {
       const result = await this.transporter.sendMail(mailOptions);
       console.log('Verification email sent successfully:', result.messageId);
+      
+      // Track successful email sending
+      if (registrationErrorMonitoring) {
+        registrationErrorMonitoring.service.trackEmailSuccess();
+        registrationErrorMonitoring.service.trackAttempt('email_verification_send', true, {
+          email: user.email,
+          messageId: result.messageId
+        });
+      }
+      
+      // Track performance metric for email sent
+      if (registrationPerformance) {
+        const userType = user.role === 'psychologist' || user.role === 'therapist' 
+          ? registrationPerformance.USER_TYPES.THERAPIST 
+          : registrationPerformance.USER_TYPES.CLIENT;
+        registrationPerformance.service.trackEmailSent(user._id.toString(), userType);
+      }
+      
       return result;
     } catch (error) {
       console.error('Failed to send verification email:', error);
+      
+      // Track error in monitoring service
+      if (registrationErrorMonitoring) {
+        registrationErrorMonitoring.service.trackError({
+          category: registrationErrorMonitoring.ERROR_CATEGORIES.EMAIL_SENDING,
+          code: 'EMAIL_SEND_FAILED',
+          message: error.message,
+          severity: registrationErrorMonitoring.ERROR_SEVERITY.HIGH,
+          context: { email: user.email },
+          originalError: error
+        });
+      }
+      
       throw new Error('Failed to send verification email');
     }
   }
 
   /**
    * Verify email token and update user status
+   * Uses the dedicated TokenGenerationService for secure token validation
    * @param {string} token - Plain text token from email
    * @returns {Promise<Object>} Verification result
    */
   async verifyEmailToken(token) {
-    const hashedToken = this.hashToken(token);
-    
-    const user = await User.findOne({
-      verificationToken: hashedToken,
-      verificationTokenExpires: { $gt: Date.now() }
-    });
+    try {
+      // Validate token using the token generation service
+      const validation = await tokenGenerationService.validateToken(token);
+      
+      if (!validation.valid) {
+        if (validation.reason === 'TOKEN_EXPIRED') {
+          return {
+            success: false,
+            code: 'TOKEN_EXPIRED',
+            message: 'Verification link has expired. Please request a new one.'
+          };
+        }
+        
+        return {
+          success: false,
+          code: 'INVALID_TOKEN',
+          message: 'Invalid or expired verification token'
+        };
+      }
 
-    if (!user) {
+      const user = validation.user;
+
+      // Check if already verified (check both fields for compatibility)
+      if (user.isVerified || user.isEmailVerified) {
+        // Clear the token since it's no longer needed
+        await tokenGenerationService.clearVerificationToken(user._id);
+
+        return {
+          success: true,
+          code: 'ALREADY_VERIFIED',
+          message: 'Email is already verified',
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isVerified: true,
+            accountStatus: user.accountStatus
+          }
+        };
+      }
+
+      // Update user verification status
+      // Set BOTH fields to ensure compatibility (login checks isVerified)
+      user.isVerified = true;
+      user.isEmailVerified = true;
+      
+      // Update account status based on role
+      if (user.role === 'client') {
+        user.accountStatus = 'email_verified';
+      } else if (user.role === 'therapist') {
+        user.accountStatus = 'email_verified'; // Will need credential submission next
+      }
+
+      await user.save();
+
+      // Clear the verification token after successful verification
+      await tokenGenerationService.clearVerificationToken(user._id);
+
+      // Track performance metric for email verified
+      if (registrationPerformance) {
+        const userType = user.role === 'psychologist' || user.role === 'therapist' 
+          ? registrationPerformance.USER_TYPES.THERAPIST 
+          : registrationPerformance.USER_TYPES.CLIENT;
+        registrationPerformance.service.trackEmailVerified(
+          user._id.toString(), 
+          userType, 
+          user.createdAt
+        );
+      }
+
+      return {
+        success: true,
+        code: 'VERIFIED',
+        message: 'Email verified successfully',
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isVerified: user.isEmailVerified,
+          accountStatus: user.accountStatus
+        }
+      };
+    } catch (error) {
+      console.error('❌ Email verification error:', error);
+      
+      // Track error in monitoring service
+      if (registrationErrorMonitoring) {
+        registrationErrorMonitoring.service.trackError({
+          category: registrationErrorMonitoring.ERROR_CATEGORIES.EMAIL_VERIFICATION,
+          code: 'VERIFICATION_ERROR',
+          message: error.message,
+          severity: registrationErrorMonitoring.ERROR_SEVERITY.MEDIUM,
+          context: { tokenProvided: !!token },
+          originalError: error
+        });
+      }
+      
       return {
         success: false,
-        message: 'Invalid or expired verification token'
+        code: 'VERIFICATION_ERROR',
+        message: 'An error occurred during verification'
       };
     }
-
-    // Update user verification status
-    user.isEmailVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
-    
-    // Update account status based on role
-    if (user.role === 'client') {
-      user.accountStatus = 'email_verified';
-    } else if (user.role === 'therapist') {
-      user.accountStatus = 'email_verified'; // Will need credential submission next
-    }
-
-    await user.save();
-
-    return {
-      success: true,
-      message: 'Email verified successfully',
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        isVerified: user.isEmailVerified,
-        accountStatus: user.accountStatus
-      }
-    };
   }
 
   /**
@@ -212,22 +333,10 @@ class EmailVerificationService {
 
   /**
    * Clean up expired verification tokens
+   * Uses the dedicated TokenGenerationService for cleanup
    */
   async cleanupExpiredTokens() {
-    try {
-      const result = await User.updateMany(
-        { verificationTokenExpires: { $lt: Date.now() } },
-        { 
-          $unset: { 
-            verificationToken: 1, 
-            verificationTokenExpires: 1 
-          } 
-        }
-      );
-      console.log(`Cleaned up ${result.modifiedCount} expired verification tokens`);
-    } catch (error) {
-      console.error('Error cleaning up expired tokens:', error);
-    }
+    return await tokenGenerationService.cleanupExpiredTokens();
   }
 
   /**

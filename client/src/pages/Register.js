@@ -90,7 +90,7 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting registration with:', { 
+      console.log('Attempting client registration with:', { 
         name: formData.name,
         email: formData.email,
         role: formData.role
@@ -102,15 +102,26 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        skipVerification: false // Enable email verification
+        skipVerification: false // Enable email verification for security
       });
       
-      // For email verification flow, redirect to verification page
+      console.log('Registration result:', result);
+      
+      // Always redirect to email verification page for new registrations
+      // This ensures users verify their email before accessing the platform
       if (result.requiresVerification) {
-        navigate('/verify-email');
+        // Store email in sessionStorage for verification page
+        sessionStorage.setItem('pendingVerificationEmail', formData.email);
+        navigate('/verify-email', { 
+          state: { 
+            email: formData.email,
+            message: 'Registration successful! Please check your email to verify your account.'
+          }
+        });
       } else {
-        // For streamlined registration, user should be automatically logged in
-        console.log('Registration successful:', result);
+        // Fallback for streamlined registration (shouldn't happen for client registration)
+        console.log('Registration successful - user logged in:', result);
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -127,6 +138,7 @@ const Register = () => {
       }
       
       setSubmitError(errorMessage);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -167,8 +179,18 @@ const Register = () => {
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
             Begin your healing journey with compassionate, professional support rooted in respect, empowerment, and hope.
           </Typography>
-          <Typography variant="body2" color="primary.main" textAlign="center" sx={{ fontWeight: 500 }}>
-            Create your account to get started
+          <Typography variant="body2" color="primary.main" textAlign="center" sx={{ fontWeight: 500, mb: 1 }}>
+            Create your client account to get started
+          </Typography>
+          <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ 
+            display: 'block',
+            fontStyle: 'italic',
+            backgroundColor: 'rgba(102, 51, 153, 0.05)',
+            padding: 1,
+            borderRadius: 1,
+            border: '1px solid rgba(102, 51, 153, 0.1)'
+          }}>
+            📧 You'll need to verify your email address before accessing your account
           </Typography>
         </Box>
         
@@ -210,7 +232,7 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 error={!!errors.email}
-                helperText={errors.email}
+                helperText={errors.email || 'We\'ll send a verification link to this email'}
                 disabled={isLoading}
               />
             </Grid>
@@ -246,7 +268,7 @@ const Register = () => {
             {isLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              'Create Account'
+              'Create Client Account'
             )}
           </Button>
           

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -20,12 +19,11 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LockIcon from '@mui/icons-material/Lock';
-import PersonIcon from '@mui/icons-material/Person';
 import Logo from '../components/Logo';
-import { API_ENDPOINTS } from '../config/api';
+import TransitionCTA from '../components/marketing/TransitionCTA';
 
 // Import local images with fallbacks
-let heroImage1, heroImage2, heroImage3, therapistImage1, therapistImage2, therapistImage3, howItWorksImg;
+let heroImage1, heroImage2, heroImage3, howItWorksImg;
 
 try {
   heroImage1 = require('../assets/hero-image-1.jpg');
@@ -43,24 +41,6 @@ try {
   heroImage3 = require('../assets/hero-image-3.jpg');
 } catch (e) {
   heroImage3 = 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=1964&q=80';
-}
-
-try {
-  therapistImage1 = require('../assets/therapist-1.jpg');
-} catch (e) {
-  therapistImage1 = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=800&q=80';
-}
-
-try {
-  therapistImage2 = require('../assets/therapist-2.jpg');
-} catch (e) {
-  therapistImage2 = 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=800&q=80';
-}
-
-try {
-  therapistImage3 = require('../assets/therapist-3.jpg');
-} catch (e) {
-  therapistImage3 = 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=800&q=80';
 }
 
 try {
@@ -117,9 +97,6 @@ const heroImages = [
   }
 ];
 
-const therapist1 = therapistImage1;
-const therapist2 = therapistImage2;
-const therapist3 = therapistImage3;
 const howItWorksImage = howItWorksImg;
 
 const benefits = [
@@ -182,91 +159,6 @@ const FeatureCard = ({ icon, title, description }) => (
   </Box>
 );
 
-const TherapistCard = ({ name, specialization, image, isCenter = false }) => (
-  <Box sx={{
-    textAlign: 'center',
-    px: 2,
-    transform: isCenter ? 'translateY(0)' : 'translateY(-20px)',
-    transition: 'transform 0.3s ease'
-  }}>
-    {image ? (
-      <Box
-        component="img"
-        src={image.startsWith('http') ? image : `${API_ENDPOINTS.BASE_URL}${image}`}
-        alt={name}
-        sx={{
-          width: isCenter ? { xs: 180, sm: 200, md: 240 } : { xs: 140, sm: 160, md: 180 },
-          height: isCenter ? { xs: 180, sm: 200, md: 240 } : { xs: 140, sm: 160, md: 180 },
-          borderRadius: '50%',
-          objectFit: 'cover',
-          mb: 3,
-          border: '4px solid',
-          borderColor: 'primary.main',
-          boxShadow: isCenter
-            ? '0 12px 40px rgba(102, 51, 153, 0.3)'
-            : '0 8px 24px rgba(102, 51, 153, 0.2)',
-          mx: 'auto',
-          display: 'block',
-          transition: 'all 0.3s ease'
-        }}
-      />
-    ) : (
-      <Box
-        sx={{
-          width: isCenter ? { xs: 180, sm: 200, md: 240 } : { xs: 140, sm: 160, md: 180 },
-          height: isCenter ? { xs: 180, sm: 200, md: 240 } : { xs: 140, sm: 160, md: 180 },
-          borderRadius: '50%',
-          mb: 3,
-          border: '4px solid',
-          borderColor: 'primary.main',
-          boxShadow: isCenter
-            ? '0 12px 40px rgba(102, 51, 153, 0.3)'
-            : '0 8px 24px rgba(102, 51, 153, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'primary.main',
-          color: 'white',
-          mx: 'auto',
-          transition: 'all 0.3s ease'
-        }}
-      >
-        <PersonIcon sx={{
-          fontSize: isCenter
-            ? { xs: 70, sm: 80, md: 100 }
-            : { xs: 50, sm: 60, md: 70 }
-        }} />
-      </Box>
-    )}
-    <Typography
-      variant={isCenter ? "h4" : "h5"}
-      gutterBottom
-      sx={{
-        fontWeight: 600,
-        mb: 1,
-        color: 'text.primary',
-        fontSize: isCenter
-          ? { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
-          : { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }
-      }}
-    >
-      {name}
-    </Typography>
-    <Typography
-      variant="body1"
-      color="primary.main"
-      sx={{
-        fontWeight: 500,
-        fontSize: isCenter
-          ? { xs: '1rem', sm: '1.1rem', md: '1.2rem' }
-          : { xs: '0.9rem', sm: '1rem', md: '1.1rem' }
-      }}
-    >
-      {specialization}
-    </Typography>
-  </Box>
-);
-
 const LandingPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -274,59 +166,14 @@ const LandingPage = () => {
   const [inView, setInView] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [featuredTherapists, setFeaturedTherapists] = useState([]);
-  const [apiTestResult, setApiTestResult] = useState('');
+  // Removed featuredTherapists and apiTestResult state as per requirements
 
   useEffect(() => {
     setInView(true);
-    fetchFeaturedTherapists();
+    // Removed fetchFeaturedTherapists call as per requirements
   }, []);
 
-  const fetchFeaturedTherapists = async () => {
-    try {
-      const response = await axios.get(API_ENDPOINTS.PSYCHOLOGISTS);
-      // Get first 3 therapists for featured section
-      const therapists = response.data.slice(0, 3).map(therapist => ({
-        name: therapist.name.startsWith('Dr.') ? therapist.name : `Dr. ${therapist.name}`,
-        specialization: therapist.specializations?.[0] || 'Licensed Psychologist',
-        image: therapist.profilePicture
-      }));
-      setFeaturedTherapists(therapists);
-    } catch (error) {
-      console.error('Error fetching therapists:', error);
-      // Fallback to default therapists if API fails
-      setFeaturedTherapists([
-        { name: 'Dr. Sarah Johnson', specialization: 'Clinical Psychologist', image: null },
-        { name: 'Dr. Michael Chen', specialization: 'Marriage & Family Therapist', image: null },
-        { name: 'Dr. Emily Rodriguez', specialization: 'Cognitive Behavioral Therapist', image: null }
-      ]);
-    }
-  };
-
-  const testApiConnection = async () => {
-    setApiTestResult('Testing...');
-    try {
-      // Test 1: Backend health
-      const healthResponse = await axios.get('https://smiling-steps.onrender.com/api/test');
-      
-      // Test 2: Registration endpoint with guaranteed unique email
-      try {
-        const uniqueEmail = 'test' + Date.now() + '@example.com';
-        const regResponse = await axios.post('https://smiling-steps.onrender.com/api/users/register', {
-          name: 'Test User',
-          email: uniqueEmail,
-          password: 'test123',
-          role: 'client'
-        });
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ✅ Registration: Works | User created: ${uniqueEmail}`);
-      } catch (regError) {
-        const errorDetails = regError.response?.data?.message || regError.response?.data?.errors?.[0] || regError.message;
-        setApiTestResult(`✅ Backend: ${healthResponse.data.message} | ❌ Registration: ${regError.response?.status} - ${errorDetails}`);
-      }
-    } catch (error) {
-      setApiTestResult(`❌ Backend Error: ${error.message}`);
-    }
-  };
+  // Removed fetchFeaturedTherapists and testApiConnection functions as per requirements
 
   // Slideshow effect - change image every 8 seconds
   useEffect(() => {
@@ -520,22 +367,6 @@ const LandingPage = () => {
                   >
                     Learn More
                   </Button>
-                  
-                  {/* Temporary API Test Button */}
-                  <Button
-                    onClick={testApiConnection}
-                    variant="text"
-                    size="small"
-                    sx={{ mt: 2, display: 'block', fontSize: '0.9rem' }}
-                  >
-                    🧪 Test Registration Direct
-                  </Button>
-                  
-                  {apiTestResult && (
-                    <Box sx={{ mt: 1, p: 1, bgcolor: 'rgba(0,0,0,0.1)', borderRadius: 1, fontSize: '0.8rem' }}>
-                      {apiTestResult}
-                    </Box>
-                  )}
                 </Box>
               </motion.div>
             </Grid>
@@ -851,57 +682,7 @@ const LandingPage = () => {
         </Container>
       </Box>
 
-      {/* Features Section */}
-      <Box sx={{ py: 10, bgcolor: 'background.default' }}>
-        <Container maxWidth="lg">
-          <Box textAlign="center" mb={8}>
-            <Typography
-              variant="h3"
-              component="h2"
-              gutterBottom
-              sx={{
-                fontWeight: 700,
-                mb: 2,
-                color: 'text.primary',
-              }}
-            >
-              Why Choose Our Platform
-            </Typography>
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              maxWidth="700px"
-              mx="auto"
-            >
-              We provide professional, convenient, and confidential online therapy services
-            </Typography>
-          </Box>
-
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
-              <FeatureCard
-                icon={<PsychologyIcon color="primary" sx={{ fontSize: 40 }} />}
-                title="Licensed Therapists"
-                description="Connect with experienced, licensed professionals who specialize in various areas of mental health."
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FeatureCard
-                icon={<ScheduleIcon color="primary" sx={{ fontSize: 40 }} />}
-                title="Flexible Scheduling"
-                description="Book sessions at your convenience with our easy-to-use scheduling system."
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FeatureCard
-                icon={<LockIcon color="primary" sx={{ fontSize: 40 }} />}
-                title="Secure & Private"
-                description="Your privacy is our priority with HIPAA-compliant video sessions and secure messaging."
-              />
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+      {/* Features Section - Removed detailed platform features as per requirements */}
 
       {/* How It Works */}
       <Box sx={{ py: 10, bgcolor: 'background.paper' }}>
@@ -1029,77 +810,10 @@ const LandingPage = () => {
         </Container>
       </Box>
 
-      {/* Therapists Section */}
-      <Box sx={{ py: 10, bgcolor: 'background.default' }}>
-        <Container maxWidth="lg">
-          <Box textAlign="center" mb={8}>
-            <Typography
-              variant="h3"
-              component="h2"
-              gutterBottom
-              sx={{
-                fontWeight: 700,
-                mb: 2,
-                color: 'text.primary',
-              }}
-            >
-              Meet Our Therapists
-            </Typography>
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              maxWidth="700px"
-              mx="auto"
-            >
-              Our team of licensed professionals is here to support you on your mental health journey
-            </Typography>
-          </Box>
+      {/* Therapists Section - Removed featured therapists grid as per requirements */}
 
-          <Grid container spacing={{ xs: 4, sm: 6, md: 8 }} justifyContent="center" alignItems="flex-end">
-            {featuredTherapists.map((therapist, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Box sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  minHeight: { xs: 320, sm: 360, md: 400 },
-                  alignItems: 'flex-end',
-                  pb: index === 1 ? 0 : 2 // Add padding bottom to side cards
-                }}>
-                  <TherapistCard
-                    name={therapist.name}
-                    specialization={therapist.specialization}
-                    image={therapist.image}
-                    isCenter={index === 1} // Middle card is the center/featured one
-                  />
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-
-          <Box textAlign="center" mt={6}>
-            <Button
-              component={RouterLink}
-              to="/therapists"
-              variant="outlined"
-              size="large"
-              sx={{
-                px: 4,
-                py: 1.5,
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                borderRadius: 2,
-                borderWidth: 2,
-                '&:hover': {
-                  borderWidth: 2,
-                },
-              }}
-            >
-              View All Therapists
-            </Button>
-          </Box>
-        </Container>
-      </Box>
+      {/* Single transition CTA to Learn More Page */}
+      <TransitionCTA />
 
       {/* CTA Section */}
       <Box sx={{ py: 10, bgcolor: 'primary.main', color: 'white' }}>

@@ -454,7 +454,7 @@ const FounderPage = () => {
             </Typography>
 
             <Grid container spacing={4} justifyContent="center">
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -470,12 +470,12 @@ const FounderPage = () => {
                   <EmailIcon sx={{ fontSize: '2.5rem', mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>Email</Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    kennethes251@gmail.com
+                    smilingstep254@gmail.com
                   </Typography>
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -491,12 +491,40 @@ const FounderPage = () => {
                   <PhoneIcon sx={{ fontSize: '2.5rem', mb: 2 }} />
                   <Typography variant="h6" sx={{ mb: 1 }}>Phone</Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    0707439299
+                    0118832083
                   </Typography>
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Paper
+                  component="a"
+                  href="https://wa.me/254118832083"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '15px',
+                    transition: 'all 0.3s ease',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    display: 'block',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' }
+                  }}
+                >
+                  <Box component="span" sx={{ fontSize: '2.5rem', mb: 2, display: 'block' }}>💬</Box>
+                  <Typography variant="h6" sx={{ mb: 1 }}>WhatsApp</Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    Chat with us
+                  </Typography>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
                 <Paper
                   elevation={0}
                   sx={{

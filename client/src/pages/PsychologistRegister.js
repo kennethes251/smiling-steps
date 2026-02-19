@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import { AuthContext } from '../context/AuthContext';
 import {
   Container,
   Box,
@@ -16,16 +15,28 @@ import {
   Select,
   MenuItem,
   OutlinedInput,
-  Paper
+  Paper,
+  CircularProgress,
+  Stepper,
+  Step,
+  StepLabel,
+  Card,
+  CardContent,
+  Divider
 } from '@mui/material';
 import {
   Psychology as PsychologyIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Email as EmailIcon,
+  Security as SecurityIcon,
+  Verified as VerifiedIcon
 } from '@mui/icons-material';
 import Logo from '../components/Logo';
 
 const PsychologistRegister = () => {
+  const { register, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,9 +48,18 @@ const PsychologistRegister = () => {
     bio: ''
   });
 
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const steps = ['Basic Information', 'Professional Details', 'Review & Submit'];
 
   const specializationOptions = [
     'Anxiety Disorders',
@@ -51,7 +71,8 @@ const PsychologistRegister = () => {
     'Grief Counseling',
     'Child Psychology',
     'Adolescent Therapy',
-    'Cognitive Behavioral Therapy',
+    'Cognitive Behavioral Therapy (CBT)',
+    'Dialectical Behavior Therapy (DBT)',
     'Mindfulness-Based Therapy',
     'Family Systems Therapy',
     'Couples Counseling',
@@ -59,7 +80,10 @@ const PsychologistRegister = () => {
     'ADHD',
     'Bipolar Disorder',
     'OCD',
-    'Panic Disorders'
+    'Panic Disorders',
+    'Substance Abuse',
+    'Behavioral Therapy',
+    'Psychodynamic Therapy'
   ];
 
   const handleInputChange = (field, value) => {
@@ -67,35 +91,93 @@ const PsychologistRegister = () => {
       ...prev,
       [field]: value
     }));
-    setError('');
+    
+    // Clear error for the field being edited
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+    setSubmitError('');
+  };
+
+  const validateStep = (step) => {
+    const newErrors = {};
+    
+    if (step === 0) {
+      // Basic Information validation
+      if (!formData.name.trim()) {
+        newErrors.name = 'Name is required';
+      } else if (formData.name.length < 2) {
+        newErrors.name = 'Name must be at least 2 characters';
+      }
+      
+      if (!formData.email) {
+        newErrors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Email is invalid';
+      }
+      
+      if (!formData.password) {
+        newErrors.password = 'Password is required';
+      } else if (formData.password.length < 6) {
+        newErrors.password = 'Password must be at least 6 characters';
+      }
+      
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    } else if (step === 1) {
+      // Professional Details validation
+      if (formData.specializations.length === 0) {
+        newErrors.specializations = 'Please select at least one specialization';
+      }
+      
+      if (!formData.experience.trim()) {
+        newErrors.experience = 'Experience information is required';
+      }
+      
+      if (!formData.education.trim()) {
+        newErrors.education = 'Education information is required';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(activeStep)) {
+      setActiveStep((prevStep) => prevStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevStep) => prevStep - 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
+    setSubmitError('');
+    
+    if (!validateStep(1)) {
       return;
     }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.specializations.length === 0) {
-      setError('Please select at least one specialization');
-      setLoading(false);
-      return;
-    }
-
+    
+    setIsLoading(true);
+    
     try {
-      const response = await axios.post(`${API_ENDPOINTS.USERS}/register`, {
+      console.log('Attempting therapist registration with:', { 
+        name: formData.name,
+        email: formData.email,
+        role: 'psychologist'
+        // Note: Not logging password for security
+      });
+      
+      const result = await register({
         name: formData.name,
         email: formData.email,
         password: formData.password,
@@ -105,93 +187,264 @@ const PsychologistRegister = () => {
           experience: formData.experience,
           education: formData.education,
           bio: formData.bio,
-          approvalStatus: 'pending', // Pending admin approval
-          isActive: false // Not active until approved
-        }
+          approvalStatus: 'pending',
+          isActive: false
+        },
+        skipVerification: false // Enable email verification for security
       });
-
-      if (response.data.success) {
-        setSuccess(true);
+      
+      console.log('Registration result:', result);
+      
+      // Always redirect to email verification page for new registrations
+      if (result.requiresVerification) {
+        // Store email in sessionStorage for verification page
+        sessionStorage.setItem('pendingVerificationEmail', formData.email);
+        navigate('/verify-email', { 
+          state: { 
+            email: formData.email,
+            message: 'Registration successful! Please check your email to verify your account before we can review your application.',
+            userType: 'therapist'
+          }
+        });
+      } else {
+        // Fallback - shouldn't happen for therapist registration
+        console.log('Registration successful - user logged in:', result);
+        navigate('/dashboard');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+    } catch (error) {
+      console.error('Registration error:', error);
+      // Get the specific error message from backend
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+        errorMessage = error.response.data.errors[0];
+      } else if (error.response?.data?.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <Container component="main" maxWidth="sm">
-        <Box
-          sx={{
-            marginTop: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            p: 4,
-            borderRadius: 3,
-            background: 'rgba(255, 255, 255, 0.95)',
-            boxShadow: '0 8px 30px rgba(102, 51, 153, 0.15)',
-          }}
-        >
-          <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: 'success.main' }}>
-            Application Submitted!
-          </Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 3 }}>
-            Thank you for applying to join Smiling Steps as a psychologist.
-          </Typography>
-          <Paper sx={{ p: 3, bgcolor: 'info.light', width: '100%', mb: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              What happens next?
-            </Typography>
-            <Typography variant="body2" paragraph>
-              <strong>Step 1:</strong> Send your credentials to HR
-              <br />
-              Email your CV, professional license, and credentials to:
-              <br />
-              <strong style={{ color: '#663399', fontSize: '1.1em' }}>hr@smilingsteps.com</strong>
-              <br />
-              <em>(This significantly increases your approval chances)</em>
-            </Typography>
-            <Typography variant="body2" paragraph>
-              <strong>Step 2:</strong> Admin team reviews your application
-              <br />
-              We verify your qualifications and credentials
-            </Typography>
-            <Typography variant="body2" paragraph>
-              <strong>Step 3:</strong> Receive approval email
-              <br />
-              You'll get an email with:
-              <br />
-              • Account activation confirmation
-              <br />
-              • Platform policies and terms
-              <br />
-              • Guidelines for working with clients
-            </Typography>
-            <Typography variant="body2" paragraph>
-              <strong>Step 4:</strong> Login and start helping clients
-              <br />
-              Access your dashboard and begin accepting sessions
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 'bold', mt: 2, color: 'primary.main' }}>
-              ⏱️ Review typically takes 1-2 business days
-            </Typography>
-          </Paper>
-          <Button
-            variant="contained"
-            onClick={() => navigate('/')}
-            fullWidth
-          >
-            Return to Home
-          </Button>
-        </Box>
-      </Container>
-    );
-  }
+  const renderStepContent = (step) => {
+    switch (step) {
+      case 0:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                required
+                placeholder="Dr. John Smith"
+                error={!!errors.name}
+                helperText={errors.name}
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email Address"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                required
+                placeholder="john.smith@example.com"
+                error={!!errors.email}
+                helperText={errors.email || 'We\'ll send a verification link to this email'}
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                required
+                placeholder="Minimum 6 characters"
+                error={!!errors.password}
+                helperText={errors.password || 'At least 6 characters'}
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                required
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
+                disabled={isLoading}
+              />
+            </Grid>
+          </Grid>
+        );
+
+      case 1:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <FormControl fullWidth required error={!!errors.specializations}>
+                <InputLabel>Specializations</InputLabel>
+                <Select
+                  multiple
+                  value={formData.specializations}
+                  onChange={(e) => handleInputChange('specializations', e.target.value)}
+                  input={<OutlinedInput label="Specializations" />}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value) => (
+                        <Chip key={value} label={value} size="small" />
+                      ))}
+                    </Box>
+                  )}
+                  disabled={isLoading}
+                >
+                  {specializationOptions.map((spec) => (
+                    <MenuItem key={spec} value={spec}>
+                      {spec}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.specializations && (
+                  <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
+                    {errors.specializations}
+                  </Typography>
+                )}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Years of Experience"
+                value={formData.experience}
+                onChange={(e) => handleInputChange('experience', e.target.value)}
+                placeholder="e.g., 5 years in clinical psychology"
+                required
+                error={!!errors.experience}
+                helperText={errors.experience}
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Education & Qualifications"
+                multiline
+                rows={3}
+                value={formData.education}
+                onChange={(e) => handleInputChange('education', e.target.value)}
+                placeholder="e.g., PhD in Clinical Psychology, University of California; Licensed Clinical Psychologist"
+                required
+                error={!!errors.education}
+                helperText={errors.education}
+                disabled={isLoading}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Professional Bio"
+                multiline
+                rows={4}
+                value={formData.bio}
+                onChange={(e) => handleInputChange('bio', e.target.value)}
+                placeholder="Brief description of your expertise, approach, and what makes you unique as a therapist..."
+                disabled={isLoading}
+              />
+            </Grid>
+          </Grid>
+        );
+
+      case 2:
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Review Your Information
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">Name:</Typography>
+                      <Typography variant="body1">{formData.name}</Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body2" color="text.secondary">Email:</Typography>
+                      <Typography variant="body1">{formData.email}</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary">Specializations:</Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                        {formData.specializations.map((spec) => (
+                          <Chip key={spec} label={spec} size="small" />
+                        ))}
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary">Experience:</Typography>
+                      <Typography variant="body1">{formData.experience}</Typography>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary">Education:</Typography>
+                      <Typography variant="body1">{formData.education}</Typography>
+                    </Grid>
+                    {formData.bio && (
+                      <Grid item xs={12}>
+                        <Typography variant="body2" color="text.secondary">Bio:</Typography>
+                        <Typography variant="body1">{formData.bio}</Typography>
+                      </Grid>
+                    )}
+                  </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  📧 Next Steps After Registration:
+                </Typography>
+                <Typography variant="body2" component="div">
+                  1. <strong>Verify your email</strong> - Check your inbox for a verification link
+                  <br />
+                  2. <strong>Send credentials</strong> - Email your CV, license, and credentials to <strong>hr@smilingsteps.com</strong>
+                  <br />
+                  3. <strong>Admin review</strong> - Our team will review your application (1-2 business days)
+                  <br />
+                  4. <strong>Get approved</strong> - Receive approval email and start helping clients
+                </Typography>
+              </Alert>
+            </Grid>
+          </Grid>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <Container component="main" maxWidth="md">
@@ -208,6 +461,7 @@ const PsychologistRegister = () => {
           boxShadow: '0 8px 30px rgba(102, 51, 153, 0.15)',
         }}
       >
+        {/* Header */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Logo size={60} sx={{ mb: 2 }} />
           <PsychologyIcon sx={{ fontSize: 50, color: 'primary.main', mb: 1 }} />
@@ -222,171 +476,143 @@ const PsychologistRegister = () => {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Join as a Psychologist
+            Join as a Therapist
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Help clients on their healing journey
+            Help clients on their healing journey with professional mental health services
           </Typography>
+          
+          {/* Trust Indicators */}
+          <Box 
+            sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              gap: 2, 
+              flexWrap: 'wrap',
+              mt: 2 
+            }}
+          >
+            <Chip
+              icon={<SecurityIcon fontSize="small" />}
+              label="Secure Registration"
+              size="small"
+              sx={{ 
+                bgcolor: 'rgba(102, 51, 153, 0.08)',
+                color: 'primary.main',
+                fontWeight: 500
+              }}
+            />
+            <Chip
+              icon={<EmailIcon fontSize="small" />}
+              label="Email Verification"
+              size="small"
+              sx={{ 
+                bgcolor: 'rgba(46, 125, 50, 0.08)',
+                color: 'success.main',
+                fontWeight: 500
+              }}
+            />
+            <Chip
+              icon={<VerifiedIcon fontSize="small" />}
+              label="Admin Approval"
+              size="small"
+              sx={{ 
+                bgcolor: 'rgba(255, 152, 0, 0.08)',
+                color: 'warning.main',
+                fontWeight: 500
+              }}
+            />
+          </Box>
         </Box>
 
-        {error && (
+        {/* Stepper */}
+        <Box sx={{ width: '100%', mb: 4 }}>
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Box>
+
+        {/* Error Display */}
+        {submitError && (
           <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
-            {error}
+            {submitError}
           </Alert>
         )}
 
-        <Alert severity="info" sx={{ mb: 3, width: '100%' }}>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Application Review Process:
-          </Typography>
-          <Typography variant="body2" component="div">
-            • Your application will be reviewed by our admin team
-            <br />
-            • <strong>Important:</strong> To increase your chances of approval, please email your CV, professional license, and credentials to <strong>hr@smilingsteps.com</strong>
-            <br />
-            • Upon approval, you will receive an email with our platform policies and terms
-            <br />
-            • Review typically takes 1-2 business days
-          </Typography>
-        </Alert>
+        {/* Important Notice */}
+        {activeStep === 0 && (
+          <Alert severity="info" sx={{ mb: 3, width: '100%' }}>
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Application Review Process:
+            </Typography>
+            <Typography variant="body2" component="div">
+              • Your application will be reviewed by our admin team
+              <br />
+              • <strong>Important:</strong> After registration, email your CV, professional license, and credentials to <strong>hr@smilingsteps.com</strong>
+              <br />
+              • Upon approval, you will receive an email with platform policies and terms
+              <br />
+              • Review typically takes 1-2 business days
+            </Typography>
+          </Alert>
+        )}
 
+        {/* Form Content */}
         <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                required
-                placeholder="Dr. John Smith"
-              />
-            </Grid>
+          {renderStepContent(activeStep)}
 
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Email Address"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                required
-                placeholder="john.smith@example.com"
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                required
-                placeholder="Minimum 6 characters"
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Confirm Password"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                required
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <FormControl fullWidth required>
-                <InputLabel>Specializations</InputLabel>
-                <Select
-                  multiple
-                  value={formData.specializations}
-                  onChange={(e) => handleInputChange('specializations', e.target.value)}
-                  input={<OutlinedInput label="Specializations" />}
-                  renderValue={(selected) => (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip key={value} label={value} size="small" />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {specializationOptions.map((spec) => (
-                    <MenuItem key={spec} value={spec}>
-                      {spec}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Years of Experience"
-                value={formData.experience}
-                onChange={(e) => handleInputChange('experience', e.target.value)}
-                placeholder="e.g., 5 years"
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Education & Qualifications"
-                multiline
-                rows={2}
-                value={formData.education}
-                onChange={(e) => handleInputChange('education', e.target.value)}
-                placeholder="e.g., PhD in Clinical Psychology, University of California"
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Professional Bio"
-                multiline
-                rows={3}
-                value={formData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                placeholder="Brief description of your expertise and approach..."
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                  📧 Important: Send Your Credentials
-                </Typography>
-                <Typography variant="body2">
-                  After submitting this form, please email your CV, professional license, and credentials to <strong>hr@smilingsteps.com</strong> to complete your application and increase approval chances.
-                </Typography>
-              </Alert>
+          {/* Navigation Buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+            <Button
+              disabled={activeStep === 0 || isLoading}
+              onClick={handleBack}
+              sx={{ mr: 1 }}
+            >
+              Back
+            </Button>
+            
+            <Box sx={{ flex: '1 1 auto' }} />
+            
+            {activeStep === steps.length - 1 ? (
               <Button
                 type="submit"
-                fullWidth
                 variant="contained"
-                size="large"
-                disabled={loading}
-                sx={{ mt: 2 }}
+                disabled={isLoading}
+                sx={{ minWidth: 200 }}
               >
-                {loading ? 'Submitting Application...' : 'Submit Application'}
+                {isLoading ? (
+                  <>
+                    <CircularProgress size={20} sx={{ mr: 1 }} />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Application'
+                )}
               </Button>
-            </Grid>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleNext}
+                disabled={isLoading}
+              >
+                Next
+              </Button>
+            )}
+          </Box>
 
-            <Grid item xs={12}>
-              <Typography variant="body2" textAlign="center" color="text.secondary">
-                Already have an account?{' '}
-                <Link to="/login" style={{ color: '#663399', textDecoration: 'none', fontWeight: 'bold' }}>
-                  Login here
-                </Link>
-              </Typography>
-            </Grid>
-          </Grid>
+          {/* Sign In Link */}
+          <Box sx={{ textAlign: 'center', mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="body2" color="text.secondary">
+              Already have an account?{' '}
+              <Link to="/login" style={{ color: '#663399', textDecoration: 'none', fontWeight: 'bold' }}>
+                Sign in here
+              </Link>
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Container>

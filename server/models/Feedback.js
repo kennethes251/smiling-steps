@@ -6,6 +6,7 @@ const FeedbackSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Session',
     required: true,
+    unique: true,  // One feedback per session
   },
   client: {
     type: Schema.Types.ObjectId,
@@ -26,11 +27,14 @@ const FeedbackSchema = new Schema({
   comment: {
     type: String,
     trim: true,
+    maxlength: 1000,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  isAnonymous: {
+    type: Boolean,
+    default: false,
   },
+}, {
+  timestamps: true,
 });
 
 module.exports = mongoose.model('Feedback', FeedbackSchema);

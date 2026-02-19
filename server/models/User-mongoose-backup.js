@@ -131,8 +131,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Please provide an email'],
-    unique: true,
-    index: true, // Add index here instead of separate index() call
+    unique: true, // unique: true already creates an index
     lowercase: true,
     trim: true,
     validate: {

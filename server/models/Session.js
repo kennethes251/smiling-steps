@@ -1,8 +1,17 @@
 const mongoose = require('mongoose');
 const encryption = require('../utils/encryption');
 const { generateMeetingLink } = require('../utils/meetingLinkGenerator');
+const { generateBookingReference } = require('../utils/bookingReferenceGenerator');
 
 const SessionSchema = new mongoose.Schema({
+  // Booking Reference Number (Requirement 1.5)
+  bookingReference: {
+    type: String,
+    unique: true,
+    sparse: true, // Allow null values but enforce uniqueness when present
+    trim: true
+    // Note: unique: true already creates an index, no need for index: true
+  },
   client: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -73,6 +82,18 @@ const SessionSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  // Recording consent fields (Requirement 12.3)
+  recordingConsent: {
+    type: Boolean,
+    default: false,
+  },
+  recordingConsentDate: {
+    type: Date,
+  },
+  recordingConsentBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
   
   // Payment fields
   sessionRate: {
@@ -108,7 +129,7 @@ const SessionSchema = new mongoose.Schema({
   },
   paymentInstructions: {
     type: String,
-    default: 'Send payment to M-Pesa number: 0707439299'
+    default: 'Send payment to M-Pesa number: 0118832083'
   },
   paymentNotifiedAt: {
     type: Date
@@ -199,20 +220,167 @@ const SessionSchema = new mongoose.Schema({
     type: Date
   },
   
+  // Admin booking fields (Requirement 15)
+  createdByAdmin: {
+    type: Boolean,
+    default: false
+  },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  adminBookingReason: {
+    type: String,
+    trim: true
+  },
+  adminPaymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'waived'],
+    default: 'pending'
+  },
+  
+  // Cancellation fields (Requirements 9.3, 9.4)
+  cancellationRequestedAt: {
+    type: Date
+  },
+  cancellationApprovedAt: {
+    type: Date
+  },
+  cancellationReason: {
+    type: String,
+    trim: true
+  },
+  cancellationNotes: {
+    type: String,
+    trim: true
+  },
+  cancelledBy: {
+    type: String,
+    enum: ['client', 'therapist', 'admin', 'system'],
+  },
+  refundStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'processing', 'processed', 'denied', 'failed', 'pending_manual', 'not_applicable'],
+    default: 'not_applicable'
+  },
+  refundAmount: {
+    type: Number,
+    default: 0
+  },
+  refundPercentage: {
+    type: Number,
+    default: 0
+  },
+  refundTransactionId: {
+    type: String,
+    trim: true
+  },
+  refundProcessedAt: {
+    type: Date
+  },
+  refundProcessedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  refundNotes: {
+    type: String,
+    trim: true
+  },
+  
+  // Rescheduling fields (Requirements 9.1, 9.2)
+  rescheduledFrom: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Session'
+  },
+  rescheduledTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Session'
+  },
+  rescheduleRequestedAt: {
+    type: Date
+  },
+  rescheduleApprovedAt: {
+    type: Date
+  },
+  rescheduleRequestedBy: {
+    type: String,
+    enum: ['client', 'therapist', 'admin'],
+  },
+  rescheduleApprovedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rescheduleReason: {
+    type: String,
+    trim: true
+  },
+  rescheduleNotes: {
+    type: String,
+    trim: true
+  },
+  rescheduleStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected', 'auto_approved'],
+    default: 'none'
+  },
+  rescheduleCount: {
+    type: Number,
+    default: 0
+  },
+  originalSessionDate: {
+    type: Date
+  },
+  newRequestedDate: {
+    type: Date
+  },
+  rescheduleRejectedAt: {
+    type: Date
+  },
+  rescheduleRejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rescheduleRejectionReason: {
+    type: String,
+    trim: true
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-// Indexes for performance optimization
+// ============================================
+// INDEXES for performance optimization
+// Requirements: 8.5, 13.4 - Verify 2-second query performance
+// ============================================
+
+// Primary session lookup indexes (Task 22.1)
+SessionSchema.index({ client: 1, sessionDate: -1 }, { name: 'idx_client_date' });
+SessionSchema.index({ psychologist: 1, sessionDate: -1 }, { name: 'idx_psychologist_date' });
+SessionSchema.index({ sessionDate: -1 }, { name: 'idx_session_date_desc' });
+
+// Status-based queries (Task 22.1)
+SessionSchema.index({ status: 1, sessionDate: -1 }, { name: 'idx_status_date' });
+SessionSchema.index({ client: 1, status: 1, sessionDate: -1 }, { name: 'idx_client_status_date' });
+SessionSchema.index({ psychologist: 1, status: 1, sessionDate: -1 }, { name: 'idx_psychologist_status_date' });
+
+// Payment status queries (Task 22.1)
+SessionSchema.index({ paymentStatus: 1, sessionDate: -1 }, { name: 'idx_payment_status_date' });
+SessionSchema.index({ client: 1, paymentStatus: 1 }, { name: 'idx_client_payment_status' });
+SessionSchema.index({ psychologist: 1, paymentStatus: 1 }, { name: 'idx_psychologist_payment_status' });
+
+// Session type queries
+SessionSchema.index({ sessionType: 1, sessionDate: -1 }, { name: 'idx_session_type_date' });
+
 // Compound index for M-Pesa checkout request ID and payment status lookups
 SessionSchema.index({ mpesaCheckoutRequestID: 1, paymentStatus: 1 });
 
-// Compound index for client payment queries
+// Compound index for client payment queries (legacy - kept for backward compatibility)
 SessionSchema.index({ client: 1, paymentStatus: 1, sessionDate: 1 });
 
-// Compound index for psychologist payment queries
+// Compound index for psychologist payment queries (legacy - kept for backward compatibility)
 SessionSchema.index({ psychologist: 1, paymentStatus: 1, sessionDate: 1 });
 
 // Sparse unique index for M-Pesa transaction IDs (only for paid transactions)
@@ -222,8 +390,55 @@ SessionSchema.index({ mpesaTransactionID: 1 }, { unique: true, sparse: true });
 SessionSchema.index({ meetingLink: 1 });
 SessionSchema.index({ videoCallStarted: 1, status: 1 });
 
-// Middleware to encrypt sensitive session data and ensure meeting link before saving
-SessionSchema.pre('save', function(next) {
+// Admin booking index for filtering admin-created sessions
+SessionSchema.index({ createdByAdmin: 1, adminId: 1, createdAt: -1 });
+
+// Cancellation indexes for efficient queries (Requirements 9.3, 9.4)
+SessionSchema.index({ status: 1, cancellationRequestedAt: -1 });
+SessionSchema.index({ refundStatus: 1, cancellationRequestedAt: 1 });
+SessionSchema.index({ cancelledBy: 1, cancellationRequestedAt: -1 });
+
+// Rescheduling indexes for efficient queries (Requirements 9.1, 9.2)
+SessionSchema.index({ rescheduleStatus: 1, rescheduleRequestedAt: -1 });
+SessionSchema.index({ rescheduledFrom: 1 });
+SessionSchema.index({ rescheduledTo: 1 });
+SessionSchema.index({ rescheduleRequestedBy: 1, rescheduleRequestedAt: -1 });
+
+// Reminder system queries (Task 22.1)
+SessionSchema.index({ reminder24HourSent: 1, sessionDate: 1, status: 1 }, { name: 'idx_reminder_24h' });
+SessionSchema.index({ reminder1HourSent: 1, sessionDate: 1, status: 1 }, { name: 'idx_reminder_1h' });
+
+// Created date index for sorting
+SessionSchema.index({ createdAt: -1 }, { name: 'idx_created_desc' });
+
+// Middleware to encrypt sensitive session data, generate booking reference, and ensure meeting link before saving
+SessionSchema.pre('save', async function(next) {
+  // Generate unique booking reference if not present (Requirement 1.5)
+  if (this.isNew && !this.bookingReference) {
+    // Generate reference with collision check
+    let reference;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      reference = generateBookingReference();
+      // Check if reference already exists
+      const existing = await mongoose.model('Session').findOne({ bookingReference: reference });
+      if (!existing) {
+        break;
+      }
+      attempts++;
+      console.log(`⚠️ Booking reference collision: ${reference}, attempt ${attempts}`);
+    }
+    
+    if (attempts >= maxAttempts) {
+      return next(new Error('Unable to generate unique booking reference'));
+    }
+    
+    this.bookingReference = reference;
+    console.log(`📋 Auto-generated booking reference for new session: ${this.bookingReference}`);
+  }
+  
   // Generate meeting link if not present (for video call sessions)
   if (this.isNew && this.isVideoCall !== false && !this.meetingLink) {
     this.meetingLink = generateMeetingLink();
@@ -320,6 +535,15 @@ SessionSchema.virtual('decryptedNotes').get(function() {
   return this.getDecryptedNotes();
 });
 
+// Virtual for scheduledDate (alias for sessionDate for backward compatibility)
+SessionSchema.virtual('scheduledDate').get(function() {
+  return this.sessionDate;
+});
+
+SessionSchema.virtual('scheduledDate').set(function(value) {
+  this.sessionDate = value;
+});
+
 SessionSchema.virtual('decryptedMeetingLink').get(function() {
   return this.getDecryptedMeetingLink();
 });
@@ -335,5 +559,37 @@ SessionSchema.virtual('decryptedSessionProof').get(function() {
 SessionSchema.virtual('decryptedDeclineReason').get(function() {
   return this.getDecryptedDeclineReason();
 });
+
+// Static method to find session by booking reference (Requirement 1.5)
+SessionSchema.statics.findByBookingReference = async function(bookingReference) {
+  if (!bookingReference) {
+    return null;
+  }
+  return this.findOne({ bookingReference: bookingReference.toUpperCase().trim() });
+};
+
+// Static method to search sessions by partial booking reference
+SessionSchema.statics.searchByBookingReference = async function(searchTerm, options = {}) {
+  if (!searchTerm) {
+    return [];
+  }
+  
+  const { limit = 10, populate = true } = options;
+  
+  // Create case-insensitive regex for partial match
+  const regex = new RegExp(searchTerm.replace(/[-]/g, '[-]?'), 'i');
+  
+  let query = this.find({ bookingReference: regex })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+  
+  if (populate) {
+    query = query
+      .populate('client', 'name email')
+      .populate('psychologist', 'name email');
+  }
+  
+  return query.exec();
+};
 
 module.exports = mongoose.model('Session', SessionSchema);

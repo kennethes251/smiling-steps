@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "Auth Stack Guardian",
+  "description": "Monitors authentication-related files (auth routes, services, middleware, validators) and ensures the layered, self-healing architecture is maintained. Validates that routes stay thin, validation runs before business logic, and event-based hooks are properly implemented for success/failure/logging/notifications.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "server/routes/auth*.js",
+      "server/services/auth*.js",
+      "server/middleware/auth*.js",
+      "server/utils/auth*.js",
+      "server/hooks/**/*.js",
+      "server/validators/**/*.js",
+      "server/listeners/**/*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "You are a senior backend architect reviewing changes to the authentication stack.\n\nAnalyze the edited file and ensure it follows the defensive, self-healing authentication architecture:\n\n## Architecture Checklist:\n1. **Thin Routes**: Routes should ONLY call services, no business logic\n2. **Validation Layer**: Validation must run BEFORE any business logic\n3. **Single Auth Service**: All auth logic must live in one service (authService.js)\n4. **Event-Based Hooks**: Check for proper success/failure event emissions\n5. **Separate Listeners**: Verify listeners exist for success, failure, logging, notifications\n6. **Global Error Handling**: Ensure errors bubble up to global error hooks\n7. **Retry-Safe Logic**: Check for idempotency and retry handling on temporary failures\n8. **Observability**: Verify logging hooks and error tracking are in place\n\n## If violations found:\n1. Explain what breaks the architecture\n2. Show the correct pattern with code examples\n3. Suggest refactoring to maintain modularity\n\n## Expected folder structure:\n```\nserver/\n├── routes/auth.js          (thin, only calls services)\n├── validators/authValidator.js\n├── services/authService.js (single source of auth logic)\n├── hooks/\n│   ├── authHooks.js        (event emitter setup)\n│   └── globalErrorHook.js\n├── listeners/\n│   ├── authSuccessListener.js\n│   ├── authFailureListener.js\n│   ├── authLoggingListener.js\n│   └── authNotificationListener.js\n└── middleware/auth.js\n```\n\nProvide specific fixes if the code deviates from this architecture."
+  }
+}

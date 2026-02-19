@@ -20,6 +20,11 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Application logs
+logs/*.log
+logs/*.json
+*.log
+
 # Runtime data
 pids
 *.pid
@@ -98,3 +103,9 @@ Thumbs.dbnode_modules
 
 # Uploaded files
 server/uploads/
+
+# Security and sensitive files
+*.pem
+*.key
+*.crt
+secrets/

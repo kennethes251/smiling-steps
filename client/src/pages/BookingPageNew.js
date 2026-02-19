@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import API_BASE_URL from '../config/api';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -23,7 +24,8 @@ import {
   Divider,
   Rating,
   Fade,
-  Grid
+  Grid,
+  Tooltip
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -33,7 +35,8 @@ import {
   Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   ArrowBack as ArrowBackIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowForwardIcon,
+  EventBusy as EventBusyIcon
 } from '@mui/icons-material';
 
 const BookingPageNew = () => {
@@ -46,6 +49,15 @@ const BookingPageNew = () => {
   const [startDate, setStartDate] = useState(new Date());
   const [error, setError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  
+  // Availability state for task 14.5
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedTime, setSelectedTime] = useState(null);
+  
+  // Dynamic rates state (Requirements 14.3, 14.4)
+  const [currentRates, setCurrentRates] = useState({});
+  const [loadingRates, setLoadingRates] = useState(false);
 
   const steps = [
     'Select Psychologist',
@@ -84,6 +96,46 @@ const BookingPageNew = () => {
   useEffect(() => {
     fetchPsychologists();
   }, []);
+
+  // Fetch current rates when psychologist is selected (Requirements 14.3, 14.4)
+  useEffect(() => {
+    if (selectedPsychologist) {
+      fetchCurrentRates(selectedPsychologist.id);
+    }
+  }, [selectedPsychologist]);
+
+  const fetchCurrentRates = async (psychologistId) => {
+    setLoadingRates(true);
+    setError('');
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/therapist/${psychologistId}/rates`);
+      if (res.data.success) {
+        // Convert rates array to object for easier lookup
+        const ratesObj = {};
+        res.data.rates.forEach(rate => {
+          ratesObj[rate.sessionType] = {
+            amount: rate.amount,
+            duration: rate.duration,
+            isDefault: rate.isDefault || false,
+            effectiveFrom: rate.effectiveFrom
+          };
+        });
+        setCurrentRates(ratesObj);
+        console.log('✅ Current rates fetched:', ratesObj);
+      }
+    } catch (err) {
+      console.error('❌ Error fetching current rates:', err);
+      // Fallback to default rates if API fails
+      setCurrentRates({
+        Individual: { amount: 2000, duration: 60, isDefault: true },
+        Couples: { amount: 3500, duration: 75, isDefault: true },
+        Family: { amount: 5000, duration: 90, isDefault: true },
+        Group: { amount: 5000, duration: 90, isDefault: true }
+      });
+    } finally {
+      setLoadingRates(false);
+    }
+  };
 
   const fetchPsychologists = async () => {
     setLoading(true);
@@ -138,20 +190,19 @@ const BookingPageNew = () => {
       return;
     }
 
-    // Get rate with fallback to default prices
-    const rate = selectedPsychologist?.rates?.[selectedSessionType] || {
-      amount: sessionTypeConfig[selectedSessionType]?.defaultDuration === 60 ? 2000 : 
-              sessionTypeConfig[selectedSessionType]?.defaultDuration === 75 ? 3500 : 
-              sessionTypeConfig[selectedSessionType]?.defaultDuration === 90 && selectedSessionType === 'Group' ? 1500 : 4500,
-      duration: sessionTypeConfig[selectedSessionType]?.defaultDuration || 60
-    };
+    // Get current rate for selected session type (Requirements 14.3, 14.4)
+    const currentRate = currentRates[selectedSessionType];
+    if (!currentRate) {
+      setError('Unable to determine session rate. Please try again.');
+      return;
+    }
     
     const bookingData = {
       psychologistId: selectedPsychologist.id || selectedPsychologist._id,
       sessionType: selectedSessionType,
       sessionDate: startDate,
-      sessionRate: rate.amount,
-      price: rate.amount
+      sessionRate: currentRate.amount, // Use current dynamic rate
+      price: currentRate.amount // Use current dynamic rate
     };
 
     try {
@@ -180,18 +231,65 @@ const BookingPageNew = () => {
   };
 
   const handleNext = () => {
-    if (activeStep === 2 && startDate) {
+    if (activeStep === 2 && startDate && selectedTime) {
       setActiveStep(3);
     }
   };
 
-  const getAvailableTimeSlots = () => {
+  // Fetch available time slots from therapist's availability windows (Task 14.5)
+  const fetchAvailableSlots = useCallback(async (date) => {
+    if (!selectedPsychologist || !selectedSessionType) return;
+    
+    setLoadingSlots(true);
+    try {
+      const therapistId = selectedPsychologist.id || selectedPsychologist._id;
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const response = await axios.get(
+        `${API_BASE_URL}/api/availability-windows/${therapistId}/slots`,
+        { params: { date: dateStr, sessionType: selectedSessionType } }
+      );
+      
+      if (response.data.success) {
+        setAvailableSlots(response.data.data.slots || []);
+      } else {
+        // Fallback to default slots if no availability configured
+        setAvailableSlots(getDefaultTimeSlots());
+      }
+    } catch (err) {
+      console.log('Could not fetch availability, using default slots:', err.message);
+      // Fallback to default slots if API fails
+      setAvailableSlots(getDefaultTimeSlots());
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [selectedPsychologist, selectedSessionType]);
+
+  // Fetch slots when date changes
+  useEffect(() => {
+    if (activeStep === 2 && selectedPsychologist && selectedSessionType) {
+      fetchAvailableSlots(startDate);
+    }
+  }, [activeStep, startDate, selectedPsychologist, selectedSessionType, fetchAvailableSlots]);
+
+  // Default time slots fallback
+  const getDefaultTimeSlots = () => {
     const slots = [];
     for (let hour = 9; hour <= 17; hour++) {
-      slots.push(`${hour}:00`);
-      if (hour < 17) slots.push(`${hour}:30`);
+      slots.push({ time: `${hour.toString().padStart(2, '0')}:00`, available: true });
+      if (hour < 17) slots.push({ time: `${hour.toString().padStart(2, '0')}:30`, available: true });
     }
     return slots;
+  };
+
+  // Legacy function for backward compatibility
+  const getAvailableTimeSlots = () => {
+    // If we have fetched slots, use them
+    if (availableSlots.length > 0) {
+      return availableSlots;
+    }
+    // Otherwise return default slots
+    return getDefaultTimeSlots();
   };
 
   if (bookingSuccess) {
@@ -282,7 +380,7 @@ const BookingPageNew = () => {
         >
           Back
         </Button>
-        {activeStep === 2 && startDate && (
+        {activeStep === 2 && startDate && selectedTime && (
           <Button
             endIcon={<ArrowForwardIcon />}
             onClick={handleNext}
@@ -380,15 +478,27 @@ const BookingPageNew = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Select the type of therapy session with Dr. {selectedPsychologist.name}
             </Typography>
+            
+            {loadingRates && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+                <CircularProgress size={40} />
+                <Typography variant="body2" sx={{ ml: 2 }}>
+                  Loading current rates...
+                </Typography>
+              </Box>
+            )}
+            
+            {!loadingRates && (
             <Grid container spacing={3}>
               {Object.keys(sessionTypeConfig).map((type) => {
                 const config = sessionTypeConfig[type];
-                // Safety check for rates - use default if not available
-                const rate = selectedPsychologist?.rates?.[type] || {
+                // Use current dynamic rates instead of static rates (Requirements 14.3, 14.4)
+                const rate = currentRates[type] || {
                   amount: config.defaultDuration === 60 ? 2000 : 
                           config.defaultDuration === 75 ? 3500 : 
                           config.defaultDuration === 90 && type === 'Group' ? 1500 : 4500,
-                  duration: config.defaultDuration
+                  duration: config.defaultDuration,
+                  isDefault: true
                 };
                 
                 return (
@@ -439,6 +549,7 @@ const BookingPageNew = () => {
                 );
               })}
             </Grid>
+            )}
           </Box>
         </Fade>
       )}
@@ -478,26 +589,59 @@ const BookingPageNew = () => {
                 <Typography variant="h6" gutterBottom>
                   Available Time Slots
                 </Typography>
-                <Grid container spacing={1}>
-                  {getAvailableTimeSlots().map((time) => (
-                    <Grid item xs={6} sm={4} key={time}>
-                      <Button
-                        variant={startDate?.toTimeString().includes(time) ? "contained" : "outlined"}
-                        fullWidth
-                        size="small"
-                        onClick={() => {
-                          const newDate = new Date(startDate);
-                          const [hours, minutes] = time.split(':');
-                          newDate.setHours(parseInt(hours), parseInt(minutes));
-                          setStartDate(newDate);
-                        }}
-                        sx={{ mb: 1 }}
-                      >
-                        {time}
-                      </Button>
-                    </Grid>
-                  ))}
-                </Grid>
+                {loadingSlots ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress size={40} />
+                  </Box>
+                ) : availableSlots.length === 0 ? (
+                  <Alert severity="info" icon={<EventBusyIcon />}>
+                    No available time slots for this date. Please select another date.
+                  </Alert>
+                ) : (
+                  <Grid container spacing={1}>
+                    {getAvailableTimeSlots().map((slot) => {
+                      const timeStr = typeof slot === 'string' ? slot : slot.time;
+                      const isAvailable = typeof slot === 'string' ? true : slot.available !== false;
+                      const isSelected = selectedTime === timeStr;
+                      
+                      return (
+                        <Grid item xs={6} sm={4} key={timeStr}>
+                          <Tooltip 
+                            title={isAvailable ? 'Click to select' : 'This slot is not available'}
+                            arrow
+                          >
+                            <span>
+                              <Button
+                                variant={isSelected ? "contained" : "outlined"}
+                                fullWidth
+                                size="small"
+                                disabled={!isAvailable}
+                                onClick={() => {
+                                  const newDate = new Date(startDate);
+                                  const [hours, minutes] = timeStr.split(':');
+                                  newDate.setHours(parseInt(hours), parseInt(minutes));
+                                  setStartDate(newDate);
+                                  setSelectedTime(timeStr);
+                                }}
+                                sx={{ 
+                                  mb: 1,
+                                  opacity: isAvailable ? 1 : 0.5,
+                                  bgcolor: isSelected ? 'primary.main' : undefined,
+                                  '&.Mui-disabled': {
+                                    bgcolor: 'grey.200',
+                                    color: 'grey.500'
+                                  }
+                                }}
+                              >
+                                {timeStr}
+                              </Button>
+                            </span>
+                          </Tooltip>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                )}
               </Grid>
             </Grid>
           </Paper>
@@ -560,7 +704,7 @@ const BookingPageNew = () => {
                       Duration
                     </Typography>
                     <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                      {selectedPsychologist?.rates?.[selectedSessionType]?.duration || 
+                      {currentRates[selectedSessionType]?.duration || 
                        sessionTypeConfig[selectedSessionType]?.defaultDuration || 60} minutes
                     </Typography>
                   </Box>
@@ -572,12 +716,17 @@ const BookingPageNew = () => {
                       Session Fee:
                     </Typography>
                     <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-                      KSh {(selectedPsychologist?.rates?.[selectedSessionType]?.amount || 
+                      KSh {(currentRates[selectedSessionType]?.amount || 
                             (sessionTypeConfig[selectedSessionType]?.defaultDuration === 60 ? 2000 : 
                              sessionTypeConfig[selectedSessionType]?.defaultDuration === 75 ? 3500 : 
                              sessionTypeConfig[selectedSessionType]?.defaultDuration === 90 && selectedSessionType === 'Group' ? 1500 : 4500)).toLocaleString()}
                     </Typography>
                   </Box>
+                  {currentRates[selectedSessionType]?.isDefault && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      * Using default rate
+                    </Typography>
+                  )}
                 </Card>
               </Grid>
 

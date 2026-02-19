@@ -24,7 +24,12 @@ import {
   Button,
   Switch,
   FormControlLabel,
-  Snackbar
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
 import {
   People as PeopleIcon,
@@ -64,6 +69,7 @@ const AdminDashboard = () => {
   });
   const [actionLoading, setActionLoading] = useState({});
   const [deleteDialog, setDeleteDialog] = useState({ open: false, userId: null, userName: '', userType: '' });
+  const [clarificationDialog, setClarificationDialog] = useState({ open: false, psychologistId: null, psychologistName: '', message: '' });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
@@ -155,6 +161,32 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error('Error toggling psychologist status:', err);
       setError(err.response?.data?.message || 'Failed to update psychologist status');
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+    }
+  };
+
+  const handleRequestClarification = async (psychologistId, message) => {
+    try {
+      setActionLoading({ ...actionLoading, [psychologistId]: true });
+      const token = localStorage.getItem('token');
+      const config = { headers: { 'x-auth-token': token } };
+
+      await axios.post(
+        `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/request-clarification`,
+        { message },
+        config
+      );
+
+      // Refresh data
+      await fetchDashboardData();
+      setActionLoading({ ...actionLoading, [psychologistId]: false });
+      
+      // Show success message
+      setError(null);
+      console.log('Clarification request sent successfully');
+    } catch (err) {
+      console.error('Error requesting clarification:', err);
+      setError(err.response?.data?.message || 'Failed to send clarification request');
       setActionLoading({ ...actionLoading, [psychologistId]: false });
     }
   };
@@ -546,6 +578,20 @@ const AdminDashboard = () => {
                                   >
                                     Reject
                                   </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="warning"
+                                    onClick={() => setClarificationDialog({ 
+                                      open: true, 
+                                      psychologistId: psych.id || psych._id, 
+                                      psychologistName: psych.name,
+                                      message: '' 
+                                    })}
+                                    disabled={actionLoading[psych.id || psych._id]}
+                                  >
+                                    Request Info
+                                  </Button>
                                 </>
                               )}
                               {approvalStatus === 'approved' && (
@@ -860,6 +906,50 @@ const AdminDashboard = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Clarification Request Dialog */}
+      <Dialog
+        open={clarificationDialog.open}
+        onClose={() => setClarificationDialog({ open: false, psychologistId: null, psychologistName: '', message: '' })}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Request Additional Information from {clarificationDialog.psychologistName}
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            multiline
+            rows={6}
+            label="Message"
+            value={clarificationDialog.message}
+            onChange={(e) => setClarificationDialog({ ...clarificationDialog, message: e.target.value })}
+            placeholder="Please specify what additional information or clarification is needed..."
+            variant="outlined"
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setClarificationDialog({ open: false, psychologistId: null, psychologistName: '', message: '' })}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (clarificationDialog.message.trim()) {
+                await handleRequestClarification(clarificationDialog.psychologistId, clarificationDialog.message);
+                setClarificationDialog({ open: false, psychologistId: null, psychologistName: '', message: '' });
+              }
+            }}
+            variant="contained"
+            disabled={!clarificationDialog.message.trim() || actionLoading[clarificationDialog.psychologistId]}
+          >
+            Send Request
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

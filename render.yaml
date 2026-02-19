@@ -3,32 +3,58 @@ services:
     name: smiling-steps-backend
     env: node
     plan: free
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: APP_VERSION
+        value: "3.0"
+      - key: LOG_LEVEL
+        value: info
       - key: MONGODB_URI
-        value: mongodb+srv://KennethEsilo:9213@cluster0.m7v7wpi.mongodb.net/smiling-steps?retryWrites=true&w=majority&appName=Cluster0
+        fromSecret: MONGODB_URI
       - key: JWT_SECRET
         generateValue: true
       - key: EMAIL_USER
-        value: kennethes251@gmail.com
+        fromSecret: EMAIL_USER
       - key: EMAIL_PASSWORD
-        value: gmhp uzew qwpl zepz
+        fromSecret: EMAIL_PASSWORD
       - key: FROM_EMAIL
         value: hr@smilingsteps.com
       - key: FROM_NAME
         value: Smiling Steps
       - key: CLIENT_URL
         value: https://smiling-steps-frontend.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://smiling-steps-frontend.onrender.com
+      - key: MPESA_CONSUMER_KEY
+        fromSecret: MPESA_CONSUMER_KEY
+      - key: MPESA_CONSUMER_SECRET
+        fromSecret: MPESA_CONSUMER_SECRET
+      - key: MPESA_BUSINESS_SHORT_CODE
+        value: "174379"
+      - key: MPESA_PASSKEY
+        fromSecret: MPESA_PASSKEY
+      - key: MPESA_CALLBACK_URL
+        value: https://smiling-steps.onrender.com/api/mpesa/callback
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: ENABLE_FILE_LOGGING
+        value: "true"
+      - key: DB_POOL_SIZE
+        value: "10"
+      - key: DB_MAX_RETRIES
+        value: "5"
 
   - type: web
     name: smiling-steps-frontend
     env: static
     plan: free
-    buildCommand: cd client && npm install && npm run build
+    buildCommand: cd client && npm ci && npm run build
     staticPublishPath: ./client/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://smiling-steps-backend.onrender.com
+        value: https://smiling-steps.onrender.com
+      - key: NODE_ENV
+        value: production

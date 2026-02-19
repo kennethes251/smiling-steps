@@ -2,9 +2,9 @@ import { useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
 import API_BASE_URL from '../../config/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Container, Typography, Button, Grid, Paper, List, ListItem, ListItemText, Divider, CircularProgress, Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField, Rating, Chip, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { Videocam as VideocamIcon, Schedule as ScheduleIcon, Receipt as ReceiptIcon, Download as DownloadIcon } from '@mui/icons-material';
+import { Videocam as VideocamIcon, Schedule as ScheduleIcon, Receipt as ReceiptIcon, Download as DownloadIcon, Chat as ChatIcon } from '@mui/icons-material';
 import QuickActions from '../shared/QuickActions';
 import QuickVideoCall from '../VideoCall/QuickVideoCall';
 import CompactProfile from '../CompactProfile';
@@ -15,6 +15,7 @@ import Logo from '../Logo';
 
 const ClientDashboard = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -242,6 +243,7 @@ const ClientDashboard = () => {
   const downloadReceipt = (session) => {
     // Generate receipt data
     const receiptData = {
+      bookingReference: session.bookingReference || 'N/A',
       sessionType: session.sessionType,
       therapist: session.psychologist?.name || 'Therapist',
       date: new Date(session.sessionDate).toLocaleString(),
@@ -257,6 +259,7 @@ SMILING STEPS THERAPY
 Payment Receipt
 =====================================
 
+Booking Reference: ${receiptData.bookingReference}
 Session Type: ${receiptData.sessionType}
 Therapist: ${receiptData.therapist}
 Session Date: ${receiptData.date}
@@ -270,12 +273,13 @@ Status: ${receiptData.status}
 Thank you for your payment!
     `.trim();
 
-    // Create and download file
+    // Create and download file - use booking reference in filename if available
     const blob = new Blob([receiptText], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `receipt-${session._id || session.id}-${Date.now()}.txt`;
+    const fileRef = session.bookingReference || session._id || session.id;
+    a.download = `receipt-${fileRef}-${Date.now()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -586,6 +590,11 @@ Thank you for your payment!
                           <Typography variant="subtitle2" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {session.sessionType} Session
                           </Typography>
+                          {session.bookingReference && (
+                            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                              Ref: {session.bookingReference}
+                            </Typography>
+                          )}
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                             With: {session.psychologist?.name || 'Therapist'}
                           </Typography>
@@ -649,6 +658,11 @@ Thank you for your payment!
                           <Typography variant="subtitle2" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {session.sessionType} Session
                           </Typography>
+                          {session.bookingReference && (
+                            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                              Ref: {session.bookingReference}
+                            </Typography>
+                          )}
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                             With: {session.psychologist?.name || 'Therapist'}
                           </Typography>
@@ -724,6 +738,11 @@ Thank you for your payment!
                           <Typography variant="subtitle2" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                             {session.sessionType} Session
                           </Typography>
+                          {session.bookingReference && (
+                            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                              Ref: {session.bookingReference}
+                            </Typography>
+                          )}
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                             With: {session.psychologist?.name || 'Therapist'}
                           </Typography>
@@ -801,6 +820,11 @@ Thank you for your payment!
                               }}
                             />
                           </Box>
+                          {session.bookingReference && (
+                            <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                              Ref: {session.bookingReference}
+                            </Typography>
+                          )}
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                             With: {session.psychologist?.name || 'Therapist'}
                           </Typography>
@@ -900,6 +924,11 @@ Thank you for your payment!
                                 />
                               )}
                             </Box>
+                            {session.bookingReference && (
+                              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                                Ref: {session.bookingReference}
+                              </Typography>
+                            )}
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                               With: {session.psychologist?.name || 'Therapist'}
                             </Typography>
@@ -992,6 +1021,19 @@ Thank you for your payment!
                                 Join Call
                               </Button>
                             )}
+                            <Button
+                              variant="outlined"
+                              color="secondary"
+                              size="small"
+                              startIcon={<ChatIcon fontSize="small" />}
+                              onClick={() => {
+                                const psychologistId = session.psychologist?._id || session.psychologist;
+                                navigate(`/chat/${psychologistId}`);
+                              }}
+                              sx={{ minWidth: 100 }}
+                            >
+                              Message
+                            </Button>
                             {session.mpesaTransactionID && (
                               <Button
                                 variant="outlined"
@@ -1130,6 +1172,11 @@ Thank you for your payment!
                                 />
                               )}
                             </Box>
+                            {session.bookingReference && (
+                              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                                Ref: {session.bookingReference}
+                              </Typography>
+                            )}
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                               With: {session.psychologist?.name || 'Therapist'}
                             </Typography>

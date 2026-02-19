@@ -1984,7 +1984,7 @@ const MarketingPage = () => {
                 <EmailIcon sx={{ fontSize: '3rem', mb: 2, color: '#663399' }} />
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>Email</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  kennethes251@gmail.com
+                  smilingstep254@gmail.com
                 </Typography>
               </Paper>
             </motion.div>
@@ -2015,7 +2015,7 @@ const MarketingPage = () => {
                 <PhoneIcon sx={{ fontSize: '3rem', mb: 2, color: '#663399' }} />
                 <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>Phone</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  0707439299
+                  0118832083
                 </Typography>
               </Paper>
             </motion.div>
@@ -2026,6 +2026,43 @@ const MarketingPage = () => {
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <Paper
+                component="a"
+                href="https://wa.me/254118832083"
+                target="_blank"
+                rel="noopener noreferrer"
+                elevation={0}
+                sx={{
+                  p: 4,
+                  textAlign: 'center',
+                  backgroundColor: 'white',
+                  borderRadius: '15px',
+                  border: '1px solid #e0e0e0',
+                  transition: 'all 0.3s ease',
+                  textDecoration: 'none',
+                  display: 'block',
+                  '&:hover': {
+                    transform: 'translateY(-5px)',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                  }
+                }}
+              >
+                <Box component="span" sx={{ fontSize: '3rem', mb: 2, display: 'block' }}>💬</Box>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold', color: 'text.primary' }}>WhatsApp</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Chat with us
+                </Typography>
+              </Paper>
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
               viewport={{ once: true }}
             >
               <Paper

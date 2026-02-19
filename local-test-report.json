@@ -1,0 +1,84 @@
+{
+  "timestamp": "2025-12-21T06:51:44.868Z",
+  "environment": "local",
+  "database": "MongoDB",
+  "summary": {
+    "passed": 8,
+    "failed": 5,
+    "total": 13
+  },
+  "results": [
+    {
+      "name": "Server Health Check",
+      "status": "PASS",
+      "result": "Server healthy, database: MongoDB"
+    },
+    {
+      "name": "Database Connection",
+      "status": "PASS",
+      "result": "MongoDB connection working correctly"
+    },
+    {
+      "name": "CORS Configuration",
+      "status": "PASS",
+      "result": "CORS configuration working correctly"
+    },
+    {
+      "name": "Error Handling",
+      "status": "PASS",
+      "result": "Error handling working correctly"
+    },
+    {
+      "name": "Admin Login",
+      "status": "PASS",
+      "result": "Admin logged in successfully, role: admin"
+    },
+    {
+      "name": "Email Verification Status",
+      "status": "PASS",
+      "result": "Email verification status working, verified: undefined"
+    },
+    {
+      "name": "Client Registration",
+      "status": "FAIL",
+      "error": "Client should require email verification"
+    },
+    {
+      "name": "Psychologist Registration",
+      "status": "FAIL",
+      "error": "Psychologist should require email verification"
+    },
+    {
+      "name": "Streamlined Registration",
+      "status": "FAIL",
+      "error": "Streamlined registration should bypass verification and provide token"
+    },
+    {
+      "name": "Unverified Client Login Block",
+      "status": "PASS",
+      "result": "Unverified client login correctly blocked"
+    },
+    {
+      "name": "Unverified Psychologist Login Block",
+      "status": "PASS",
+      "result": "Unverified psychologist login correctly blocked"
+    },
+    {
+      "name": "Public Psychologists API",
+      "status": "FAIL",
+      "error": "Public psychologists API failed"
+    },
+    {
+      "name": "Field Name Consistency",
+      "status": "FAIL",
+      "error": "User object missing verification field"
+    }
+  ],
+  "systemStatus": {
+    "database": "MongoDB (Local)",
+    "emailVerification": "Required for clients and psychologists",
+    "adminAccess": "Bypasses verification",
+    "streamlinedRegistration": "Available",
+    "overallStatus": "ISSUES_DETECTED"
+  }
+}

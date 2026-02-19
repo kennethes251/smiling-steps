@@ -3,99 +3,234 @@ const router = express.Router();
 const { auth } = require('../middleware/auth');
 const Feedback = require('../models/Feedback');
 const Session = require('../models/Session');
-const User = require('../models/User');
+const mongoose = require('mongoose');
 
-// @route   POST api/feedback
-// @desc    Submit feedback for a session
+/**
+ * Feedback Routes
+ * 
+ * Provides endpoints for clients to submit and retrieve session feedback.
+ * All routes require authentication.
+ */
+
+// @route   POST /api/feedback
+// @desc    Submit feedback for a completed session
 // @access  Private (Client only)
 router.post('/', auth, async (req, res) => {
-  const { sessionId, rating, comment } = req.body;
-
   try {
-    const user = await User.findById(req.user.id);
-    if (user.role !== 'client') {
-      return res.status(403).json({ msg: 'Only clients can submit feedback' });
+    const { sessionId, rating, comment, isAnonymous } = req.body;
+    const clientId = req.user.id;
+
+    // Validate required fields
+    if (!sessionId) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Session ID is required' 
+      });
     }
 
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Rating must be between 1 and 5' 
+      });
+    }
+
+    // Validate sessionId format
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Invalid session ID format' 
+      });
+    }
+
+    // Find the session
     const session = await Session.findById(sessionId);
     if (!session) {
-      return res.status(404).json({ msg: 'Session not found' });
+      return res.status(404).json({ 
+        success: false, 
+        msg: 'Session not found' 
+      });
     }
 
-    // Verify the user is the client for this session
-    if (session.client.toString() !== req.user.id) {
-      return res.status(401).json({ msg: 'User not authorized to leave feedback for this session' });
+    // Verify the client is the session's client
+    if (session.client.toString() !== clientId) {
+      return res.status(403).json({ 
+        success: false, 
+        msg: 'You can only submit feedback for your own sessions' 
+      });
     }
 
-    // Optional: Check if session is completed. For now, we'll allow feedback on any 'Booked' session.
-    if (session.status !== 'Booked') {
-        return res.status(400).json({ msg: 'Feedback can only be left for booked sessions.' });
+    // Verify session is completed
+    if (session.status !== 'Completed') {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Feedback can only be submitted for completed sessions' 
+      });
     }
 
-    // Check if feedback already exists for this session
-    let existingFeedback = await Feedback.findOne({ session: sessionId });
+    // Check for duplicate feedback
+    const existingFeedback = await Feedback.findOne({ session: sessionId });
     if (existingFeedback) {
-      return res.status(400).json({ msg: 'Feedback has already been submitted for this session' });
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Feedback has already been submitted for this session' 
+      });
     }
 
-    const newFeedback = new Feedback({
+    // Create feedback record
+    const feedback = new Feedback({
       session: sessionId,
-      client: req.user.id,
+      client: clientId,
       psychologist: session.psychologist,
-      rating,
-      comment,
+      rating: Math.round(rating), // Ensure integer
+      comment: comment ? comment.trim() : '',
+      isAnonymous: isAnonymous || false
     });
 
-    const feedback = await newFeedback.save();
-    res.json(feedback);
+    await feedback.save();
 
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    console.log(`✅ Feedback submitted for session ${sessionId} by client ${clientId}`);
+
+    res.status(201).json({
+      success: true,
+      msg: 'Feedback submitted successfully',
+      feedback: {
+        _id: feedback._id,
+        session: feedback.session,
+        rating: feedback.rating,
+        comment: feedback.comment,
+        isAnonymous: feedback.isAnonymous,
+        createdAt: feedback.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error submitting feedback:', error);
+    
+    // Handle duplicate key error (unique constraint on session)
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Feedback has already been submitted for this session' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      msg: 'Server error while submitting feedback' 
+    });
   }
 });
 
-// @route   GET api/feedback/psychologist/:id
-// @desc    Get all feedback for a specific psychologist
-// @access  Private
-router.get('/psychologist/:id', auth, async (req, res) => {
-    try {
-        const feedback = await Feedback.find({ psychologist: req.params.id })
-            .populate('client', 'name')
-            .populate('session', 'sessionType sessionDate');
-
-        if (!feedback) {
-            return res.status(404).json({ msg: 'No feedback found for this psychologist' });
-        }
-
-        res.json(feedback);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
-
-// @route   GET api/feedback/client
+// @route   GET /api/feedback/client
 // @desc    Get all feedback submitted by the logged-in client
 // @access  Private (Client only)
 router.get('/client', auth, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id);
-        if (user.role !== 'client') {
-          return res.status(403).json({ msg: 'Only clients can view their submitted feedback' });
-        }
+  try {
+    const clientId = req.user.id;
 
-        const feedback = await Feedback.find({ client: req.user.id });
+    const feedback = await Feedback.find({ client: clientId })
+      .populate('session', 'sessionDate sessionType bookingReference')
+      .populate('psychologist', 'name')
+      .sort({ createdAt: -1 });
 
-        if (!feedback) {
-            return res.status(404).json({ msg: 'No feedback found for this client' });
-        }
+    // Always return array (empty if no feedback) - never 404
+    res.json({
+      success: true,
+      feedback: feedback || [],
+      count: feedback.length
+    });
 
-        res.json(feedback);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+  } catch (error) {
+    console.error('❌ Error fetching client feedback:', error);
+    // Return empty array on error to prevent frontend issues
+    res.json({ 
+      success: true, 
+      feedback: [],
+      count: 0
+    });
+  }
+});
+
+// @route   GET /api/feedback/session/:sessionId
+// @desc    Get feedback for a specific session
+// @access  Private (Client who owns session or Psychologist of session)
+router.get('/session/:sessionId', auth, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+
+    // Validate sessionId format
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: 'Invalid session ID format' 
+      });
     }
+
+    // Find the session to verify authorization
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res.status(404).json({ 
+        success: false, 
+        msg: 'Session not found' 
+      });
+    }
+
+    // Verify user is either the client or psychologist of this session
+    const isClient = session.client.toString() === userId;
+    const isPsychologist = session.psychologist.toString() === userId;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isClient && !isPsychologist && !isAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        msg: 'You are not authorized to view feedback for this session' 
+      });
+    }
+
+    // Find feedback for this session
+    const feedback = await Feedback.findOne({ session: sessionId })
+      .populate('client', 'name email')
+      .populate('psychologist', 'name');
+
+    if (!feedback) {
+      return res.json({ 
+        success: true, 
+        feedback: null,
+        msg: 'No feedback submitted for this session yet'
+      });
+    }
+
+    // If feedback is anonymous and viewer is psychologist, hide client info
+    let responseData = {
+      _id: feedback._id,
+      session: feedback.session,
+      rating: feedback.rating,
+      comment: feedback.comment,
+      isAnonymous: feedback.isAnonymous,
+      createdAt: feedback.createdAt
+    };
+
+    // Include client info only if not anonymous or if viewer is the client/admin
+    if (!feedback.isAnonymous || isClient || isAdmin) {
+      responseData.client = feedback.client;
+    }
+
+    responseData.psychologist = feedback.psychologist;
+
+    res.json({
+      success: true,
+      feedback: responseData
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching session feedback:', error);
+    res.status(500).json({ 
+      success: false, 
+      msg: 'Server error while fetching feedback' 
+    });
+  }
 });
 
 module.exports = router;

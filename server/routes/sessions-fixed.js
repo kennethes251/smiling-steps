@@ -1,8 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const { Op } = require('sequelize');
 const { v4: uuidv4 } = require('uuid');
+const { 
+  getSessionsWithCache, 
+  parsePaginationParams,
+  invalidateSessionCache 
+} = require('../utils/optimizedQueries');
 
 // Models are initialized globally in server/index.js
 // Access them via global.Session and global.User
@@ -70,6 +74,9 @@ router.post('/request', auth, async (req, res) => {
     console.log('✅ Session request created successfully:', session.id);
     console.log('🎥 Meeting link generated:', meetingLink);
     
+    // Invalidate cache for affected users
+    invalidateSessionCache(session.id, req.user.id, psychologistId);
+    
     // Send notification to psychologist
     try {
       const { sendSessionRequestNotification } = require('../utils/notificationService');
@@ -88,6 +95,32 @@ router.post('/request', auth, async (req, res) => {
   } catch (err) {
     console.error('❌ Session creation error:', err.message);
     console.error('Full error:', err);
+    res.status(500).json({ msg: 'Server Error', error: err.message });
+  }
+});
+
+// @route   GET api/sessions/stats
+// @desc    Get session statistics for the logged-in user (cached)
+// @access  Private
+router.get('/stats', auth, async (req, res) => {
+  try {
+    const user = await global.User.findByPk ? 
+      await global.User.findByPk(req.user.id) : 
+      await global.User.findById(req.user.id);
+      
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    
+    const { getSessionStats } = require('../utils/optimizedQueries');
+    const stats = await getSessionStats(req.user.id, user.role);
+    
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (err) {
+    console.error('❌ Error fetching session stats:', err.message);
     res.status(500).json({ msg: 'Server Error', error: err.message });
   }
 });
@@ -157,58 +190,34 @@ router.post('/', auth, async (req, res) => {
 });
 
 // @route   GET api/sessions
-// @desc    Get all sessions for the logged-in user
+// @desc    Get all sessions for the logged-in user with pagination and caching
 // @access  Private
 router.get('/', auth, async (req, res) => {
-  console.log('📋 GET /api/sessions');
+  console.log('📋 GET /api/sessions with optimization');
   console.log('👤 User from auth:', req.user);
+  console.log('🔍 Query params:', req.query);
   
   try {
-    const user = await global.User.findByPk(req.user.id);
+    const user = await global.User.findByPk ? 
+      await global.User.findByPk(req.user.id) : 
+      await global.User.findById(req.user.id);
+      
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    let sessions;
     console.log('🔍 User role:', user.role);
     
-    if (user.role === 'client') {
-      console.log('✅ Fetching client sessions');
-      sessions = await global.Session.findAll({ 
-        where: { clientId: req.user.id },
-        include: [{ 
-          model: global.User, 
-          as: 'psychologist', 
-          attributes: ['id', 'name', 'email'] 
-        }],
-        order: [['sessionDate', 'ASC']]
-      });
-    } else if (user.role === 'psychologist') {
-      console.log('✅ Fetching psychologist sessions');
-      sessions = await global.Session.findAll({ 
-        where: { psychologistId: req.user.id },
-        include: [{ 
-          model: global.User, 
-          as: 'client', 
-          attributes: ['id', 'name', 'email'] 
-        }],
-        order: [['sessionDate', 'ASC']]
-      });
-    } else if (user.role === 'admin') {
-      console.log('✅ Fetching all sessions (admin)');
-      sessions = await global.Session.findAll({
-        include: [
-          { model: global.User, as: 'client', attributes: ['id', 'name', 'email'] },
-          { model: global.User, as: 'psychologist', attributes: ['id', 'name', 'email'] }
-        ],
-        order: [['sessionDate', 'ASC']]
-      });
-    } else {
-      return res.status(403).json({ msg: 'Not authorized' });
-    }
-
-    console.log('✅ Found', sessions.length, 'sessions');
-    res.json(sessions);
+    // Use optimized queries with caching
+    const result = await getSessionsWithCache(user.role, req.user.id, req.query);
+    
+    console.log('✅ Found', result.sessions.length, 'sessions with pagination');
+    
+    res.json({
+      success: true,
+      sessions: result.sessions,
+      pagination: result.pagination
+    });
   } catch (err) {
     console.error('❌ Error:', err.message);
     res.status(500).json({ msg: 'Server Error', error: err.message });
@@ -326,7 +335,7 @@ router.put('/:id/approve', auth, async (req, res) => {
     // Get psychologist's payment info
     const psychologist = await global.User.findByPk(req.user.id);
     const sessionRate = req.body.sessionRate || psychologist?.psychologistDetails?.sessionRate || 2500;
-    const mpesaNumber = psychologist?.psychologistDetails?.paymentInfo?.mpesaNumber || '0707439299';
+    const mpesaNumber = psychologist?.psychologistDetails?.paymentInfo?.mpesaNumber || '0118832083';
     const mpesaName = psychologist?.psychologistDetails?.paymentInfo?.mpesaName || psychologist?.name;
     
     // Update session
@@ -345,6 +354,9 @@ router.put('/:id/approve', auth, async (req, res) => {
       amount: sessionRate,
       status: 'Approved'
     });
+
+    // Invalidate cache for affected users
+    invalidateSessionCache(session.id, session.clientId, session.psychologistId);
 
     // Send email notification to client with payment instructions
     try {
@@ -504,6 +516,9 @@ router.put('/:id/verify-payment', auth, async (req, res) => {
     await session.save();
 
     console.log('✅ Payment verified, session confirmed:', session.id);
+
+    // Invalidate cache for affected users
+    invalidateSessionCache(session.id, session.clientId, session.psychologistId);
 
     // Send confirmation email/SMS to client with meeting link
     try {
