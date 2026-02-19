@@ -16,7 +16,7 @@ if (process.env.REACT_APP_API_URL) {
   API_BASE_URL = 'http://localhost:5000';
 } else {
   // Production on Render - use production backend
-  API_BASE_URL = 'https://smiling-steps.onrender.com';
+  API_BASE_URL = 'https://smiling-steps-backend.onrender.com';
 }
 
 // Only log in development to avoid exposing info in production
