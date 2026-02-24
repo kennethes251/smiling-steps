@@ -79,7 +79,7 @@ function createGmailTransporter() {
   };
 
   // If explicit host is provided, use it instead of service
-  if (process.env.EMAIL_HOST) {
+  if (process.env.EMAIL_HOST && process.env.EMAIL_HOST.trim() !== '') {
     delete config.service;
     config.host = process.env.EMAIL_HOST;
     config.port = parseInt(process.env.EMAIL_PORT) || 587;
