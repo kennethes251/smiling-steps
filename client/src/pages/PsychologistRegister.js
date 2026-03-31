@@ -463,8 +463,7 @@ const PsychologistRegister = () => {
       >
         {/* Header */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Logo size={60} sx={{ mb: 2 }} />
-          <PsychologyIcon sx={{ fontSize: 50, color: 'primary.main', mb: 1 }} />
+          <Logo size={60} sx={{ mb: 2, justifyContent: 'center' }} />
           <Typography
             component="h1"
             variant="h4"

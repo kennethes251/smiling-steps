@@ -192,7 +192,7 @@ function getEnvironmentConfig(environment = process.env.NODE_ENV || 'development
     default: // development
       return {
         ...baseConfig,
-        allowedOrigins: ['http://localhost:3000', 'http://localhost:3001'],
+        allowedOrigins: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
         logLevel: 'debug',
         enableDebugLogs: true,
         rateLimitStrict: false

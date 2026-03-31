@@ -16,8 +16,6 @@ import {
 } from '@mui/icons-material';
 import { AuthContext } from '../../context/AuthContext';
 import Logo from '../Logo';
-import axios from 'axios';
-import API_BASE_URL from '../../config/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -45,17 +43,10 @@ const Login = () => {
     console.log('Attempting login with:', formData);
     
     try {
-      // First, make a direct API call to check for specific error responses
-      const res = await axios.post(`${API_BASE_URL}/api/users/login`, {
-        email: formData.email,
-        password: formData.password
-      });
-      
-      // If we get here, login was successful - use the AuthContext login
       const response = await login(formData.email, formData.password);
       console.log('Login response:', response);
       
-      if (response && response.id) {
+      if (response && (response.id || response._id)) {
         console.log('Login successful, navigating to dashboard');
         navigate('/dashboard');
       } else {
