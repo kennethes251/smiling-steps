@@ -61,7 +61,8 @@ import {
   Event as EventIcon,
   AdminPanelSettings as AdminIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  Email as EmailIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import API_BASE_URL, { API_ENDPOINTS } from '../../config/api';
@@ -313,6 +314,21 @@ const AdminDashboardEnhanced = () => {
       showSnackbar(error.response?.data?.message || 'Failed to approve psychologist', 'error');
     }
     setConfirmDialog({ open: false, type: '', data: null });
+  };
+
+  // Handle request documents from therapist
+  const handleRequestDocuments = async (psychologistId) => {
+    try {
+      await axios.post(
+        `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/request-documents`,
+        {},
+        getAuthConfig()
+      );
+      showSnackbar('Document request email sent to therapist');
+    } catch (error) {
+      console.error('Error sending document request:', error);
+      showSnackbar(error.response?.data?.message || 'Failed to send document request', 'error');
+    }
   };
 
   // Handle psychologist rejection
@@ -770,7 +786,16 @@ const AdminDashboardEnhanced = () => {
                     </Typography>
                     
                     {/* Action Buttons */}
-                    <Box display="flex" gap={1}>
+                    <Box display="flex" gap={1} flexWrap="wrap">
+                      <Button
+                        variant="outlined"
+                        color="info"
+                        size="small"
+                        startIcon={<EmailIcon />}
+                        onClick={() => handleRequestDocuments(psychologist._id || psychologist.id)}
+                      >
+                        Request Docs
+                      </Button>
                       <Button
                         variant="contained"
                         color="success"

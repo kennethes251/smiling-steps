@@ -142,8 +142,8 @@ router.post('/register', validateRegisterInput, async (req, res) => {
         approvalStatus: 'pending', // Requires admin approval
         isActive: false // Not active until approved
       };
-      // Psychologists also need email verification (unless streamlined)
-      userPayload.isVerified = isStreamlined;
+      // Psychologists are auto-verified - admin approval is the gate, not email verification
+      userPayload.isVerified = true;
     }
 
     // Create user
@@ -162,8 +162,52 @@ router.post('/register', validateRegisterInput, async (req, res) => {
       );
     }
 
-    // Handle email verification for both clients AND psychologists (unless streamlined)
-    if (!isStreamlined && (role === 'client' || role === 'psychologist')) {
+    // For psychologists: send admin notification email instead of verification email
+    if (role === 'psychologist') {
+      try {
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+          }
+        });
+        const adminEmail = process.env.EMAIL_USER || 'smilingstep254@gmail.com';
+        const dashboardUrl = process.env.CLIENT_URL ? `${process.env.CLIENT_URL}/dashboard` : 'your admin dashboard';
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: adminEmail,
+          subject: `🆕 New Therapist Application - ${user.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: #663399; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                <h2 style="margin: 0;">New Therapist Application</h2>
+              </div>
+              <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
+                <p>A new therapist has applied to join Smiling Steps:</p>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr><td style="padding: 8px; font-weight: bold;">Name:</td><td style="padding: 8px;">${user.name}</td></tr>
+                  <tr style="background: #f9f9f9;"><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${user.email}</td></tr>
+                  <tr><td style="padding: 8px; font-weight: bold;">Specializations:</td><td style="padding: 8px;">${user.psychologistDetails?.specializations?.join(', ') || 'Not specified'}</td></tr>
+                  <tr style="background: #f9f9f9;"><td style="padding: 8px; font-weight: bold;">Experience:</td><td style="padding: 8px;">${user.psychologistDetails?.experience || 'Not specified'}</td></tr>
+                  <tr><td style="padding: 8px; font-weight: bold;">Education:</td><td style="padding: 8px;">${user.psychologistDetails?.education || 'Not specified'}</td></tr>
+                </table>
+                <p style="margin-top: 20px;">Please review this application in the <a href="${dashboardUrl}" style="color: #663399;">admin dashboard</a>.</p>
+                <p>You can request their CV and credentials, then approve or reject their application.</p>
+              </div>
+            </div>
+          `
+        });
+        console.log('📧 Admin notification sent for new therapist:', user.email);
+      } catch (emailError) {
+        console.error('Failed to send admin notification email:', emailError);
+        // Don't fail registration if notification email fails
+      }
+    }
+
+    // Handle email verification for clients only (unless streamlined)
+    if (!isStreamlined && role === 'client') {
       try {
         const verificationToken = await emailVerificationService.createVerificationToken(user._id);
         await emailVerificationService.sendVerificationEmail(user, verificationToken);
@@ -501,8 +545,8 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if email is verified (for clients and psychologists - admin bypasses)
-    if ((user.role === 'client' || user.role === 'psychologist') && !user.isVerified) {
+    // Check if email is verified (for clients only - psychologists use admin approval flow)
+    if (user.role === 'client' && !user.isVerified) {
       return res.status(400).json({
         success: false,
         message: 'Email not verified',

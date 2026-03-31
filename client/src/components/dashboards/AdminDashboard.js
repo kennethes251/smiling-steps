@@ -16,18 +16,23 @@ import {
   TableRow,
   Paper,
   Chip,
-  Alert
+  Alert,
+  Button,
+  Stack,
+  Snackbar
 } from '@mui/material';
 import {
   People as PeopleIcon,
   Psychology as PsychologyIcon,
   Article as ArticleIcon,
-  Feedback as FeedbackIcon,
   TrendingUp as TrendingUpIcon,
-  Payment as PaymentIcon
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Email as EmailIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import PaymentVerificationPanel from './PaymentVerificationPanel';
+import API_BASE_URL from '../../config/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +41,59 @@ const AdminDashboard = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleApprove = async (psychId) => {
+    setActionLoading(prev => ({ ...prev, [psychId]: 'approving' }));
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/approve`, {}, {
+        headers: { 'x-auth-token': token }
+      });
+      showSnackbar('Therapist approved successfully');
+      fetchDashboardData();
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || 'Failed to approve therapist', 'error');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [psychId]: null }));
+    }
+  };
+
+  const handleReject = async (psychId) => {
+    setActionLoading(prev => ({ ...prev, [psychId]: 'rejecting' }));
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/reject`, {}, {
+        headers: { 'x-auth-token': token }
+      });
+      showSnackbar('Therapist application rejected');
+      fetchDashboardData();
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || 'Failed to reject therapist', 'error');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [psychId]: null }));
+    }
+  };
+
+  const handleRequestDocuments = async (psychId) => {
+    setActionLoading(prev => ({ ...prev, [psychId]: 'requesting' }));
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_BASE_URL}/api/admin/psychologists/${psychId}/request-documents`, {}, {
+        headers: { 'x-auth-token': token }
+      });
+      showSnackbar('Document request email sent to therapist');
+    } catch (err) {
+      showSnackbar(err.response?.data?.message || 'Failed to send document request', 'error');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [psychId]: null }));
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -169,38 +227,86 @@ const AdminDashboard = () => {
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableCell><strong>Name</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell><strong>Approval Status</strong></TableCell>
                   <TableCell><strong>Specializations</strong></TableCell>
                   <TableCell><strong>Joined</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {psychologists.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">
+                    <TableCell colSpan={6} align="center">
                       <Typography color="textSecondary">No psychologists registered yet</Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  psychologists.map((psych) => (
-                    <TableRow key={psych.id} hover>
-                      <TableCell>{psych.name}</TableCell>
-                      <TableCell>{psych.email}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={psych.isVerified ? 'Verified' : 'Pending'}
-                          color={psych.isVerified ? 'success' : 'warning'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {psych.psychologistDetails?.specializations?.slice(0, 2).join(', ') || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(psych.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  psychologists.map((psych) => {
+                    const approvalStatus = psych.approvalStatus || psych.psychologistDetails?.approvalStatus || 'pending';
+                    const isPending = approvalStatus === 'pending';
+                    const isApproved = approvalStatus === 'approved';
+                    const isLoading = actionLoading[psych.id];
+                    return (
+                      <TableRow key={psych.id} hover>
+                        <TableCell>{psych.name}</TableCell>
+                        <TableCell>{psych.email}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={approvalStatus.charAt(0).toUpperCase() + approvalStatus.slice(1)}
+                            color={isApproved ? 'success' : isPending ? 'warning' : 'error'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {psych.psychologistDetails?.specializations?.slice(0, 2).join(', ') || 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(psych.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Stack direction="row" spacing={1}>
+                            {isPending && (
+                              <>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="info"
+                                  startIcon={<EmailIcon />}
+                                  onClick={() => handleRequestDocuments(psych.id)}
+                                  disabled={!!isLoading}
+                                >
+                                  {isLoading === 'requesting' ? 'Sending...' : 'Request Docs'}
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={<CheckCircleIcon />}
+                                  onClick={() => handleApprove(psych.id)}
+                                  disabled={!!isLoading}
+                                >
+                                  {isLoading === 'approving' ? 'Approving...' : 'Approve'}
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  startIcon={<CancelIcon />}
+                                  onClick={() => handleReject(psych.id)}
+                                  disabled={!!isLoading}
+                                >
+                                  {isLoading === 'rejecting' ? 'Rejecting...' : 'Reject'}
+                                </Button>
+                              </>
+                            )}
+                            {isApproved && (
+                              <Typography variant="body2" color="success.main">✓ Active</Typography>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
@@ -348,6 +454,14 @@ const AdminDashboard = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Container>
   );
 };

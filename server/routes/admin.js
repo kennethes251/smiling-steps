@@ -321,6 +321,68 @@ router.post('/psychologists', auth, adminAuth, async (req, res) => {
   }
 });
 
+// Request documents from therapist
+// @route   POST api/admin/psychologists/:id/request-documents
+// @desc    Send email to therapist requesting CV and credentials
+// @access  Private (Admin only)
+router.post('/psychologists/:id/request-documents', auth, adminAuth, async (req, res) => {
+  try {
+    const psychologist = await User.findById(req.params.id);
+    
+    if (!psychologist || psychologist.role !== 'psychologist') {
+      return res.status(404).json({ success: false, message: 'Therapist not found' });
+    }
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    const adminEmail = process.env.EMAIL_USER || 'smilingstep254@gmail.com';
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: psychologist.email,
+      subject: 'Action Required: Submit Your Credentials - Smiling Steps',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #663399; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">📋 Credentials Required</h2>
+          </div>
+          <div style="padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
+            <p>Dear ${psychologist.name},</p>
+            <p>Thank you for applying to join Smiling Steps as a therapist. We have reviewed your initial application and would like to proceed with verifying your credentials.</p>
+            <p><strong>Please send the following documents to <a href="mailto:${adminEmail}" style="color: #663399;">${adminEmail}</a>:</strong></p>
+            <ul>
+              <li>Updated CV / Resume</li>
+              <li>Professional license or certification</li>
+              <li>Academic qualifications (degree certificates)</li>
+              <li>Any other relevant professional documents</li>
+            </ul>
+            <p>Once we receive and review your documents, we will notify you of the outcome of your application.</p>
+            <p>If you have any questions, please reply to this email.</p>
+            <p>Best regards,<br><strong>The Smiling Steps Team</strong></p>
+          </div>
+        </div>
+      `
+    });
+
+    console.log('📧 Document request sent to therapist:', psychologist.email);
+
+    res.json({ 
+      success: true, 
+      message: `Document request email sent to ${psychologist.email}` 
+    });
+  } catch (error) {
+    console.error('Error sending document request:', error);
+    res.status(500).json({ success: false, message: 'Failed to send document request email' });
+  }
+});
+
 // Approve psychologist - Enhanced with audit logging and email notification
 // @route   PUT api/admin/psychologists/:id/approve
 // @desc    Approve a pending psychologist application

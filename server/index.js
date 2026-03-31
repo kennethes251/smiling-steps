@@ -26,6 +26,7 @@ const {
 } = require('./config/securityConfig');
 const { initializeVideoCallServer } = require('./services/videoCallService');
 const { initializeChatRoomSocket } = require('./services/chatRoomSocketService');
+const { initializeDirectMessageSocket } = require('./services/directMessageSocketService');
 
 const app = express();
 const server = http.createServer(app);
@@ -143,6 +144,11 @@ const startServer = async () => {
     const chatIO = initializeChatRoomSocket(io);
     app.set('chatIO', chatIO);
     logger.info('✅ WebSocket namespace initialized for chat rooms');
+
+    // Initialize WebSocket namespace for direct messages (client<->therapist, therapist<->admin)
+    const dmIO = initializeDirectMessageSocket(io);
+    app.set('dmIO', dmIO);
+    logger.info('✅ WebSocket namespace initialized for direct messages');
 
     // Define Routes with error handling
     logger.info('🔄 Loading API routes...');

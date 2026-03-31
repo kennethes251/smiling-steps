@@ -4,274 +4,196 @@ const { auth } = require('../middleware/auth');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const { findOrCreateConversation, rolesAllowed } = require('../services/directMessageSocketService');
 
-// @route   POST /api/chat/conversations
-// @desc    Create or find a conversation between client and psychologist
-// @access  Private
+// POST /api/chat/conversations
+// Find or create a conversation between the current user and a target user.
+// Supports: client<->psychologist, psychologist<->admin, client<->admin
 router.post('/conversations', auth, async (req, res) => {
-  const { psychologistId, clientId, assessmentResultId } = req.body;
-
   try {
-    const currentUser = await User.findById(req.user.id);
-    if (!currentUser) {
-      return res.status(404).json({ msg: 'User not found.' });
+    const { targetUserId } = req.body;
+
+    // Legacy support: accept psychologistId or clientId
+    const resolvedTargetId = targetUserId || req.body.psychologistId || req.body.clientId;
+    if (!resolvedTargetId) {
+      return res.status(400).json({ msg: 'targetUserId is required' });
     }
 
-    let targetClientId, targetPsychologistId;
+    const currentUser = await User.findById(req.user.id).select('name role');
+    const targetUser = await User.findById(resolvedTargetId).select('name role');
 
-    // Determine client and psychologist based on who is making the request
-    if (currentUser.role === 'client') {
-      targetClientId = req.user.id;
-      targetPsychologistId = psychologistId;
-      
-      // If no psychologist specified, find one (for general chat)
-      if (!targetPsychologistId) {
-        const psychologist = await User.findOne({ role: 'psychologist', approvalStatus: 'approved' });
-        if (!psychologist) {
-          return res.status(404).json({ msg: 'No available psychologists.' });
-        }
-        targetPsychologistId = psychologist._id;
-      }
-    } else if (currentUser.role === 'psychologist') {
-      targetPsychologistId = req.user.id;
-      targetClientId = clientId;
-      
-      if (!targetClientId) {
-        return res.status(400).json({ msg: 'Client ID is required for psychologist to start conversation.' });
-      }
-    } else {
-      return res.status(403).json({ msg: 'Only clients and psychologists can start conversations.' });
+    if (!currentUser) return res.status(404).json({ msg: 'Current user not found' });
+    if (!targetUser) return res.status(404).json({ msg: 'Target user not found' });
+
+    if (!rolesAllowed(currentUser.role, targetUser.role)) {
+      return res.status(403).json({
+        msg: `Messaging not allowed between ${currentUser.role} and ${targetUser.role}`,
+      });
     }
 
-    // Validate the other party exists
-    const psychologist = await User.findById(targetPsychologistId);
-    if (!psychologist || psychologist.role !== 'psychologist') {
-      return res.status(404).json({ msg: 'Psychologist not found.' });
-    }
-
-    const client = await User.findById(targetClientId);
-    if (!client || client.role !== 'client') {
-      return res.status(404).json({ msg: 'Client not found.' });
-    }
-
-    // Find existing conversation or create new one
-    let conversation = await Conversation.findOne({
-      client: targetClientId,
-      psychologist: targetPsychologistId,
-      ...(assessmentResultId && { assessmentResult: assessmentResultId }),
-    });
-
-    if (conversation) {
-      // Populate and return existing conversation
-      await conversation.populate('client', 'name email');
-      await conversation.populate('psychologist', 'name email');
-      return res.json(conversation);
-    }
-
-    conversation = new Conversation({
-      client: targetClientId,
-      psychologist: targetPsychologistId,
-      ...(assessmentResultId && { assessmentResult: assessmentResultId }),
-    });
-
-    await conversation.save();
-    await conversation.populate('client', 'name email');
-    await conversation.populate('psychologist', 'name email');
-    
-    res.status(201).json(conversation);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// @route   GET /api/chat/conversations
-// @desc    Get all conversations for a user
-// @access  Private
-router.get('/conversations', auth, async (req, res) => {
-  try {
-    const conversations = await Conversation.find({
-      $or: [{ client: req.user.id }, { psychologist: req.user.id }],
-    })
-      .populate('client', 'name email profilePicture')
-      .populate('psychologist', 'name email profilePicture')
-      .sort({ 'lastMessage.timestamp': -1 });
-
-    // Add unread count for each conversation
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv) => {
-        const unreadCount = await Message.countDocuments({
-          conversation: conv._id,
-          sender: { $ne: req.user.id },
-          isRead: false,
-          isDeleted: false
-        });
-        return {
-          ...conv.toObject(),
-          unreadCount
-        };
-      })
+    const conversation = await findOrCreateConversation(
+      { id: req.user.id },
+      { id: resolvedTargetId }
     );
-
-    res.json(conversationsWithUnread);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// @route   GET /api/chat/conversations/:id
-// @desc    Get a specific conversation by ID
-// @access  Private
-router.get('/conversations/:id', auth, async (req, res) => {
-  try {
-    const conversation = await Conversation.findById(req.params.id)
-      .populate('client', 'name email profilePicture')
-      .populate('psychologist', 'name email profilePicture');
-
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
-    }
-
-    // Ensure the user is part of the conversation
-    if (conversation.client._id.toString() !== req.user.id && 
-        conversation.psychologist._id.toString() !== req.user.id) {
-      return res.status(403).json({ msg: 'User not authorized for this conversation' });
-    }
 
     res.json(conversation);
   } catch (err) {
-    console.error(err.message);
+    console.error('Create conversation error:', err);
     res.status(500).send('Server Error');
   }
 });
 
-// @route   GET /api/chat/conversations/:id/messages
-// @desc    Get all messages for a conversation
-// @access  Private
+// GET /api/chat/conversations
+// Get all conversations for the current user
+router.get('/conversations', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find by participants array (new) OR legacy client/psychologist fields
+    const conversations = await Conversation.find({
+      $or: [
+        { participants: userId },
+        { client: userId },
+        { psychologist: userId },
+      ],
+    })
+      .populate('participants', 'name email role profilePicture')
+      .populate('client', 'name email role profilePicture')
+      .populate('psychologist', 'name email role profilePicture')
+      .sort({ 'lastMessage.timestamp': -1 });
+
+    const withUnread = await Promise.all(
+      conversations.map(async (conv) => {
+        const unreadCount = await Message.countDocuments({
+          conversation: conv._id,
+          sender: { $ne: userId },
+          isRead: false,
+          isDeleted: false,
+        });
+        return { ...conv.toObject(), unreadCount };
+      })
+    );
+
+    res.json(withUnread);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// GET /api/chat/conversations/:id
+router.get('/conversations/:id', auth, async (req, res) => {
+  try {
+    const conv = await Conversation.findById(req.params.id)
+      .populate('participants', 'name email role profilePicture')
+      .populate('client', 'name email role profilePicture')
+      .populate('psychologist', 'name email role profilePicture');
+
+    if (!conv) return res.status(404).json({ msg: 'Conversation not found' });
+
+    const userId = req.user.id;
+    const participantIds = conv.participants?.length
+      ? conv.participants.map((p) => p._id.toString())
+      : [conv.client?._id?.toString(), conv.psychologist?._id?.toString()].filter(Boolean);
+
+    if (!participantIds.includes(userId)) {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+
+    res.json(conv);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// GET /api/chat/conversations/:id/messages
 router.get('/conversations/:id/messages', auth, async (req, res) => {
   try {
-    const messages = await Message.find({ conversation: req.params.id })
-      .populate('sender', 'name avatar')
+    const messages = await Message.find({ conversation: req.params.id, isDeleted: false })
+      .populate('sender', 'name role profilePicture')
       .sort({ createdAt: 'asc' });
-
     res.json(messages);
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
     res.status(500).send('Server Error');
   }
 });
 
-// @route   POST /api/chat/conversations/:id/messages
-// @desc    Send a message
-// @access  Private
+// POST /api/chat/conversations/:id/messages  (REST fallback — real-time via socket)
 router.post('/conversations/:id/messages', auth, async (req, res) => {
   const { text } = req.body;
-
   try {
-    const conversation = await Conversation.findById(req.params.id);
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
+    const conv = await Conversation.findById(req.params.id);
+    if (!conv) return res.status(404).json({ msg: 'Conversation not found' });
+
+    const userId = req.user.id;
+    const participantIds = conv.participants?.length
+      ? conv.participants.map((p) => p.toString())
+      : [conv.client?.toString(), conv.psychologist?.toString()].filter(Boolean);
+
+    if (!participantIds.includes(userId)) {
+      return res.status(403).json({ msg: 'Not authorized' });
     }
 
-    // Ensure the user is part of the conversation
-    if (conversation.client.toString() !== req.user.id && conversation.psychologist.toString() !== req.user.id) {
-        return res.status(403).json({ msg: 'User not authorized for this conversation' });
+    const message = await Message.create({ conversation: req.params.id, sender: userId, text });
+    conv.lastMessage = { text, sender: userId, timestamp: new Date() };
+    await conv.save();
+
+    const populated = await message.populate('sender', 'name role profilePicture');
+
+    // Also push via socket if available
+    const dmIO = req.app.get('dmIO');
+    if (dmIO) {
+      dmIO.to(`dm:${req.params.id}`).emit('dm:message', {
+        conversationId: req.params.id,
+        message: populated,
+      });
     }
 
-    const message = new Message({
-      conversation: req.params.id,
-      sender: req.user.id,
-      text,
-    });
-
-    await message.save();
-
-    // Update the last message in the conversation
-    conversation.lastMessage = {
-        text,
-        sender: req.user.id,
-        timestamp: new Date()
-    };
-    await conversation.save();
-
-    // In a real-time app, you would emit this message via WebSockets
-    const populatedMessage = await message.populate('sender', 'name avatar');
-    res.status(201).json(populatedMessage);
-
+    res.status(201).json(populated);
   } catch (err) {
-    console.error(err.message);
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// PUT /api/chat/conversations/:id/read
+router.put('/conversations/:id/read', auth, async (req, res) => {
+  try {
+    const conv = await Conversation.findById(req.params.id);
+    if (!conv) return res.status(404).json({ msg: 'Conversation not found' });
+
+    const result = await Message.updateMany(
+      { conversation: req.params.id, sender: { $ne: req.user.id }, isRead: false },
+      { $set: { isRead: true, readAt: new Date() } }
+    );
+    res.json({ msg: 'Messages marked as read', modifiedCount: result.modifiedCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
+  }
+});
+
+// GET /api/chat/unread-count
+router.get('/unread-count', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const conversations = await Conversation.find({
+      $or: [{ participants: userId }, { client: userId }, { psychologist: userId }],
+    });
+    const ids = conversations.map((c) => c._id);
+    const unreadCount = await Message.countDocuments({
+      conversation: { $in: ids },
+      sender: { $ne: userId },
+      isRead: false,
+      isDeleted: false,
+    });
+    res.json({ unreadCount });
+  } catch (err) {
+    console.error(err);
     res.status(500).send('Server Error');
   }
 });
 
 module.exports = router;
-
-
-// @route   PUT /api/chat/conversations/:id/read
-// @desc    Mark all messages in a conversation as read
-// @access  Private
-router.put('/conversations/:id/read', auth, async (req, res) => {
-  try {
-    const conversation = await Conversation.findById(req.params.id);
-    if (!conversation) {
-      return res.status(404).json({ msg: 'Conversation not found' });
-    }
-
-    // Ensure the user is part of the conversation
-    if (conversation.client.toString() !== req.user.id && 
-        conversation.psychologist.toString() !== req.user.id) {
-      return res.status(403).json({ msg: 'User not authorized for this conversation' });
-    }
-
-    // Mark all messages from the other party as read
-    const result = await Message.updateMany(
-      {
-        conversation: req.params.id,
-        sender: { $ne: req.user.id },
-        isRead: false
-      },
-      {
-        $set: {
-          isRead: true,
-          readAt: new Date()
-        }
-      }
-    );
-
-    res.json({ 
-      msg: 'Messages marked as read',
-      modifiedCount: result.modifiedCount 
-    });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// @route   GET /api/chat/unread-count
-// @desc    Get total unread message count for user
-// @access  Private
-router.get('/unread-count', auth, async (req, res) => {
-  try {
-    // Find all conversations the user is part of
-    const conversations = await Conversation.find({
-      $or: [{ client: req.user.id }, { psychologist: req.user.id }],
-    });
-
-    const conversationIds = conversations.map(c => c._id);
-
-    // Count unread messages across all conversations
-    const unreadCount = await Message.countDocuments({
-      conversation: { $in: conversationIds },
-      sender: { $ne: req.user.id },
-      isRead: false,
-      isDeleted: false
-    });
-
-    res.json({ unreadCount });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
