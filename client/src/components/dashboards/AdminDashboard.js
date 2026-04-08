@@ -51,10 +51,7 @@ const AdminDashboard = () => {
   const handleApprove = async (psychId) => {
     setActionLoading(prev => ({ ...prev, [psychId]: 'approving' }));
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/approve`, {}, {
-        headers: { 'x-auth-token': token }
-      });
+      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/approve`, {});
       showSnackbar('Therapist approved successfully');
       fetchDashboardData();
     } catch (err) {
@@ -67,10 +64,7 @@ const AdminDashboard = () => {
   const handleReject = async (psychId) => {
     setActionLoading(prev => ({ ...prev, [psychId]: 'rejecting' }));
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/reject`, {}, {
-        headers: { 'x-auth-token': token }
-      });
+      await axios.put(`${API_BASE_URL}/api/admin/psychologists/${psychId}/reject`, {});
       showSnackbar('Therapist application rejected');
       fetchDashboardData();
     } catch (err) {
@@ -83,10 +77,7 @@ const AdminDashboard = () => {
   const handleRequestDocuments = async (psychId) => {
     setActionLoading(prev => ({ ...prev, [psychId]: 'requesting' }));
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API_BASE_URL}/api/admin/psychologists/${psychId}/request-documents`, {}, {
-        headers: { 'x-auth-token': token }
-      });
+      await axios.post(`${API_BASE_URL}/api/admin/psychologists/${psychId}/request-documents`, {});
       showSnackbar('Document request email sent to therapist');
     } catch (err) {
       showSnackbar(err.response?.data?.message || 'Failed to send document request', 'error');
@@ -101,14 +92,11 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const config = { headers: { 'x-auth-token': token } };
-
-      // Fetch all data in parallel
+      // Use axios defaults (set by setAuthToken on login) - no manual token needed
       const [statsRes, psychRes, clientsRes] = await Promise.all([
-        axios.get('https://smiling-steps.onrender.com/api/admin/stats', config),
-        axios.get('https://smiling-steps.onrender.com/api/admin/psychologists', config),
-        axios.get('https://smiling-steps.onrender.com/api/admin/clients', config)
+        axios.get(`${API_BASE_URL}/api/admin/stats`),
+        axios.get(`${API_BASE_URL}/api/admin/psychologists`),
+        axios.get(`${API_BASE_URL}/api/admin/clients`)
       ]);
 
       setStats(statsRes.data);

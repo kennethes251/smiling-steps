@@ -300,6 +300,8 @@ const AdminDashboardEnhanced = () => {
 
   // Handle psychologist approval
   const handleApprovePsychologist = async (psychologistId) => {
+    // Optimistically remove from list to prevent double-approve
+    setPendingPsychologists(prev => prev.filter(p => p.id !== psychologistId));
     try {
       await axios.put(
         `${API_ENDPOINTS.ADMIN}/psychologists/${psychologistId}/approve`,
@@ -307,11 +309,17 @@ const AdminDashboardEnhanced = () => {
         getAuthConfig()
       );
       showSnackbar('Psychologist approved successfully');
-      fetchPendingPsychologists();
       fetchStats();
     } catch (error) {
       console.error('Error approving psychologist:', error);
-      showSnackbar(error.response?.data?.message || 'Failed to approve psychologist', 'error');
+      const msg = error.response?.data?.message || 'Failed to approve psychologist';
+      // If already approved, that's fine — don't restore to list
+      if (error.response?.data?.code !== 'ALREADY_APPROVED') {
+        showSnackbar(msg, 'error');
+        fetchPendingPsychologists(); // restore list on real error
+      } else {
+        showSnackbar('Psychologist was already approved', 'info');
+      }
     }
     setConfirmDialog({ open: false, type: '', data: null });
   };
