@@ -41,44 +41,68 @@ const ClientDashboard = () => {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No authentication token found');
+        setLoading(false);
+        return;
+      }
+      
       const config = {
         headers: { 'x-auth-token': token },
       };
 
-      // Fetch all data in parallel
+      // Fetch all data in parallel - REMOVED company endpoint (doesn't exist)
       const [
         sessionsRes,
         feedbackRes,
-        psychologistsRes,
-        companyRes
+        psychologistsRes
       ] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/sessions`, config),
-        axios.get(`${API_BASE_URL}/api/feedback/client`, config).catch(() => ({ data: [] })),
-        axios.get(`${API_BASE_URL}/api/users/psychologists`, config).catch(() => ({ data: { data: [] } })),
-        axios.get(`${API_BASE_URL}/api/company/my-company`, config).catch(() => ({ data: null }))
+        axios.get(`${API_BASE_URL}/api/sessions`, config).catch(err => {
+          console.error('Failed to fetch sessions:', err.response?.status, err.response?.data);
+          return { data: [] };
+        }),
+        axios.get(`${API_BASE_URL}/api/feedback/client`, config).catch(err => {
+          console.error('Failed to fetch feedback:', err.response?.status);
+          return { data: [] };
+        }),
+        axios.get(`${API_BASE_URL}/api/users/psychologists`, config).catch(err => {
+          console.error('Failed to fetch psychologists:', err.response?.status);
+          return { data: { data: [] } };
+        })
       ]);
 
-      // Process sessions
+      // Process sessions with null check
       if (sessionsRes.data && Array.isArray(sessionsRes.data)) {
         const sortedSessions = sessionsRes.data.sort((a, b) => new Date(a.sessionDate) - new Date(b.sessionDate));
         setSessions(sortedSessions);
-        setSubmittedFeedback(feedbackRes.data?.map(f => f.session) || []);
+        
+        // Set submitted feedback with null check
+        if (feedbackRes.data && Array.isArray(feedbackRes.data)) {
+          setSubmittedFeedback(feedbackRes.data.map(f => f.session).filter(Boolean));
+        }
       } else {
+        console.warn('Sessions data is not an array:', sessionsRes.data);
         setSessions([]);
       }
 
-      // Set psychologists
-      setPsychologists(psychologistsRes.data?.data || []);
-
-      // Set company and subscription if available
-      if (companyRes?.data) {
-        setCompany(companyRes.data);
-        if (companyRes.data.subscription) {
-          setSubscription(companyRes.data.subscription);
-        }
+      // Set psychologists with null check
+      if (psychologistsRes.data?.data && Array.isArray(psychologistsRes.data.data)) {
+        setPsychologists(psychologistsRes.data.data);
+      } else {
+        setPsychologists([]);
       }
+
+      // Company feature not implemented yet - remove these calls
+      // setCompany(null);
+      // setSubscription(null);
+      
     } catch (err) {
       console.error('Failed to fetch dashboard data', err);
+      if (err.response?.status === 401) {
+        console.error('Authentication failed - token may be expired');
+        // Optionally redirect to login or refresh token
+      }
     } finally {
       setLoading(false);
     }
