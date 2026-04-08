@@ -138,7 +138,8 @@ class EmailVerificationService {
    * @param {string} token - Plain text verification token
    */
   async sendVerificationEmail(user, token) {
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
+    const clientUrl = process.env.CLIENT_URL || 'https://smiling-steps-frontend.onrender.com';
+    const verificationUrl = `${clientUrl}/verify-email?token=${token}`;
     
     const mailOptions = {
       from: {
