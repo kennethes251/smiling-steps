@@ -83,7 +83,8 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'REGISTER_SUCCESS', payload: res.data });
       return res.data;
     } catch (err) {
-      dispatch({ type: 'REGISTER_FAIL', payload: err.response.data.msg });
+      const errorMessage = err.response?.data?.msg || err.response?.data?.message || err.message || 'Registration failed';
+      dispatch({ type: 'REGISTER_FAIL', payload: errorMessage });
       throw err;
     }
   };
@@ -127,12 +128,17 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('AuthContext: Login error:', err);
-      const errorMessage = err.response?.data?.msg || err.message || 'Login failed';
+      const errorMessage = err.response?.data?.msg 
+        || err.response?.data?.message 
+        || err.response?.data?.errors?.[0]
+        || err.message 
+        || 'Login failed';
       dispatch({ 
         type: 'LOGIN_FAIL', 
         payload: errorMessage 
       });
-      throw new Error(errorMessage);
+      // Re-throw original error so Login.js can read err.response
+      throw err;
     }
   };
 
